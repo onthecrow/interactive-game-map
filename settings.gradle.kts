@@ -28,4 +28,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":genshinCompose")
+include(":rdr2Compose")
+include(":genshin")
+include(":rdr2")

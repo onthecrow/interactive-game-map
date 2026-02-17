@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
@@ -12,6 +14,15 @@ kotlin {
     }
 }
 
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+val mapsKey = (System.getenv("GENSHIN_MAPS_API_KEY")
+    ?: localProps.getProperty("GENSHIN_MAPS_API_KEY")
+    ?: "")
+
 android {
     namespace = "com.onthecrow.genshinmap"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -22,6 +33,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        resValue("string", "google_maps_key", mapsKey)
     }
     packaging {
         resources {
@@ -32,5 +45,8 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
+    }
+    buildFeatures {
+        resValues = true
     }
 }

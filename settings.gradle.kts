@@ -14,6 +14,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
 
 dependencyResolutionManagement {
     repositories {
@@ -32,3 +35,9 @@ include(":genshinCompose")
 include(":rdr2Compose")
 include(":genshin")
 include(":rdr2")
+
+include(":feature:map:ui-api")
+include(":feature:map:ui-impl")
+
+include(":core:navigation:api")
+include(":core:navigation:impl")

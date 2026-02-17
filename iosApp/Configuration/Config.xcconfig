@@ -1,3 +1,4 @@
+#include "Secrets.xcconfig"
 TEAM_ID=
 
 PRODUCT_NAME=InteractiveGameMap

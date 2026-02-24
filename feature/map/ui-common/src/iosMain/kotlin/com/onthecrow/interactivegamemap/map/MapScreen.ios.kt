@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitView
@@ -20,6 +21,7 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import platform.CoreGraphics.CGRectMake
 import platform.CoreLocation.CLLocationCoordinate2DMake
@@ -44,9 +46,7 @@ fun ByteArray?.toUIImageOrNull(): UIImage? {
         }
 
         UIImage(data = data)
-    } catch (t: Throwable) {
-        println("toUIImageOrNull: crashed: ${t::class.simpleName}: ${t.message}")
-        t.printStackTrace()
+    } catch (_: Throwable) {
         null
     }
 }
@@ -58,6 +58,7 @@ actual fun MapScreen(modifier: Modifier) {
         val target = CLLocationCoordinate2DMake(55.751244, 37.618423) // Москва
         GMSCameraPosition.cameraWithTarget(target = target, zoom = 12f)
     }
+    val scope = rememberCoroutineScope()
 
     val configProvider: RemoteConfigProvider = koinInject<RemoteConfigProvider>()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
@@ -84,12 +85,11 @@ actual fun MapScreen(modifier: Modifier) {
                     zoom: ULong,
                     receiver: GMSTileReceiverProtocol
                 ) {
-                    val tile = mapTileProvider.getTile(x.toInt(), y.toInt(), zoom.toInt())
-
-                    val image: UIImage? = tile?.data?.toUIImageOrNull()
-
-                    // Если тайла нет — передай null (SDK сам обработает как "no tile")
-                    receiver.receiveTileWithX(x, y, zoom, image)
+                    scope.launch {
+                        val tile = mapTileProvider.getTileAsync(x.toInt(), y.toInt(), zoom.toInt())
+                        val image: UIImage? = tile.data?.toUIImageOrNull()
+                        receiver.receiveTileWithX(x, y, zoom, image)
+                    }
                 }
             }.map = mapView
             mapView.mapType = kGMSTypeNone

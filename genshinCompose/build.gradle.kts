@@ -21,59 +21,6 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
-
-        // todo reuse via plugin
-        val libsDir = rootProject.file("lib/maps")
-
-        val xcFramework = File(libsDir, "GoogleMaps.xcframework")
-
-        val archSlice = when (iosTarget.name) {
-            "iosArm64" -> "ios-arm64"
-            "iosSimulatorArm64" -> "ios-arm64_x86_64-simulator"
-            else -> error("Unknown iOS target: ${iosTarget.name}")
-        }
-
-        val sliceDir = File(xcFramework, archSlice)
-        val headersDir = File(sliceDir, "Headers")
-        val headersGoogleMapsDir = File(headersDir, "GoogleMaps")
-        val staticLib = File(sliceDir, "GoogleMaps.a")
-
-        require(headersDir.exists()) { "Headers not found: $headersDir" }
-        require(staticLib.exists()) { "GoogleMaps.a not found: $staticLib" }
-
-        iosTarget.compilations.getByName("main") {
-            val googleMaps by cinterops.creating {
-                defFile(project.file("src/nativeInterop/cinterop/googlemaps.def"))
-
-                extraOpts("-compiler-option", "-I${headersDir.absolutePath}")
-                extraOpts("-compiler-option", "-I${headersGoogleMapsDir.absolutePath}")
-            }
-        }
-
-        iosTarget.binaries.all {
-            linkerOpts(staticLib.absolutePath)
-
-            linkerOpts("-ObjC")
-            linkerOpts(
-                "-lz", "-lc++",
-                "-framework", "Accelerate",
-                "-framework", "Contacts",
-                "-framework", "CoreData",
-                "-framework", "CoreGraphics",
-                "-framework", "CoreLocation",
-                "-framework", "CoreImage",
-                "-framework", "CoreTelephony",
-                "-framework", "CoreText",
-                "-framework", "GLKit",
-                "-framework", "ImageIO",
-                "-framework", "Metal",
-                "-framework", "MetricKit",
-                "-framework", "QuartzCore",
-                "-framework", "Security",
-                "-framework", "SystemConfiguration",
-                "-framework", "UIKit",
-            )
-        }
     }
     
     sourceSets {
@@ -84,8 +31,10 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core.navigation.api)
             implementation(projects.core.navigation.impl)
+            implementation(projects.core.network)
+            implementation(projects.core.remoteconfig)
             implementation(projects.feature.map.uiApi)
-            implementation(projects.feature.map.uiImpl)
+            implementation(projects.feature.map.uiGenshinImpl)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)

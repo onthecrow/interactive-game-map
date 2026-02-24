@@ -37,7 +37,11 @@ include(":genshin")
 include(":rdr2")
 
 include(":feature:map:ui-api")
-include(":feature:map:ui-impl")
+include(":feature:map:ui-common")
+include(":feature:map:ui-genshin-impl")
+include(":feature:map:ui-rdr2-impl")
 
 include(":core:navigation:api")
 include(":core:navigation:impl")
+include(":core:network")
+include(":core:remoteconfig")

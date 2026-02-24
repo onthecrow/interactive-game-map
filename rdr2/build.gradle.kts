@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.googleServices)
 }
 
 kotlin {
@@ -12,6 +13,8 @@ kotlin {
         implementation(projects.rdr2Compose)
         implementation(libs.compose.uiToolingPreview)
         implementation(libs.androidx.activity.compose)
+        implementation(platform(libs.firebase.bom))
+        implementation(libs.firebase.analytics)
     }
 }
 

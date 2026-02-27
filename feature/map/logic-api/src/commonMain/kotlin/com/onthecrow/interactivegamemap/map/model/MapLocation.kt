@@ -7,4 +7,15 @@ data class MapLocation(
     val description: String,
     val lat: Double,
     val lng: Double,
-)
+) {
+    companion object {
+        val EMPTY = MapLocation(
+            id = -1,
+            mapId = -1,
+            name = "",
+            description = "",
+            lat = 0.0,
+            lng = 0.0,
+        )
+    }
+}

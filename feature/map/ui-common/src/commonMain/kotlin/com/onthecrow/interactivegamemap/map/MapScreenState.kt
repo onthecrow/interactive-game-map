@@ -5,5 +5,6 @@ import com.onthecrow.nomadrates.uicore.State
 
 data class MapScreenState(
     val searchValue: String = "",
+    val selectedLocation: MapLocation? = null,
     val locations: List<MapLocation> = emptyList(),
 ): State

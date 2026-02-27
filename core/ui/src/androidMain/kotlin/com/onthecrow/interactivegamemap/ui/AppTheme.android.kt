@@ -1,16 +1,17 @@
-package com.onthecrow.nomadrates.ui
+package com.onthecrow.interactivegamemap.ui
 
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
-@androidx.compose.runtime.Composable
+@Composable
 actual fun AppTheme(
     darkTheme: Boolean,
     dynamicColor: Boolean,
-    content: @androidx.compose.runtime.Composable (() -> Unit)
+    content: @Composable (() -> Unit)
 ) {
     val colorScheme = when {
         // Android 12+ (Dynamic Color)

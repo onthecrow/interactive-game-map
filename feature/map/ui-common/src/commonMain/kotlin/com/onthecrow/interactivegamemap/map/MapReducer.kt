@@ -11,6 +11,8 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnClearSearchClick -> state.copy(searchValue = "")
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
             is MapEvent.OnLocationsLoaded -> state.copy(locations = event.locations)
+            is MapEvent.OnLocationClick -> state.copy(selectedLocation = event.location)
+            is MapEvent.OnLocationDismiss -> state.copy(selectedLocation = null)
             else -> state
         }
     }

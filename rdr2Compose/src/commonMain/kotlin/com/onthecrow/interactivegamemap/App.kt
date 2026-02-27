@@ -9,8 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.onthecrow.nomadrates.navigation.NavigationProvider
-import com.onthecrow.nomadrates.ui.AppTheme
-import com.onthecrow.nomadrates.ui.view.SystemBarShadeView
+import com.onthecrow.interactivegamemap.ui.AppTheme
+import com.onthecrow.interactivegamemap.ui.view.ShadePosition
+import com.onthecrow.interactivegamemap.ui.view.SystemBarShadeView
 import org.koin.compose.getKoin
 
 
@@ -28,12 +29,12 @@ fun App() {
 
             SystemBarShadeView(
                 modifier = Modifier.fillMaxWidth(),
-                position = com.onthecrow.nomadrates.ui.view.ShadePosition.BOTTOM,
+                position = ShadePosition.BOTTOM,
             )
 
             SystemBarShadeView(
                 modifier = Modifier.fillMaxWidth(),
-                position = com.onthecrow.nomadrates.ui.view.ShadePosition.TOP,
+                position = ShadePosition.TOP,
             )
         }
     }

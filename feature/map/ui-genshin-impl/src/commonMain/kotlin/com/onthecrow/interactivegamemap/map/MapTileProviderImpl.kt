@@ -16,7 +16,7 @@ class MapTileProviderImpl(
             13 -> Triple((x - 4096).toString(), (y - 4096).inv().toString(), zoom.toString())
             14 -> Triple((x - 8192).toString(), (y - 8192).inv().toString(), zoom.toString())
             15 -> Triple((x - 16384).toString(), (y - 16384).inv().toString(), zoom.toString())
-            else -> throw IllegalStateException()
+            else -> Triple(x.toString(), y.inv().toString(), zoom.toString()) /*throw IllegalStateException()*/
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.onthecrow.nomadrates.ui.view
+package com.onthecrow.interactivegamemap.ui.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

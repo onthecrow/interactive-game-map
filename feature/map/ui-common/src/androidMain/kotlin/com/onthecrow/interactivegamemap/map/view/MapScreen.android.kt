@@ -31,6 +31,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Tile
 import com.google.android.gms.maps.model.TileOverlayOptions
+import com.onthecrow.interactivegamemap.map.MapEvent
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
@@ -40,6 +41,7 @@ import org.koin.compose.koinInject
 internal actual fun MapView(
     locations: List<MapLocation>,
     modifier: Modifier,
+    onEvent: (MapEvent) -> Unit,
 ) {
     if (LocalInspectionMode.current) {
         Box(
@@ -80,7 +82,10 @@ internal actual fun MapView(
                 val existing = markers[location.id.toString()]
                 val pos = LatLng(location.lat, location.lng)
                 if (existing == null) {
-                    markers[location.id.toString()] = map.addMarker(MarkerOptions().position(pos))!!
+                    markers[location.id.toString()] =
+                        map.addMarker(MarkerOptions().position(pos))!!.apply {
+                            tag = location
+                        }
                 } else {
                     existing.position = pos
                 }
@@ -143,7 +148,19 @@ internal actual fun MapView(
 
     AndroidView(
         modifier = modifier,
-        factory = { mapView },
+        factory = {
+            mapView.apply {
+                getMapAsync { mapView ->
+                    mapView.setOnMarkerClickListener {
+                        onEvent(MapEvent.OnLocationClick(it.tag as MapLocation))
+                        true
+                    }
+                    mapView.setOnMapClickListener {
+                        onEvent(MapEvent.OnLocationDismiss)
+                    }
+                }
+            }
+        },
     )
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle

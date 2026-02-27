@@ -6,6 +6,7 @@ import com.onthecrow.interactivegamemap.map.model.MapLocation
 internal fun Location.toMapLocation(): MapLocation {
     return MapLocation(
         id = id,
+        mapId = -1,
         name = title,
         description = description ?: "",
         lat = lat,

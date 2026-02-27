@@ -1,5 +1,11 @@
-package com.onthecrow.interactivegamemap.map
+package com.onthecrow.interactivegamemap.map.view
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -7,8 +13,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitView
+import com.onthecrow.interactivegamemap.map.MapScreenState
+import com.onthecrow.interactivegamemap.map.MapTileProvider
+import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.network.RemoteConfig
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import googlemaps.GMSCameraPosition
@@ -28,11 +42,10 @@ import platform.CoreGraphics.CGRectMake
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
-import platform.MapKit.MKPointAnnotation
 import platform.UIKit.UIImage
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-fun ByteArray?.toUIImageOrNull(): UIImage? {
+internal fun ByteArray?.toUIImageOrNull(): UIImage? {
     return try {
         val bytes = this ?: run {
             return null
@@ -55,7 +68,10 @@ fun ByteArray?.toUIImageOrNull(): UIImage? {
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun MapScreen(modifier: Modifier, state: MapState) {
+internal actual fun MapView(
+    locations: List<MapLocation>,
+    modifier: Modifier
+) {
     val camera: GMSCameraPosition = remember {
         val target = CLLocationCoordinate2DMake(55.751244, 37.618423) // Москва
         GMSCameraPosition.cameraWithTarget(target = target, zoom = 12f)
@@ -107,7 +123,17 @@ actual fun MapScreen(modifier: Modifier, state: MapState) {
             mapView.settings.myLocationButton = true
 
 
-            state.locations.forEach { location ->
+            locations.forEach { location ->
+                val actualIds = locations.map { it.id.toString() }.toSet()
+
+                markers.entries.removeAll { entry ->
+                    val shouldRemove = entry.key !in actualIds
+                    if (shouldRemove) {
+                        entry.value.map = null
+                    }
+                    shouldRemove
+                }
+
                 val existing = markers[location.id.toString()]
                 if (existing == null) {
                     val ann = GMSMarker().apply {

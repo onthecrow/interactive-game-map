@@ -10,6 +10,7 @@ kotlin {
         namespace = "com.onthecrow.interactivegamemap.map"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
+        androidResources.enable = true
     }
 
     listOf(
@@ -72,17 +73,22 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.play.services.maps)
+            implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
-            implementation(projects.feature.map.uiApi)
-            implementation(projects.feature.map.logicApi)
             implementation(projects.core.navigation.api)
             implementation(projects.core.remoteconfig)
+            implementation(projects.core.ui)
+            implementation(projects.core.uiCore)
+            implementation(projects.feature.map.uiApi)
+            implementation(projects.feature.map.logicApi)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
             implementation(libs.compose.material3)
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.components.resources)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)

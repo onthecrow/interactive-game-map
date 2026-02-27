@@ -1,12 +1,28 @@
-package com.onthecrow.interactivegamemap.map
+package com.onthecrow.interactivegamemap.map.view
 
 import android.os.Bundle
+import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.LatLng
@@ -15,12 +31,27 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Tile
 import com.google.android.gms.maps.model.TileOverlayOptions
+import com.onthecrow.interactivegamemap.map.MapTileProvider
+import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import org.koin.compose.koinInject
 
 @Composable
-actual fun MapScreen(modifier: Modifier, state: MapState) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+internal actual fun MapView(
+    locations: List<MapLocation>,
+    modifier: Modifier,
+) {
+    if (LocalInspectionMode.current) {
+        Box(
+            modifier = modifier.background(Color.Green),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Map preview stub")
+        }
+        return
+    }
+
+    val context = LocalContext.current
 
     val mapView = remember {
         MapView(context).apply {
@@ -33,9 +64,19 @@ actual fun MapScreen(modifier: Modifier, state: MapState) {
 
     val markers = remember { mutableMapOf<String, Marker>() }
 
-    LaunchedEffect(state.locations) {
+    LaunchedEffect(locations) {
         mapView.getMapAsync { map ->
-            state.locations.forEach { location ->
+            val actualIds = locations.map { it.id.toString() }.toSet()
+
+            markers.entries.removeAll { entry ->
+                val shouldRemove = entry.key !in actualIds
+                if (shouldRemove) {
+                    entry.value.remove()
+                }
+                shouldRemove
+            }
+
+            locations.forEach { location ->
                 val existing = markers[location.id.toString()]
                 val pos = LatLng(location.lat, location.lng)
                 if (existing == null) {
@@ -56,10 +97,13 @@ actual fun MapScreen(modifier: Modifier, state: MapState) {
                 // todo map setting for each app
 //                val mobiCenter = LatLng(0.25, 0.4) // lat, lng
 //                it.moveCamera(CameraUpdateFactory.newLatLngZoom(mobiCenter, 12f))
+
                 val north = config.boundsNorth ?: return@getMapAsync
                 val south = config.boundsSouth ?: return@getMapAsync
                 val east = config.boundsEast ?: return@getMapAsync
                 val west = config.boundsWest ?: return@getMapAsync
+
+                Log.d("$$$$", "$north $south $east $west")
 
                 val bounds = LatLngBounds(
                     LatLng(south.toDouble(), west.toDouble()),
@@ -76,11 +120,11 @@ actual fun MapScreen(modifier: Modifier, state: MapState) {
         mapView.getMapAsync { map: GoogleMap ->
 //            val target = LatLng(55.751244, 37.618423) // Москва
 //            map.moveCamera(CameraUpdateFactory.newLatLngZoom(target, 12f))
-            val bounds = LatLngBounds(
-                LatLng(-0.75, -1.0),  // south, west
-                LatLng(1.0, 1.0)   // north, east
-            )
-            map.setLatLngBoundsForCameraTarget(bounds)
+//            val bounds = LatLngBounds(
+//                LatLng(-0.75, -1.0),  // south, west
+//                LatLng(1.0, 1.0)   // north, east
+//            )
+//            map.setLatLngBoundsForCameraTarget(bounds)
 
             val tileOverlayOptions = TileOverlayOptions().tileProvider { i, i1, i2 ->
                 val tile = mapTileProvider.getTile(i, i1, i2)
@@ -102,15 +146,15 @@ actual fun MapScreen(modifier: Modifier, state: MapState) {
         factory = { mapView },
     )
 
-    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle, mapView) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+        val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                androidx.lifecycle.Lifecycle.Event.ON_START -> mapView.onStart()
-                androidx.lifecycle.Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                androidx.lifecycle.Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                androidx.lifecycle.Lifecycle.Event.ON_STOP -> mapView.onStop()
-                androidx.lifecycle.Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+                Lifecycle.Event.ON_START -> mapView.onStart()
+                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
                 else -> Unit
             }
         }

@@ -3,17 +3,20 @@ package com.onthecrow.interactivegamemap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.onthecrow.nomadrates.navigation.NavigationProvider
+import com.onthecrow.nomadrates.ui.AppTheme
+import com.onthecrow.nomadrates.ui.view.SystemBarShadeView
 import org.koin.compose.getKoin
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    AppTheme {
         val navigationProvider = getKoin().get<NavigationProvider>()
 
         Box(
@@ -21,6 +24,16 @@ fun App() {
                 .background(MaterialTheme.colorScheme.background),
         ) {
             navigationProvider.Navigation(modifier = Modifier.fillMaxSize())
+
+            SystemBarShadeView(
+                modifier = Modifier.fillMaxWidth(),
+                position = com.onthecrow.nomadrates.ui.view.ShadePosition.BOTTOM,
+            )
+
+            SystemBarShadeView(
+                modifier = Modifier.fillMaxWidth(),
+                position = com.onthecrow.nomadrates.ui.view.ShadePosition.TOP,
+            )
         }
     }
 }

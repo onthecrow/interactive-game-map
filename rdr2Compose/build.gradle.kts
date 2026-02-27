@@ -33,6 +33,7 @@ kotlin {
             implementation(projects.core.navigation.impl)
             implementation(projects.core.network)
             implementation(projects.core.remoteconfig)
+            implementation(projects.core.ui)
             implementation(projects.feature.map.uiApi)
             implementation(projects.feature.map.uiCommon)
             implementation(projects.feature.map.uiRdr2Impl)

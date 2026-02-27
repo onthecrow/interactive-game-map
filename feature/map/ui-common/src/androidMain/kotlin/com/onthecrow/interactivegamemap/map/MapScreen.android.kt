@@ -7,18 +7,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Tile
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import org.koin.compose.koinInject
 
 @Composable
-actual fun MapScreen(modifier: Modifier) {
+actual fun MapScreen(modifier: Modifier, state: MapState) {
     val context = androidx.compose.ui.platform.LocalContext.current
 
     val mapView = remember {
@@ -30,6 +31,22 @@ actual fun MapScreen(modifier: Modifier) {
     val configProvider: RemoteConfigProvider = koinInject<RemoteConfigProvider>()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
 
+    val markers = remember { mutableMapOf<String, Marker>() }
+
+    LaunchedEffect(state.locations) {
+        mapView.getMapAsync { map ->
+            state.locations.forEach { location ->
+                val existing = markers[location.id.toString()]
+                val pos = LatLng(location.lat, location.lng)
+                if (existing == null) {
+                    markers[location.id.toString()] = map.addMarker(MarkerOptions().position(pos))!!
+                } else {
+                    existing.position = pos
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         configProvider.getRemoteConfigFlow().collect { config ->
             mapView.getMapAsync {
@@ -37,11 +54,16 @@ actual fun MapScreen(modifier: Modifier) {
                 it.setMinZoomPreference(config.minZoom.toFloat())
 
                 // todo map setting for each app
-                val mobiCenter = LatLng(0.25, 0.4) // lat, lng
-                it.moveCamera(CameraUpdateFactory.newLatLngZoom(mobiCenter, 12f))
+//                val mobiCenter = LatLng(0.25, 0.4) // lat, lng
+//                it.moveCamera(CameraUpdateFactory.newLatLngZoom(mobiCenter, 12f))
+                val north = config.boundsNorth ?: return@getMapAsync
+                val south = config.boundsSouth ?: return@getMapAsync
+                val east = config.boundsEast ?: return@getMapAsync
+                val west = config.boundsWest ?: return@getMapAsync
+
                 val bounds = LatLngBounds(
-                    LatLng(-0.75, -1.0),  // south, west
-                    LatLng(1.0, 1.0)   // north, east
+                    LatLng(south.toDouble(), west.toDouble()),
+                    LatLng(north.toDouble(), east.toDouble()),
                 )
                 it.setLatLngBoundsForCameraTarget(bounds)
 //                val startLatLng = LatLng(config.startLat.toDouble(), config.startLng.toDouble())

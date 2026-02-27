@@ -33,8 +33,11 @@ kotlin {
             implementation(projects.core.navigation.impl)
             implementation(projects.core.network)
             implementation(projects.core.remoteconfig)
+            implementation(projects.feature.map.uiCommon)
             implementation(projects.feature.map.uiApi)
             implementation(projects.feature.map.uiGenshinImpl)
+            implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.map.logicGenshinImpl)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)

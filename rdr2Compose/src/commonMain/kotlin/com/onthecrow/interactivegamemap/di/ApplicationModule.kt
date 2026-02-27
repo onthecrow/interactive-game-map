@@ -1,7 +1,8 @@
 package com.onthecrow.interactivegamemap.di
 
-
 import com.onthecrow.interactivegamemap.map.MapDestination
+import com.onthecrow.interactivegamemap.map.di.mapLogicModule
+import com.onthecrow.interactivegamemap.map.di.mapModule
 import com.onthecrow.interactivegamemap.map.di.rdr2MapModule
 import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
@@ -19,6 +20,8 @@ val applicationModule = module {
         navigationModule,
         networkModule,
         remoteConfigModule,
+        mapModule,
         rdr2MapModule,
+        mapLogicModule,
     )
 }

@@ -1,0 +1,22 @@
+package com.onthecrow.interactivegamemap.map.di
+
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.onthecrow.interactivegamemap.map.MapDestination
+import com.onthecrow.interactivegamemap.map.MapScreen
+import com.onthecrow.interactivegamemap.map.MapViewModel
+import com.onthecrow.nomadrates.navigation.registerScreen
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
+
+val mapModule = module {
+    viewModelOf(::MapViewModel)
+
+    registerScreen<MapDestination> { _, modifier ->
+        val viewModel: MapViewModel = koinViewModel()
+        val state by viewModel.state.collectAsStateWithLifecycle()
+
+        MapScreen(modifier = modifier, state = state)
+    }
+}

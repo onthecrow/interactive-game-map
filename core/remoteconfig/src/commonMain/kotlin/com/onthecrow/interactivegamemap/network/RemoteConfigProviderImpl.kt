@@ -40,6 +40,10 @@ internal abstract class RemoteConfigProviderImpl : KoinComponent, RemoteConfigPr
                 minZoom = getString(KEY_MIN_ZOOM).toInt(),
                 startLat = getString(KEY_START_LAT).toInt(),
                 startLng = getString(KEY_START_LNG).toInt(),
+                boundsNorth = getString(KEY_BOUNDS_NORTH).toFloatOrNull(),
+                boundsSouth = getString(KEY_BOUNDS_SOUTH).toFloatOrNull(),
+                boundsEast = getString(KEY_BOUNDS_EAST).toFloatOrNull(),
+                boundsWest = getString(KEY_BOUNDS_WEST).toFloatOrNull(),
             )
         }
     }
@@ -51,5 +55,9 @@ internal abstract class RemoteConfigProviderImpl : KoinComponent, RemoteConfigPr
         protected const val KEY_START_LAT = "start_lat"
         protected const val KEY_START_LNG = "start_lng"
         protected const val KEY_TILES_URL = "tiles_url"
+        protected const val KEY_BOUNDS_NORTH = "bounds_north"
+        protected const val KEY_BOUNDS_SOUTH = "bounds_south"
+        protected const val KEY_BOUNDS_EAST = "bounds_east"
+        protected const val KEY_BOUNDS_WEST = "bounds_west"
     }
 }

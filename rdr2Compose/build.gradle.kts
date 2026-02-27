@@ -34,7 +34,10 @@ kotlin {
             implementation(projects.core.network)
             implementation(projects.core.remoteconfig)
             implementation(projects.feature.map.uiApi)
+            implementation(projects.feature.map.uiCommon)
             implementation(projects.feature.map.uiRdr2Impl)
+            implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.map.logicRdr2Impl)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)

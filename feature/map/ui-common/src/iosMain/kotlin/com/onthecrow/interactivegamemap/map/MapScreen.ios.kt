@@ -13,6 +13,7 @@ import com.onthecrow.interactivegamemap.network.RemoteConfig
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import googlemaps.GMSCameraPosition
 import googlemaps.GMSMapView
+import googlemaps.GMSMarker
 import googlemaps.GMSTileLayer
 import googlemaps.GMSTileReceiverProtocol
 import googlemaps.animateToCameraPosition
@@ -27,6 +28,7 @@ import platform.CoreGraphics.CGRectMake
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
+import platform.MapKit.MKPointAnnotation
 import platform.UIKit.UIImage
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
@@ -53,7 +55,7 @@ fun ByteArray?.toUIImageOrNull(): UIImage? {
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
-actual fun MapScreen(modifier: Modifier) {
+actual fun MapScreen(modifier: Modifier, state: MapState) {
     val camera: GMSCameraPosition = remember {
         val target = CLLocationCoordinate2DMake(55.751244, 37.618423) // Москва
         GMSCameraPosition.cameraWithTarget(target = target, zoom = 12f)
@@ -71,6 +73,8 @@ actual fun MapScreen(modifier: Modifier) {
                 config = it
             }
     }
+
+    val markers = remember { mutableMapOf<String, GMSMarker>() }
 
     UIKitView(
         modifier = modifier,
@@ -101,6 +105,24 @@ actual fun MapScreen(modifier: Modifier) {
             mapView.myLocationEnabled = true
             mapView.settings.compassButton = true
             mapView.settings.myLocationButton = true
+
+
+            state.locations.forEach { location ->
+                val existing = markers[location.id.toString()]
+                if (existing == null) {
+                    val ann = GMSMarker().apply {
+                        position = CLLocationCoordinate2DMake(location.lat, location.lng)
+                        title = location.name
+                        snippet = location.description
+                        map = mapView
+                    }
+                    markers[location.id.toString()] = ann
+                } else {
+                    existing.position = CLLocationCoordinate2DMake(location.lat, location.lng)
+                    existing.title = location.name
+                    existing.snippet = location.description
+                }
+            }
         }
     )
 }

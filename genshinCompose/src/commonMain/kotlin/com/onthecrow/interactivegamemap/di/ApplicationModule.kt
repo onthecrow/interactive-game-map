@@ -3,6 +3,8 @@ package com.onthecrow.interactivegamemap.di
 
 import com.onthecrow.interactivegamemap.map.MapDestination
 import com.onthecrow.interactivegamemap.map.di.genshinMapModule
+import com.onthecrow.interactivegamemap.map.di.mapLogicModule
+import com.onthecrow.interactivegamemap.map.di.mapModule
 import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
 import com.onthecrow.nomadrates.navigation.Destination
@@ -19,6 +21,8 @@ val applicationModule = module {
         navigationModule,
         networkModule,
         remoteConfigModule,
+        mapModule,
         genshinMapModule,
+        mapLogicModule,
     )
 }

@@ -7,4 +7,8 @@ data class RemoteConfig(
     val minZoom: Int,
     val startLat: Int,
     val startLng: Int,
+    val boundsNorth: Float?,
+    val boundsSouth: Float?,
+    val boundsEast: Float?,
+    val boundsWest: Float?,
 )

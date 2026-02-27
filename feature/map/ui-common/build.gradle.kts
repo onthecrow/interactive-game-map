@@ -75,6 +75,7 @@ kotlin {
         }
         commonMain.dependencies {
             implementation(projects.feature.map.uiApi)
+            implementation(projects.feature.map.logicApi)
             implementation(projects.core.navigation.api)
             implementation(projects.core.remoteconfig)
 

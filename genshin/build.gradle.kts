@@ -26,6 +26,11 @@ val mapsKey = (System.getenv("GENSHIN_MAPS_API_KEY")
     ?: localProps.getProperty("GENSHIN_MAPS_API_KEY")
     ?: "")
 
+val signingProps = Properties().apply {
+    val f = rootProject.file("signing.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.onthecrow.genshinmap"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -44,9 +49,20 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        if (signingProps.containsKey("genshin.storeFile")) {
+            create("release") {
+                storeFile = rootProject.file(signingProps.getProperty("genshin.storeFile"))
+                storePassword = signingProps.getProperty("genshin.storePassword")
+                keyAlias = signingProps.getProperty("genshin.keyAlias")
+                keyPassword = signingProps.getProperty("genshin.keyPassword")
+            }
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     buildFeatures {

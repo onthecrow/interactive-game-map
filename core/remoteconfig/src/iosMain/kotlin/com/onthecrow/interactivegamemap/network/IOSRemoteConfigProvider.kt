@@ -34,9 +34,9 @@ internal class IOSRemoteConfigProvider : RemoteConfigProviderImpl() {
         FIRRemoteConfig.remoteConfig().fetchAndActivateWithCompletionHandler { status, error ->
             if (error != null) {
                 logError("Initial Fetch Error", error)
-            } else {
-                onConfigUpdated()
             }
+            // Falls back to the last activated values when offline
+            onConfigUpdated()
         }
     }
 

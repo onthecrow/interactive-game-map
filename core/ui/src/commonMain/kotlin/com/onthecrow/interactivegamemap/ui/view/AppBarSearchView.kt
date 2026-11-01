@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +37,7 @@ fun AppBarSearchView(
     hint: String,
     value: String,
     showBackButton: Boolean = true,
+    leadingContent: (@Composable () -> Unit)? = null,
     onBackPress: () -> Unit = {},
     onValueChange: (String) -> Unit = {},
     onClearClick: () -> Unit = {},
@@ -43,71 +45,92 @@ fun AppBarSearchView(
     Row(
         modifier = modifier,
     ) {
-        if (showBackButton) {
+        if (leadingContent != null) {
+            leadingContent()
+        } else if (showBackButton) {
             BackButtonView(onClick = onBackPress)
         } else {
             Spacer(modifier = Modifier.size(48.dp))
         }
-        BasicTextField(
+        SearchFieldView(
             modifier = Modifier.weight(1f)
-                .height(48.dp)
                 .shadow(
                     elevation = 6.dp,
                     shape = RoundedCornerShape(100.dp),
-                )
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(100.dp),
                 ),
+            hint = hint,
             value = value,
             onValueChange = onValueChange,
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                fontSize = 16.sp,
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.onSecondaryContainer),
-            decorationBox = { innerTextField ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        modifier = Modifier.padding(start = 12.dp),
-                        imageVector = vectorResource(Res.drawable.ic_search),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier.weight(1f),
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-                        if (value.isEmpty()) {
-                            Text(
-                                text = hint,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                        }
-                        innerTextField()
-                    }
-                    if (value.isNotEmpty()) {
-                        Icon(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable(enabled = true, onClick = onClearClick)
-                                .padding(12.dp),
-                            imageVector = vectorResource(Res.drawable.ic_cancel),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
-                }
-            }
+            onClearClick = onClearClick,
         )
         Spacer(modifier = Modifier.size(48.dp))
     }
+}
+
+@Composable
+fun SearchFieldView(
+    modifier: Modifier = Modifier,
+    hint: String,
+    value: String,
+    onValueChange: (String) -> Unit = {},
+    onClearClick: () -> Unit = {},
+) {
+    BasicTextField(
+        modifier = modifier
+            .height(48.dp)
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(100.dp),
+            ),
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            fontSize = 16.sp,
+        ),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.onSecondaryContainer),
+        decorationBox = { innerTextField ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    modifier = Modifier.padding(start = 12.dp),
+                    imageVector = vectorResource(Res.drawable.ic_search),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = hint,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    innerTextField()
+                }
+                if (value.isNotEmpty()) {
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(enabled = true, onClick = onClearClick)
+                            .padding(12.dp),
+                        imageVector = vectorResource(Res.drawable.ic_cancel),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+        }
+    )
 }
 
 @Preview(

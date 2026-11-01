@@ -10,10 +10,77 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         return when (event) {
             is MapEvent.OnClearSearchClick -> state.copy(searchValue = "")
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
+            is MapEvent.OnConfigLoaded -> {
+                val maps = event.config.maps
+                state.copy(
+                    maps = maps,
+                    currentMap = maps.firstOrNull { it.id == state.currentMap?.id }
+                        ?: maps.firstOrNull { it.id == event.config.defaultMapId },
+                )
+            }
+            is MapEvent.OnMapSelect -> {
+                if (event.map.id == state.currentMap?.id) {
+                    state
+                } else {
+                    state.copy(
+                        currentMap = event.map,
+                        locations = emptyList(),
+                        markerGroups = emptyList(),
+                        viewport = null,
+                        showAllDungeons = false,
+                    ).withoutSelection()
+                }
+            }
+            is MapEvent.OnCameraIdle -> state.copy(viewport = event.viewport)
             is MapEvent.OnLocationsLoaded -> state.copy(locations = event.locations)
-            is MapEvent.OnLocationClick -> state.copy(selectedLocation = event.location)
-            is MapEvent.OnLocationDismiss -> state.copy(selectedLocation = null)
-            else -> state
+            is MapEvent.OnMarkerGroupsLoaded -> state.copy(markerGroups = event.groups)
+            is MapEvent.OnLocationClick -> state.copy(
+                selectedLocation = event.location,
+                selectedFloorId = event.location.dungeon?.floorId,
+                entrances = emptyList(),
+            )
+            is MapEvent.OnEntrancesLoaded -> state.copy(entrances = event.entrances)
+            is MapEvent.OnFloorClick -> state.copy(selectedFloorId = event.floorId)
+            is MapEvent.OnLocationDismiss -> state.withoutSelection()
+            is MapEvent.OnDungeonsClick -> state.copy(
+                showAllDungeons = !state.isDungeonsActive,
+                selectedFloorId = null,
+            )
+            is MapEvent.OnMarkerListClick -> state.copy(isMarkerListVisible = true)
+            is MapEvent.OnMarkerListDismiss -> state.copy(isMarkerListVisible = false, markerListQuery = "")
+            is MapEvent.OnMarkerListQueryChange -> state.copy(markerListQuery = event.value)
+            is MapEvent.OnMarkerListSettingsLoaded -> state.copy(
+                collapsedGroupIds = event.settings.collapsedGroupIds,
+                categoryVisibility = event.settings.categoryVisibility,
+                cycles = event.settings.cycles,
+            )
+            is MapEvent.OnGroupClick -> state.copy(
+                collapsedGroupIds = if (state.isGroupCollapsed(event.groupId)) {
+                    state.collapsedGroupIds - event.groupId
+                } else {
+                    state.collapsedGroupIds + event.groupId
+                },
+            )
+            is MapEvent.OnCategoryClick -> {
+                val category = state.markerGroups.asSequence()
+                    .flatMap { it.categories }
+                    .firstOrNull { it.category.id == event.categoryId }
+                    ?: return state
+                state.copy(
+                    categoryVisibility = state.categoryVisibility +
+                        (event.categoryId to !state.isCategoryVisible(category.category)),
+                )
+            }
+            is MapEvent.OnCategoriesVisibilityChange -> state.copy(
+                categoryVisibility = state.categoryVisibility + state.markerGroups
+                    .flatMap { it.categories }
+                    .associate { it.category.id to event.visible },
+            )
+            is MapEvent.OnCycleClick -> state.copy(cycles = state.cycles + (event.categoryId to event.cycle))
         }
+    }
+
+    private fun MapScreenState.withoutSelection(): MapScreenState {
+        return copy(selectedLocation = null, selectedFloorId = null, entrances = emptyList())
     }
 }

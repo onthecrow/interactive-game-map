@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 internal data class Location(
     @SerialName("id")
     val id: Int,
+    @SerialName("map_id")
+    val mapId: Int,
     @SerialName("category_id")
     val categoryId: Int,
     @SerialName("title")
@@ -18,4 +20,8 @@ internal data class Location(
     val lat: Double,
     @SerialName("longitude")
     val lng: Double,
+    @SerialName("tags")
+    val tags: List<Int> = emptyList(),
+    @SerialName("interior_id")
+    val interiorId: Int? = null,
 )

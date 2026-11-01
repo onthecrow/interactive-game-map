@@ -74,6 +74,7 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.play.services.maps)
             implementation(libs.compose.uiTooling)
         }

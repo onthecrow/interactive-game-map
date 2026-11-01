@@ -10,6 +10,8 @@ import com.onthecrow.interactivegamemap.network.MapFloor
 
 internal val EntrancePathColor = Color(0xFFFFC107)
 
+internal const val FOUND_MARKER_ALPHA = 0.5f
+
 // Drawing order of the map layers, the tiles are at the bottom
 internal const val Z_INDEX_DUNGEON_DIM = 1
 internal const val Z_INDEX_DUNGEON_FLOOR = 2
@@ -22,6 +24,8 @@ internal expect fun MapView(
     selectedLocation: MapLocation?,
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
+    foundLocationIds: Set<Int>,
+    focusedLocation: MapLocation?,
     modifier: Modifier = Modifier,
     onEvent: (MapEvent) -> Unit = {},
 )

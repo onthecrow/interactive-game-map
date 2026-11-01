@@ -10,6 +10,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -19,6 +20,8 @@ internal class MapViewModel(
     private val getLocationsUseCase: GetLocationsUseCase,
     private val getLocationsByIdsUseCase: GetLocationsByIdsUseCase,
     private val getMarkerGroupsUseCase: GetMarkerGroupsUseCase,
+    private val setLocationFoundUseCase: SetLocationFoundUseCase,
+    getFoundLocationIdsUseCase: GetFoundLocationIdsUseCase,
     preferences: MapPreferences,
     configProvider: RemoteConfigProvider,
     reducer: MapReducer,
@@ -58,6 +61,25 @@ internal class MapViewModel(
             .drop(1) // the value before the preferences are read
             .onEach(preferences::setMarkerListSettings)
             .launchIn(viewModelScope)
+        getFoundLocationIdsUseCase()
+            .onEach { onEvent(MapEvent.OnFoundLocationsLoaded(it)) }
+            .launchIn(viewModelScope)
+        eventFlow
+            .filterIsInstance<MapEvent.OnFoundClick>()
+            .onEach { setLocationFoundUseCase(it.locationId, it.locationId !in state.value.foundLocationIds) }
+            .launchIn(viewModelScope)
+        eventFlow
+            .filterIsInstance<MapEvent.OnLocationLinkClick>()
+            .onEach { openLocationLink(it.locationId) }
+            .launchIn(viewModelScope)
+    }
+
+    private fun openLocationLink(locationId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            getLocationsByIdsUseCase(listOf(locationId)).firstOrNull()?.let {
+                onEvent(MapEvent.OnLocationLinkLoaded(it))
+            }
+        }
     }
 
     private fun getLocations(filter: LocationsFilter) {

@@ -63,6 +63,8 @@ internal actual fun MapView(
     selectedLocation: MapLocation?,
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
+    foundLocationIds: Set<Int>,
+    focusedLocation: MapLocation?,
     modifier: Modifier,
     onEvent: (MapEvent) -> Unit,
 ) {
@@ -167,6 +169,17 @@ internal actual fun MapView(
                 markerImages[id] = image
             }
         }
+    }
+
+    LaunchedEffect(googleMap, locations, foundLocationIds) {
+        locations.forEach { location ->
+            markers[location.id.toString()]?.alpha = if (location.id in foundLocationIds) FOUND_MARKER_ALPHA else 1f
+        }
+    }
+
+    LaunchedEffect(googleMap, focusedLocation) {
+        val location = focusedLocation ?: return@LaunchedEffect
+        googleMap?.animateCamera(CameraUpdateFactory.newLatLng(LatLng(location.lat, location.lng)))
     }
 
     val hasFloors = floors.isNotEmpty()

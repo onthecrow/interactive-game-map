@@ -7,6 +7,7 @@ import com.onthecrow.interactivegamemap.map.di.mapLogicModule
 import com.onthecrow.interactivegamemap.map.di.mapModule
 import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
+import com.onthecrow.nomadrates.database.di.databaseModule
 import com.onthecrow.nomadrates.navigation.Destination
 import com.onthecrow.nomadrates.navigation.di.StartDestination
 import com.onthecrow.nomadrates.navigation.di.navigationModule
@@ -19,6 +20,7 @@ val applicationModule = module {
     single(StartDestination) { MapDestination } bind Destination::class
     includes(
         navigationModule,
+        databaseModule,
         networkModule,
         remoteConfigModule,
         mapModule,

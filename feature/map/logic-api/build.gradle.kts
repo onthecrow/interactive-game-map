@@ -16,8 +16,12 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.core.database)
+
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
         }
     }
 }

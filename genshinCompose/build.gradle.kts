@@ -29,6 +29,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
+            implementation(projects.core.database)
             implementation(projects.core.navigation.api)
             implementation(projects.core.navigation.impl)
             implementation(projects.core.network)

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +20,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 
 enum class ShadePosition {
     TOP, BOTTOM;
@@ -37,7 +37,7 @@ fun BoxScope.SystemBarShadeView(
     position: ShadePosition,
     modifier: Modifier = Modifier,
 ) {
-    val shadeColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f)
+    val shadeColor = GameMapTheme.colors.background.copy(alpha = 0.9f)
     val systemBarsPaddings = WindowInsets.systemBars.asPaddingValues()
     var state by remember { mutableStateOf(SystemBarShadeViewState(Alignment.TopCenter, height = 0.dp, colors = emptyList())) }
     LaunchedEffect(position, systemBarsPaddings, shadeColor) {

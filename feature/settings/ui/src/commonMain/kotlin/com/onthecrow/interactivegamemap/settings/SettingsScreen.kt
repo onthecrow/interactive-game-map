@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.onthecrow.interactivegamemap.settings
 
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -10,30 +8,20 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.settings.view.AppVersion
 import com.onthecrow.interactivegamemap.settings.view.ChoiceDialog
-import com.onthecrow.interactivegamemap.settings.view.ClickableItem
-import com.onthecrow.interactivegamemap.settings.view.SectionHeader
-import com.onthecrow.interactivegamemap.settings.view.SettingsGroup
 import com.onthecrow.interactivegamemap.settings.view.SignatureFooter
-import com.onthecrow.interactivegamemap.settings.view.SwitchItem
-import com.onthecrow.interactivegamemap.ui.AppTheme
+import com.onthecrow.interactivegamemap.ui.components.GameScreenScaffold
+import com.onthecrow.interactivegamemap.ui.components.GameSectionHeader
+import com.onthecrow.interactivegamemap.ui.components.GameSettingsGroup
+import com.onthecrow.interactivegamemap.ui.components.GameSettingsRow
+import com.onthecrow.interactivegamemap.ui.components.SettingAction
 import com.onthecrow.interactivegamemap.ui.isDynamicColorSupported
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import interactivegamemap.feature.settings.ui.generated.resources.Res
-import interactivegamemap.feature.settings.ui.generated.resources.ic_arrow_back
 import interactivegamemap.feature.settings.ui.generated.resources.settings_back
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers_summary
@@ -56,7 +44,6 @@ import interactivegamemap.feature.settings.ui.generated.resources.settings_theme
 import interactivegamemap.feature.settings.ui.generated.resources.settings_title
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.vectorResource
 
 // Each language is named in itself, so it can be found whatever the current one is
 private val LanguageNames = mapOf(
@@ -80,30 +67,11 @@ internal fun SettingsScreen(
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The color of the screen is the one of the shades under the system bars
-    val containerColor = MaterialTheme.colorScheme.background
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = containerColor,
-        topBar = {
-            LargeTopAppBar(
-                title = { Text(text = stringResource(Res.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = { onEvent(SettingsEvent.OnBackClick) }) {
-                        Icon(
-                            imageVector = vectorResource(Res.drawable.ic_arrow_back),
-                            contentDescription = stringResource(Res.string.settings_back),
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = containerColor,
-                    scrolledContainerColor = containerColor,
-                ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
+    GameScreenScaffold(
+        modifier = modifier,
+        title = stringResource(Res.string.settings_title),
+        onBackClick = { onEvent(SettingsEvent.OnBackClick) },
+        backContentDescription = stringResource(Res.string.settings_back),
     ) { padding ->
         // At least a screen tall, so the footer sits at the bottom, a longer list scrolls it along
         BoxWithConstraints(modifier = Modifier.padding(padding)) {
@@ -157,22 +125,24 @@ internal fun SettingsScreen(
 
 @Composable
 private fun MapSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
-    SectionHeader(text = stringResource(Res.string.settings_section_map))
-    SettingsGroup {
+    GameSectionHeader(text = stringResource(Res.string.settings_section_map))
+    GameSettingsGroup {
         item {
-            SwitchItem(
+            GameSettingsRow(
                 title = stringResource(Res.string.settings_hide_markers),
                 summary = stringResource(Res.string.settings_hide_markers_summary),
-                checked = settings.hideMarkersWhileMoving,
-                onCheckedChange = { onEvent(SettingsEvent.OnHideMarkersWhileMovingChange(it)) },
+                action = SettingAction.Switch(settings.hideMarkersWhileMoving) {
+                    onEvent(SettingsEvent.OnHideMarkersWhileMovingChange(it))
+                },
             )
         }
         item {
-            SwitchItem(
+            GameSettingsRow(
                 title = stringResource(Res.string.settings_cluster_markers),
                 summary = stringResource(Res.string.settings_cluster_markers_summary),
-                checked = settings.clusterMarkers,
-                onCheckedChange = { onEvent(SettingsEvent.OnClusterMarkersChange(it)) },
+                action = SettingAction.Switch(settings.clusterMarkers) {
+                    onEvent(SettingsEvent.OnClusterMarkersChange(it))
+                },
             )
         }
     }
@@ -180,23 +150,28 @@ private fun MapSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) 
 
 @Composable
 private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
-    SectionHeader(text = stringResource(Res.string.settings_section_appearance))
-    SettingsGroup {
+    GameSectionHeader(text = stringResource(Res.string.settings_section_appearance))
+    // The system's colors exist from Android 12: from the wallpaper or picked by the user. A game with
+    // colors of its own doesn't follow them
+    val hasSystemColors = isDynamicColorSupported && GameMapTheme.supportsDynamicColor
+    val themeLabel = stringResource(settings.theme.labelRes)
+    val systemColors = stringResource(Res.string.settings_system_colors)
+    val systemColorsSummary = stringResource(Res.string.settings_system_colors_summary)
+    GameSettingsGroup {
         item {
-            ClickableItem(
+            GameSettingsRow(
                 title = stringResource(Res.string.settings_theme),
-                summary = stringResource(settings.theme.labelRes),
-                onClick = { onEvent(SettingsEvent.OnThemeClick) },
+                action = SettingAction.Choice(themeLabel) { onEvent(SettingsEvent.OnThemeClick) },
             )
         }
-        // The system's colors exist from Android 12: from the wallpaper or picked by the user
-        if (isDynamicColorSupported) {
+        if (hasSystemColors) {
             item {
-                SwitchItem(
-                    title = stringResource(Res.string.settings_system_colors),
-                    summary = stringResource(Res.string.settings_system_colors_summary),
-                    checked = settings.dynamicColor,
-                    onCheckedChange = { onEvent(SettingsEvent.OnDynamicColorChange(it)) },
+                GameSettingsRow(
+                    title = systemColors,
+                    summary = systemColorsSummary,
+                    action = SettingAction.Switch(settings.dynamicColor) {
+                        onEvent(SettingsEvent.OnDynamicColorChange(it))
+                    },
                 )
             }
         }
@@ -205,15 +180,15 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
 
 @Composable
 private fun LanguageSection(state: SettingsState, onEvent: (SettingsEvent) -> Unit) {
-    SectionHeader(text = stringResource(Res.string.settings_section_language))
-    SettingsGroup {
+    GameSectionHeader(text = stringResource(Res.string.settings_section_language))
+    val language = state.settings.language?.takeIf { it in SUPPORTED_LANGUAGES }
+    val value = language?.languageName
+        ?: stringResource(Res.string.settings_language_system_summary, state.systemLanguage.languageName)
+    GameSettingsGroup {
         item {
-            val language = state.settings.language?.takeIf { it in SUPPORTED_LANGUAGES }
-            ClickableItem(
+            GameSettingsRow(
                 title = stringResource(Res.string.settings_language),
-                summary = language?.languageName
-                    ?: stringResource(Res.string.settings_language_system_summary, state.systemLanguage.languageName),
-                onClick = { onEvent(SettingsEvent.OnLanguageClick) },
+                action = SettingAction.Choice(value) { onEvent(SettingsEvent.OnLanguageClick) },
             )
         }
     }
@@ -221,12 +196,12 @@ private fun LanguageSection(state: SettingsState, onEvent: (SettingsEvent) -> Un
 
 @Composable
 private fun PrivacySection(onEvent: (SettingsEvent) -> Unit) {
-    SectionHeader(text = stringResource(Res.string.settings_section_privacy))
-    SettingsGroup {
+    GameSectionHeader(text = stringResource(Res.string.settings_section_privacy))
+    GameSettingsGroup {
         item {
-            ClickableItem(
+            GameSettingsRow(
                 title = stringResource(Res.string.settings_privacy_policy),
-                onClick = { onEvent(SettingsEvent.OnPrivacyPolicyClick) },
+                action = SettingAction.Link { onEvent(SettingsEvent.OnPrivacyPolicyClick) },
             )
         }
     }
@@ -238,11 +213,3 @@ private val ThemeMode.labelRes: StringResource
         ThemeMode.LIGHT -> Res.string.settings_theme_light
         ThemeMode.DARK -> Res.string.settings_theme_dark
     }
-
-@Preview
-@Composable
-private fun SettingsScreenPreview() {
-    AppTheme {
-        SettingsScreen(state = SettingsState(), onEvent = {})
-    }
-}

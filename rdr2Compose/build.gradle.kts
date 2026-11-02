@@ -36,6 +36,7 @@ kotlin {
             implementation(projects.core.remoteconfig)
             implementation(projects.core.settings)
             implementation(projects.core.ui)
+            implementation(projects.core.uiRdr2)
             implementation(projects.feature.map.uiApi)
             implementation(projects.feature.map.uiCommon)
             implementation(projects.feature.map.uiRdr2Impl)

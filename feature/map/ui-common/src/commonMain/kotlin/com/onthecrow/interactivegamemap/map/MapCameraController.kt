@@ -3,8 +3,10 @@ package com.onthecrow.interactivegamemap.map
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.serialization.Serializable
 
-/** Where the camera looks, it is put back when the map view is created again. */
+/** Where the camera looks, it is put back when the map view is created again and at the next launch. */
+@Serializable
 data class CameraPosition(
     val lat: Double,
     val lng: Double,

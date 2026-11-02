@@ -14,7 +14,11 @@ internal sealed interface MapEvent : Event {
     data object OnMarkerListClick : MapEvent
     data object OnMarkerListDismiss : MapEvent
     data object OnSettingsClick : MapEvent
-    data class OnConfigLoaded(val config: RemoteConfig) : MapEvent
+    /** [savedMapView] is opened when no map is open yet. */
+    data class OnConfigLoaded(
+        val config: RemoteConfig,
+        val savedMapView: MapViewSettings = MapViewSettings(),
+    ) : MapEvent
     data class OnMapSelect(val map: GameMap) : MapEvent
     data class OnCameraIdle(val viewport: MapBounds, val camera: CameraPosition) : MapEvent
     data class OnSearchValueChange(val value: String) : MapEvent

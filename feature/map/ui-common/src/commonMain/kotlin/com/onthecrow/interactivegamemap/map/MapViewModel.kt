@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
@@ -41,12 +42,14 @@ internal class MapViewModel(
     override val initialState: MapScreenState get() = MapScreenState()
 
     init {
+        // Read before the config comes, so the map of the last launch opens instead of the default one
+        val savedMapView = preferences.getMapViewSettings()
         // The names of the maps are translated with the markers
         combine(configProvider.getRemoteConfigFlow(), languageProvider.language) { config, language ->
             val names = getMapNamesUseCase(language)
             config.copy(maps = config.maps.map { map -> names[map.id]?.let { map.copy(name = it) } ?: map })
         }
-            .onEach { onEvent(MapEvent.OnConfigLoaded(it)) }
+            .onEach { onEvent(MapEvent.OnConfigLoaded(it, savedMapView)) }
             .launchIn(viewModelScope)
         languageProvider.language
             .onEach { onEvent(MapEvent.OnLanguageChange(it)) }
@@ -78,6 +81,11 @@ internal class MapViewModel(
             .distinctUntilChanged()
             .drop(1) // the value before the preferences are read
             .onEach(preferences::setMarkerListSettings)
+            .launchIn(viewModelScope)
+        state
+            .mapNotNull { it.mapViewSettings }
+            .distinctUntilChanged()
+            .onEach(preferences::setMapViewSettings)
             .launchIn(viewModelScope)
         getFoundLocationIdsUseCase()
             .onEach { onEvent(MapEvent.OnFoundLocationsLoaded(it)) }

@@ -1,6 +1,5 @@
 package com.onthecrow.interactivegamemap.map
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.CornerRadius
@@ -14,11 +13,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -34,19 +33,20 @@ internal val MarkerCluster.label: String
         else -> "${count / 1000 * 1000}+"
     }
 
-/** The images of the clusters by their labels, a round badge in the accent color of the theme. */
+/** The images of the clusters by their labels, a round badge in the cluster colors of the theme. */
 @Composable
 internal fun rememberClusterImages(clusters: List<MarkerCluster>): Map<String, ImageBitmap> {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val background = MaterialTheme.colorScheme.primary
-    val content = MaterialTheme.colorScheme.onPrimary
-    val style = MaterialTheme.typography.labelLarge.copy(color = content, fontWeight = FontWeight.Bold)
-    val images = remember(textMeasurer, density, background, style) { mutableMapOf<String, ImageBitmap>() }
+    val colors = GameMapTheme.colors
+    val background = colors.cluster
+    val border = colors.clusterBorder
+    val style = GameMapTheme.typography.label.copy(color = colors.onCluster)
+    val images = remember(textMeasurer, density, background, border, style) { mutableMapOf<String, ImageBitmap>() }
 
     return remember(clusters, images) {
         clusters.map { it.label }.distinct().associateWith { label ->
-            images.getOrPut(label) { drawCluster(label, textMeasurer, style, density, background, content) }
+            images.getOrPut(label) { drawCluster(label, textMeasurer, style, density, background, border) }
         }
     }
 }

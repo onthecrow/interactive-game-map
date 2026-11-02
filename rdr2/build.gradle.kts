@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
 }
 
 kotlin {
@@ -15,6 +16,7 @@ kotlin {
         implementation(libs.androidx.activity.compose)
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
+        implementation(libs.firebase.crashlytics)
     }
 }
 
@@ -61,9 +63,13 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            manifestPlaceholders["firebaseCollectionEnabled"] = false
+        }
         getByName("release") {
             isMinifyEnabled = false
             signingConfig = signingConfigs.findByName("release")
+            manifestPlaceholders["firebaseCollectionEnabled"] = true
         }
     }
     buildFeatures {

@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.UIKitView
 import com.onthecrow.interactivegamemap.map.MapEvent
+import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
@@ -28,6 +29,7 @@ import googlemaps.GMSCoordinateBounds
 import googlemaps.GMSGroundOverlay
 import googlemaps.GMSMapView
 import googlemaps.GMSMapViewDelegateProtocol
+import googlemaps.GMSMapViewOptions
 import googlemaps.GMSMarker
 import googlemaps.GMSMutablePath
 import googlemaps.GMSPolygon
@@ -47,12 +49,13 @@ import kotlinx.coroutines.launch
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.koin.compose.koinInject
-import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGPointMake
 import platform.CoreLocation.CLLocationCoordinate2D
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
 import platform.UIKit.UIColor
+import platform.UIKit.UIEdgeInsetsMake
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageOrientation
 import platform.darwin.NSObject
@@ -94,6 +97,7 @@ internal actual fun MapView(
 ) {
     val scope = rememberCoroutineScope()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
+    val mapStyle: MapStyle = koinInject<MapStyle>()
 
     var mapView by remember { mutableStateOf<GMSMapView?>(null) }
 
@@ -298,10 +302,18 @@ internal actual fun MapView(
     UIKitView(
         modifier = modifier,
         factory = {
-            mapView = GMSMapView(frame = CGRectMake(0.0, 0.0, 0.0, 0.0), camera = camera).apply {
+            val options = GMSMapViewOptions().apply {
+                this.camera = camera
+                backgroundColor = mapStyle.backgroundColor.toUIColor()
+            }
+            mapView = GMSMapView(options = options).apply {
                 mapType = kGMSTypeNone
+                // The map view adds the safe area to the padding by itself
+                padding = UIEdgeInsetsMake(0.0, GoogleLogoPadding.value.toDouble(), GoogleLogoPadding.value.toDouble(), 0.0)
                 myLocationEnabled = true
-                settings.compassButton = true
+                settings.rotateGestures = false
+                settings.tiltGestures = false
+                settings.compassButton = false
                 settings.myLocationButton = true
             }
             mapView!!
@@ -335,15 +347,11 @@ private fun MapBounds.toCoordinateBounds(): GMSCoordinateBounds {
 
 @OptIn(ExperimentalForeignApi::class)
 private fun GMSMapView.visibleBounds(): MapBounds {
-    return projection.visibleRegion().useContents {
-        val corners = listOf(nearLeft, nearRight, farLeft, farRight)
-        MapBounds(
-            west = corners.minOf { it.longitude },
-            south = corners.minOf { it.latitude },
-            east = corners.maxOf { it.longitude },
-            north = corners.maxOf { it.latitude },
-        )
-    }
+    // The visible region of the projection doesn't include the padding
+    val (width, height) = bounds.useContents { size.width to size.height }
+    val (west, south) = projection.coordinateForPoint(CGPointMake(0.0, height)).useContents { longitude to latitude }
+    val (east, north) = projection.coordinateForPoint(CGPointMake(width, 0.0)).useContents { longitude to latitude }
+    return MapBounds(west = west, south = south, east = east, north = north)
 }
 
 private fun Color.toUIColor(): UIColor {

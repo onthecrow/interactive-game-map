@@ -10,4 +10,5 @@ plugins {
     alias(libs.plugins.kotlinMultiplatformLibrary) apply false
     alias(libs.plugins.kotlinx.serialization) apply false
     alias(libs.plugins.googleServices) apply false
+    alias(libs.plugins.firebaseCrashlytics) apply false
 }

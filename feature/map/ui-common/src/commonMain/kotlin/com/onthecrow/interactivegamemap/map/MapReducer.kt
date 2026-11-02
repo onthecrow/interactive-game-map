@@ -11,6 +11,7 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         return when (event) {
             is MapEvent.OnClearSearchClick -> state.copy(searchValue = "")
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
+            is MapEvent.OnSearchLinkClick -> state.copy(searchValue = event.query).withoutSelection()
             is MapEvent.OnConfigLoaded -> {
                 val maps = event.config.maps
                 val saved = event.savedMapView.takeIf { state.currentMap == null }

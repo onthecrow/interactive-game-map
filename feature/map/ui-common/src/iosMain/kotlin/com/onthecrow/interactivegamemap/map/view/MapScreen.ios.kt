@@ -17,8 +17,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.UIKitView
 import com.onthecrow.interactivegamemap.map.CameraCommand
 import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.MapAnalytics
 import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
+import com.onthecrow.interactivegamemap.map.MapLoad
 import com.onthecrow.interactivegamemap.map.MarkerCluster
 import com.onthecrow.interactivegamemap.map.label
 import com.onthecrow.interactivegamemap.map.MapStyle
@@ -28,9 +30,11 @@ import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
+import com.onthecrow.interactivegamemap.map.trackFirstTile
 import com.onthecrow.interactivegamemap.network.GameMap
 import com.onthecrow.interactivegamemap.network.MapBounds
 import com.onthecrow.interactivegamemap.network.MapFloor
+import com.onthecrow.interactivegamemap.network.MapTiles
 import googlemaps.GMSCameraPosition
 import googlemaps.GMSCameraUpdate
 import googlemaps.GMSCoordinateBounds
@@ -54,6 +58,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -112,6 +117,7 @@ internal actual fun MapView(
     val scope = rememberCoroutineScope()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
     val mapStyle: MapStyle = koinInject<MapStyle>()
+    val mapAnalytics: MapAnalytics = koinInject<MapAnalytics>()
 
     var mapView by remember { mutableStateOf<GMSMapView?>(null) }
     var isCameraMoving by remember { mutableStateOf(false) }
@@ -158,23 +164,9 @@ internal actual fun MapView(
         }
     }
     val tileLayer = remember(map?.tiles) {
-        map?.tiles?.let { tiles ->
-            object : GMSTileLayer() {
-                override fun requestTileForX(
-                    x: ULong,
-                    y: ULong,
-                    zoom: ULong,
-                    receiver: GMSTileReceiverProtocol
-                ) {
-                    scope.launch {
-                        val tile = mapTileProvider.getTileAsync(tiles, x.toInt(), y.toInt(), zoom.toInt())
-                        val image: UIImage? = tile?.let { it.data.toUIImageOrNull() ?: kGMSTileLayerNoTile }
-                        receiver.receiveTileWithX(x, y, zoom, image)
-                    }
-                }
-            }
-        }
+        map?.tiles?.let { tiles -> MapTileLayer(tiles, mapTileProvider, scope) }
     }
+    var tileLoad by remember { mutableStateOf<MapLoad?>(null) }
 
     val defaultCamera: GMSCameraPosition = remember {
         val target = CLLocationCoordinate2DMake(55.751244, 37.618423) // Москва
@@ -182,8 +174,18 @@ internal actual fun MapView(
     }
 
     DisposableEffect(mapView, tileLayer) {
-        tileLayer?.map = mapView
+        val view = mapView
+        val gameMap = map
+        if (view != null && tileLayer != null && gameMap != null) {
+            // Before the layer asks for its first tiles
+            tileLoad = mapAnalytics.startLoad(gameMap.id).also { tileLayer.load = it }
+        }
+        tileLayer?.map = view
         onDispose { tileLayer?.map = null }
+    }
+
+    LaunchedEffect(tileLoad) {
+        tileLoad?.let { mapAnalytics.trackFirstTile(it) }
     }
 
     LaunchedEffect(mapView, map) {
@@ -412,6 +414,31 @@ internal actual fun MapView(
             view.delegate = mapDelegate
         }
     )
+}
+
+/** Loads the tiles of [tiles] on the main thread, each one the map gets goes to [load]. */
+@OptIn(ExperimentalForeignApi::class)
+private class MapTileLayer(
+    private val tiles: MapTiles,
+    private val mapTileProvider: MapTileProvider,
+    private val scope: CoroutineScope,
+) : GMSTileLayer() {
+    var load: MapLoad? = null
+
+    override fun requestTileForX(x: ULong, y: ULong, zoom: ULong, receiver: GMSTileReceiverProtocol) {
+        scope.launch {
+            var error: String? = null
+            val tile = mapTileProvider.getTileAsync(tiles, x.toInt(), y.toInt(), zoom.toInt()) { error = it }
+            val decoded = tile?.data.toUIImageOrNull()
+            // No image is asked for again, the empty one isn't
+            val image: UIImage? = decoded ?: tile?.let { kGMSTileLayerNoTile }
+            receiver.receiveTileWithX(x, y, zoom, image)
+            load?.onTile(
+                hasImage = decoded != null,
+                error = error ?: "decode".takeIf { tile?.data != null && decoded == null } ?: "unknown".takeIf { tile == null },
+            )
+        }
+    }
 }
 
 // A marker is drawn with the size of its image in points

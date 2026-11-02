@@ -2,6 +2,8 @@ package com.onthecrow.interactivegamemap.map.di
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.onthecrow.interactivegamemap.analytics.ScreenTracker
+import com.onthecrow.interactivegamemap.map.MapAnalytics
 import com.onthecrow.interactivegamemap.map.MapDestination
 import com.onthecrow.interactivegamemap.map.MapPreferences
 import com.onthecrow.interactivegamemap.map.MapReducer
@@ -21,6 +23,10 @@ val mapModule = module {
     single { MapReducer() }
     single { MarkerIconLoader(get()) }
     single { MarkerPinLoader(get()) }
+    // At the launch: the first map is measured from it
+    single(createdAtStart = true) {
+        MapAnalytics(get()).also { get<ScreenTracker>().addListener(it::onScreenChange) }
+    }
     viewModelOf(::MapViewModel)
 
     registerScreen<MapDestination> { _, modifier ->

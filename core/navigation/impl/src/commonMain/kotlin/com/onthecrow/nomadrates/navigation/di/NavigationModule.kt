@@ -20,6 +20,7 @@ val navigationModule = module {
         NavigationProviderImpl(
             navigator = get(),
             startDestination = get(StartDestination),
+            screenTracker = get(),
         )
     } bind NavigationProvider::class
 

@@ -46,6 +46,7 @@ include(":feature:map:ui-rdr2-impl")
 include(":feature:settings:ui-api")
 include(":feature:settings:ui")
 
+include(":core:analytics")
 include(":core:database")
 include(":core:navigation:api")
 include(":core:navigation:impl")

@@ -190,10 +190,7 @@ internal fun MapScreen(
                 onLinkClick = { url ->
                     when (val link = parseDescriptionLink(url)) {
                         is DescriptionLink.Location -> onEvent(MapEvent.OnLocationLinkClick(link.id))
-                        is DescriptionLink.Search -> {
-                            onEvent(MapEvent.OnLocationDismiss)
-                            onEvent(MapEvent.OnSearchValueChange(link.query))
-                        }
+                        is DescriptionLink.Search -> onEvent(MapEvent.OnSearchLinkClick(link.query))
                         is DescriptionLink.External -> uriHandler.openUri(link.url)
                     }
                 },

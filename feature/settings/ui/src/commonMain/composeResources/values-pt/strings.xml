@@ -1,0 +1,26 @@
+<resources>
+    <string name="settings_title">Configurações</string>
+    <string name="settings_back">Voltar</string>
+    <string name="settings_section_map">Mapa</string>
+    <string name="settings_hide_markers">Ocultar marcadores ao mover o mapa</string>
+    <string name="settings_hide_markers_summary">O mapa se move com mais fluidez</string>
+    <string name="settings_cluster_markers">Agrupar marcadores</string>
+    <string name="settings_cluster_markers_summary">Marcadores próximos se juntam em um só ao diminuir o zoom</string>
+    <string name="settings_section_appearance">Aparência</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Padrão do sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_system_colors">Cores do sistema</string>
+    <string name="settings_system_colors_summary">Usar as cores do tema do smartphone</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_language">Idioma do app</string>
+    <string name="settings_language_system">Padrão do sistema</string>
+    <string name="settings_language_system_summary">Padrão do sistema (%1$s)</string>
+    <string name="settings_section_privacy">Privacidade</string>
+    <string name="settings_privacy_policy">Política de Privacidade</string>
+    <string name="settings_cancel">Cancelar</string>
+    <string name="settings_footer_signature">Desenvolvido com ❤️ por</string>
+    <string name="settings_footer_contact">Se tiver alguma dúvida, fale comigo</string>
+    <string name="settings_version">Versão %1$s</string>
+</resources>

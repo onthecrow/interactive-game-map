@@ -26,11 +26,12 @@ internal class LocationsRepositoryImpl(
             .map { location -> location.toMapLocation(catalog) }
     }
 
-    override suspend fun getLocations(): List<MapLocation> {
+    // The markers of the source are in English only
+    override suspend fun getLocations(language: String): List<MapLocation> {
         return locations.await()
     }
 
-    override suspend fun getMarkerCatalog(): MarkerCatalog {
+    override suspend fun getMarkerCatalog(language: String): MarkerCatalog {
         return catalog.await()
     }
 }

@@ -4,13 +4,13 @@ import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
 
 interface GetMarkerGroupsUseCase {
-    suspend operator fun invoke(mapId: Int): List<MapMarkerGroup>
+    suspend operator fun invoke(mapId: Int, language: String): List<MapMarkerGroup>
 }
 
 class GetMarkerGroupsUseCaseImpl(private val repository: LocationsRepository) : GetMarkerGroupsUseCase {
-    override suspend operator fun invoke(mapId: Int): List<MapMarkerGroup> {
-        val catalog = repository.getMarkerCatalog()
-        val locations = repository.getLocations()
+    override suspend operator fun invoke(mapId: Int, language: String): List<MapMarkerGroup> {
+        val catalog = repository.getMarkerCatalog(language)
+        val locations = repository.getLocations(language)
             .filter { it.mapId == mapId }
             .groupBy { it.categoryId }
         return catalog.groupsByMap[mapId].orEmpty().mapNotNull { group ->

@@ -25,8 +25,8 @@ class LocationsFilteringTest {
     private val locations = json.decodeFromString<List<Location>>(read("markers.json")).map { it.toMapLocation(catalog) }
 
     private val repository = object : LocationsRepository {
-        override suspend fun getLocations(): List<MapLocation> = locations
-        override suspend fun getMarkerCatalog(): MarkerCatalog = catalog
+        override suspend fun getLocations(language: String): List<MapLocation> = locations
+        override suspend fun getMarkerCatalog(language: String): MarkerCatalog = catalog
     }
     private val getLocations = GetLocationsUseCaseImpl(repository)
     private val getMarkerGroups = GetMarkerGroupsUseCaseImpl(repository)
@@ -105,7 +105,7 @@ class LocationsFilteringTest {
 
     @Test
     fun `groups have counts for every cycle and skip empty categories`() = runBlocking {
-        val groups = getMarkerGroups(1)
+        val groups = getMarkerGroups(1, LocationsFilter.DEFAULT_LANGUAGE)
         val nazarItems = groups.single { it.name == "Madam Nazar's Items" }
         val flower = nazarItems.categories.single { it.category.id == AMERICAN_FLOWER }
 

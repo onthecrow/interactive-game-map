@@ -3,6 +3,7 @@ package com.onthecrow.interactivegamemap.map.mapper
 import com.onthecrow.interactivegamemap.map.model.LocationDungeon
 import com.onthecrow.interactivegamemap.map.model.LocationResponse
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
+import com.onthecrow.interactivegamemap.map.model.MarkerLocale
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.test.Test
@@ -70,5 +71,22 @@ class LocationMapperTest {
 
     private companion object {
         private const val ICONS = "https://game-cdn.appsample.com/gim/markers"
+    }
+
+    @Test
+    fun `locales name every category, group and map`() {
+        val groupIds = catalog.groupsByMap.values.flatten().map { it.id }.toSet()
+        val locales = File("src/commonMain/composeResources/files/locales").listFiles().orEmpty()
+
+        assertEquals(setOf("de", "es", "fr", "ja", "ko", "pt", "ru", "zh"), locales.map { it.nameWithoutExtension }.toSet())
+        locales.forEach { file ->
+            val locale = json.decodeFromString<MarkerLocale>(file.readText())
+            val localized = catalog.localized(locale)
+
+            assertEquals(catalog.categories.keys, locale.categories.keys, file.name)
+            assertEquals(groupIds, locale.groups.keys, file.name)
+            assertEquals(catalog.groupsByMap.keys, localized.mapNames.keys, file.name)
+            assertEquals(locale.categories.getValue("o3"), localized.categories.getValue("o3").name, file.name)
+        }
     }
 }

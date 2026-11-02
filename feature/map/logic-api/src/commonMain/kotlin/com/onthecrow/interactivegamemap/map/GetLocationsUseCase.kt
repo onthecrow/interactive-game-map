@@ -10,15 +10,15 @@ interface GetLocationsUseCase {
 class GetLocationsUseCaseImpl(private val repository: LocationsRepository) : GetLocationsUseCase {
     override suspend operator fun invoke(filter: LocationsFilter): List<MapLocation> {
         val query = filter.query.trim()
-        val locations = repository.getLocations().asSequence().filter { it.mapId == filter.mapId }
+        val locations = repository.getLocations(filter.language).asSequence().filter { it.mapId == filter.mapId }
         // A search looks through everything, including the hidden categories
         if (query.isNotEmpty()) {
             return locations
                 .filter { it.name.contains(query, ignoreCase = true) }
-                .take(MAX_LOCATIONS)
+                .take(filter.limit)
                 .toList()
         }
-        val categories = repository.getMarkerCatalog().categories
+        val categories = repository.getMarkerCatalog(filter.language).categories
         return locations
             .filter { location ->
                 filter.categoryVisibility[location.categoryId]
@@ -30,11 +30,7 @@ class GetLocationsUseCaseImpl(private val repository: LocationsRepository) : Get
                 location.cycle == null || location.cycle == selectedCycle
             }
             .filter { location -> filter.bounds?.contains(location.lat, location.lng) ?: true }
-            .take(MAX_LOCATIONS)
+            .take(filter.limit)
             .toList()
-    }
-
-    private companion object {
-        private const val MAX_LOCATIONS = 1000
     }
 }

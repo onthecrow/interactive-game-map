@@ -6,6 +6,8 @@ import com.onthecrow.interactivegamemap.map.GetLocationsUseCase
 import com.onthecrow.interactivegamemap.map.GetLocationsUseCaseImpl
 import com.onthecrow.interactivegamemap.map.GetMarkerGroupsUseCase
 import com.onthecrow.interactivegamemap.map.GetMarkerGroupsUseCaseImpl
+import com.onthecrow.interactivegamemap.map.GetMapNamesUseCase
+import com.onthecrow.interactivegamemap.map.GetMapNamesUseCaseImpl
 import com.onthecrow.interactivegamemap.map.LocationsRepository
 import com.onthecrow.interactivegamemap.map.data.LocalDataSource
 import com.onthecrow.interactivegamemap.map.data.LocationsRepositoryImpl
@@ -16,6 +18,7 @@ val mapLogicModule = module {
     single<GetLocationsUseCase> { GetLocationsUseCaseImpl(get()) }
     single<GetLocationsByIdsUseCase> { GetLocationsByIdsUseCaseImpl(get()) }
     single<GetMarkerGroupsUseCase> { GetMarkerGroupsUseCaseImpl(get()) }
+    single<GetMapNamesUseCase> { GetMapNamesUseCaseImpl(get()) }
     single<LocationsRepository> { LocationsRepositoryImpl(get()) }
     single { LocalDataSource() }
 }

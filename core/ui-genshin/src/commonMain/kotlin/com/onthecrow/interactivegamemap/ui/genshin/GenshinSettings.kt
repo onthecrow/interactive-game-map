@@ -169,7 +169,8 @@ object GenshinSettingsGroup : SettingsGroupComponent {
 /**
  * A pill row of the game settings. The texts end before the big star and the switch or the value start
  * after it, the darker end of the row begins at the star's center. The title takes two lines at most, the
- * summary three, the value two. A link has neither the stars nor the darker end, just the chevron.
+ * summary three, the value two. A link has neither the stars nor the darker end, just the chevron, nor has a copy,
+ * just its icon.
  */
 object GenshinSettingsRow : SettingsRowComponent {
     @Composable
@@ -198,8 +199,14 @@ object GenshinSettingsRow : SettingsRowComponent {
                 role = Role.Button,
                 onClick = action.onClick,
             )
+            is SettingAction.Copy -> Modifier.clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = action.onClick,
+            )
         }
-        val ornamented = action !is SettingAction.Link
+        val ornamented = action is SettingAction.Switch || action is SettingAction.Choice
         val trail = if (pressed) colors.surfaceRow else colors.surfaceRowTrail
         Row(
             modifier = modifier
@@ -270,6 +277,12 @@ object GenshinSettingsRow : SettingsRowComponent {
                         Chevron()
                     }
                     is SettingAction.Link -> Chevron()
+                    is SettingAction.Copy -> Icon(
+                        imageVector = GenshinIcons.Copy,
+                        contentDescription = null,
+                        tint = colors.iconSecondary,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
         }

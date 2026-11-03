@@ -15,4 +15,8 @@ internal object FirebaseAnalyticsTracker : AnalyticsTracker {
     override fun setUserProperty(name: String, value: String?) {
         FIRAnalytics.setUserPropertyString(value, forName = name)
     }
+
+    override fun setUserId(id: String) {
+        FIRAnalytics.setUserID(id)
+    }
 }

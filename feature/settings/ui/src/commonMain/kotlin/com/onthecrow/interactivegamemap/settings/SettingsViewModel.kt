@@ -2,12 +2,13 @@ package com.onthecrow.interactivegamemap.settings
 
 import androidx.lifecycle.viewModelScope
 import com.onthecrow.interactivegamemap.analytics.Analytics
-import com.onthecrow.interactivegamemap.analytics.AnalyticsSetting
+import com.onthecrow.interactivegamemap.analytics.AnalyticsId
 import com.onthecrow.interactivegamemap.analytics.SettingChangeEvent
 import com.onthecrow.nomadrates.navigation.Navigator
 import com.onthecrow.nomadrates.uicore.BaseViewModel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 /** Every setting is written to [SettingsRepository] and comes back from it. */
 internal class SettingsViewModel(
@@ -15,6 +16,7 @@ internal class SettingsViewModel(
     private val navigator: Navigator,
     languageProvider: AppLanguageProvider,
     private val analytics: Analytics,
+    analyticsId: AnalyticsId,
     reducer: SettingsReducer,
 ) : BaseViewModel<SettingsEvent, SettingsState, SettingsReducer>(reducer) {
 
@@ -42,6 +44,8 @@ internal class SettingsViewModel(
         languageProvider.systemLanguage
             .onEach { onEvent(SettingsEvent.OnSystemLanguageChanged(it)) }
             .launchIn(viewModelScope)
+        // The initial state is made before the values of the constructor are set, the id comes as an event too
+        viewModelScope.launch { onEvent(SettingsEvent.OnAnalyticsIdLoaded(analyticsId.value)) }
     }
 
     private fun update(transform: (AppSettings) -> AppSettings) {
@@ -52,18 +56,9 @@ internal class SettingsViewModel(
 
     /** A pick of the value a setting has isn't a change. */
     private fun logChanges(old: AppSettings, new: AppSettings) {
-        fun log(setting: AnalyticsSetting, value: (AppSettings) -> Any?) {
-            if (value(old) != value(new)) analytics.log(SettingChangeEvent(setting, value(new) ?: SYSTEM_LANGUAGE))
+        val oldValues = old.analyticsValues
+        new.analyticsValues.forEach { (setting, value) ->
+            if (oldValues[setting] != value) analytics.log(SettingChangeEvent(setting, value))
         }
-        log(AnalyticsSetting.HIDE_MARKERS_WHILE_MOVING) { it.hideMarkersWhileMoving }
-        log(AnalyticsSetting.CLUSTER_MARKERS) { it.clusterMarkers }
-        log(AnalyticsSetting.THEME) { it.theme }
-        log(AnalyticsSetting.DYNAMIC_COLOR) { it.dynamicColor }
-        log(AnalyticsSetting.LANGUAGE) { it.language }
-    }
-
-    private companion object {
-        // The language when it follows the system, the only setting that can be null
-        const val SYSTEM_LANGUAGE = "system"
     }
 }

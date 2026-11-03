@@ -46,6 +46,12 @@ internal object GenshinIcons {
 
     val ChevronRight = icon("ChevronRight") { line("M9.5 5.5L16 12L9.5 18.5") }
 
+    // A sheet over another one
+    val Copy = icon("Copy") {
+        line("M9 4.5H17.5A2 2 0 0 1 19.5 6.5V15")
+        line("M6.5 8H14A2 2 0 0 1 16 10V18A2 2 0 0 1 14 20H6.5A2 2 0 0 1 4.5 18V10A2 2 0 0 1 6.5 8Z")
+    }
+
     val ExpandMore = icon("ExpandMore") { line("M6 9.5L12 15.5L18 9.5") }
 
     val Add = icon("Add") { line("M12 5.5V18.5M5.5 12H18.5") }

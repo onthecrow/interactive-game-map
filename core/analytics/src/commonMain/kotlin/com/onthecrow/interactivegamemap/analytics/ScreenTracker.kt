@@ -2,9 +2,12 @@ package com.onthecrow.interactivegamemap.analytics
 
 /**
  * The screen the user sees: the one on top of the navigation while the app is in the foreground.
- * Each one shown is logged as screen_view. Called on the main thread.
+ * Each one shown is logged as screen_view and kept in the crash reports. Called on the main thread.
  */
-class ScreenTracker(private val analytics: Analytics) {
+class ScreenTracker(
+    private val analytics: Analytics,
+    private val crashReporter: CrashReporter,
+) {
 
     private var topScreen: String? = null
     private var isForeground = false
@@ -35,6 +38,7 @@ class ScreenTracker(private val analytics: Analytics) {
         if (visible == screen) return
         val previous = screen ?: BACKGROUND.takeIf { wasShown }
         screen = visible
+        crashReporter.setKeys(mapOf(KEY_SCREEN to (visible ?: BACKGROUND)))
         listeners.forEach { it(visible) }
         if (visible != null) {
             wasShown = true

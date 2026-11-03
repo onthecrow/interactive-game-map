@@ -2,12 +2,14 @@ package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.analytics.Analytics
 import com.onthecrow.interactivegamemap.analytics.AnalyticsEvent
+import com.onthecrow.interactivegamemap.analytics.CrashReporter
 import com.onthecrow.interactivegamemap.analytics.MapLoadSource
 import com.onthecrow.interactivegamemap.analytics.MapReadyEvent
 import com.onthecrow.interactivegamemap.analytics.MapTimeEvent
 import com.onthecrow.interactivegamemap.analytics.ScreenTracker
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TestTimeSource
 
@@ -23,10 +25,29 @@ private class RecordingAnalytics : Analytics {
     override fun setDefaultParams(params: Map<String, Any?>) = Unit
 }
 
+private class RecordingCrashReporter : CrashReporter {
+    val logs = mutableListOf<String>()
+    val keys = mutableMapOf<String, Any?>()
+    val nonFatals = mutableListOf<Throwable>()
+
+    override fun log(message: String) {
+        logs += message
+    }
+
+    override fun setKeys(keys: Map<String, Any?>) {
+        this.keys += keys
+    }
+
+    override fun recordNonFatal(throwable: Throwable) {
+        nonFatals += throwable
+    }
+}
+
 class MapAnalyticsTest {
     private val time = TestTimeSource()
     private val analytics = RecordingAnalytics()
-    private val mapAnalytics = MapAnalytics(analytics, time)
+    private val crashReporter = RecordingCrashReporter()
+    private val mapAnalytics = MapAnalytics(analytics, crashReporter, time)
 
     private val map = MapDestination.screenName
 
@@ -58,6 +79,27 @@ class MapAnalyticsTest {
             ),
             analytics.events,
         )
+        assertEquals<Map<String, Any?>>(mapOf("map_id" to 2, "map_ready" to true, "tile_error" to "timeout"), crashReporter.keys)
+        assertEquals(
+            listOf("Map 2: loading, launch", "Map 2: a tile failed, timeout", "Map 2: drawn in 2000 ms"),
+            crashReporter.logs,
+        )
+        assertEquals(emptyList(), crashReporter.nonFatals)
+    }
+
+    @Test
+    fun `a tile failing again for the same reason isn't logged again`() {
+        val load = mapAnalytics.startLoad(mapId = 2)
+        load.onTile(hasImage = false, error = "timeout")
+        load.onTile(hasImage = false, error = "timeout")
+        load.onTile(hasImage = false, error = "no_network")
+        load.onTile(hasImage = false, error = null)
+
+        assertEquals(
+            listOf("Map 2: loading, launch", "Map 2: a tile failed, timeout", "Map 2: a tile failed, no_network"),
+            crashReporter.logs,
+        )
+        assertEquals(TileStats(loaded = 0, failed = 3, lastError = "no_network"), load.stats)
     }
 
     @Test
@@ -78,6 +120,26 @@ class MapAnalyticsTest {
             notReady,
         )
         assertEquals(MapReadyEvent(MapLoadSource.LAUNCH, 90.seconds, 90.seconds, 1, wasHidden = true), ready)
+        val notDrawn = assertIs<MapNotDrawnException>(crashReporter.nonFatals.single())
+        assertEquals(
+            "Map 2 not drawn after 30 s, launch: 0 tiles loaded, 1 failed, the last error no_network",
+            notDrawn.message,
+        )
+    }
+
+    @Test
+    fun `a short visit without the map isn't reported, a long one is reported once`() {
+        mapAnalytics.onScreenChange(map)
+        mapAnalytics.startLoad(mapId = 2)
+        time += 5.seconds
+        mapAnalytics.onScreenChange("settings")
+        repeat(2) {
+            mapAnalytics.onScreenChange(map)
+            time += 10.seconds
+            mapAnalytics.onScreenChange(null)
+        }
+
+        assertEquals(1, crashReporter.nonFatals.size)
     }
 
     @Test
@@ -117,5 +179,12 @@ class MapAnalyticsTest {
         mapAnalytics.onScreenChange(null)
 
         assertEquals(MapTimeEvent(4.seconds, null, ScreenTracker.BACKGROUND, false, true, 0, 0, null), analytics.events.single())
+        assertEquals(emptyList(), crashReporter.nonFatals)
+
+        mapAnalytics.onScreenChange(map)
+        time += 20.seconds
+        mapAnalytics.onScreenChange(null)
+
+        assertEquals("No map after 20 s, the remote config hasn't come", crashReporter.nonFatals.single().message)
     }
 }

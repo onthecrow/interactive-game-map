@@ -21,4 +21,8 @@ internal class FirebaseAnalyticsTracker(private val firebase: FirebaseAnalytics)
     override fun setUserProperty(name: String, value: String?) {
         firebase.setUserProperty(name, value)
     }
+
+    override fun setUserId(id: String) {
+        firebase.setUserId(id)
+    }
 }

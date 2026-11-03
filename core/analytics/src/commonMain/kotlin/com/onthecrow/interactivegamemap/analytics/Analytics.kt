@@ -32,12 +32,18 @@ interface Analytics {
 interface AnalyticsTracker {
     fun logEvent(name: String, params: Map<String, Any>)
     fun setUserProperty(name: String, value: String?)
+    fun setUserId(id: String)
 }
 
-internal class AnalyticsImpl(private val trackers: List<AnalyticsTracker>) : Analytics {
+/** @param userId the [AnalyticsId], the events go with it from the start */
+internal class AnalyticsImpl(private val trackers: List<AnalyticsTracker>, userId: String) : Analytics {
 
     @Volatile
     private var defaultParams = emptyMap<String, Any>()
+
+    init {
+        trackers.forEach { it.setUserId(userId) }
+    }
 
     override fun log(event: AnalyticsEvent) {
         val params = defaultParams + normalize(event.params)
@@ -77,5 +83,9 @@ internal object LogAnalyticsTracker : AnalyticsTracker {
 
     override fun setUserProperty(name: String, value: String?) {
         println("Analytics: user property $name = $value")
+    }
+
+    override fun setUserId(id: String) {
+        println("Analytics: user id $id")
     }
 }

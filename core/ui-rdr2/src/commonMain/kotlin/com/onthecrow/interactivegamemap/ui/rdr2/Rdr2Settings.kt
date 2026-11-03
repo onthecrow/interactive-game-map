@@ -37,6 +37,7 @@ import com.onthecrow.interactivegamemap.ui.components.SettingsGroupComponent
 import com.onthecrow.interactivegamemap.ui.components.SettingsRowComponent
 import com.onthecrow.interactivegamemap.ui.rdr2.resources.Res
 import com.onthecrow.interactivegamemap.ui.rdr2.resources.ic_arrow_back
+import com.onthecrow.interactivegamemap.ui.rdr2.resources.ic_copy
 import org.jetbrains.compose.resources.vectorResource
 
 // A group is one rounded card, its rows are split by narrow gaps with slightly rounded corners
@@ -130,8 +131,8 @@ object Rdr2SettingsGroup : SettingsGroupComponent {
 }
 
 /**
- * A list item: a switch toggled by the whole row, read as one switch by screen readers, or a row which
- * opens something with the current value under the title.
+ * A list item: a switch toggled by the whole row, read as one switch by screen readers, a row which
+ * opens something with the current value under the title, or one which copies its summary.
  */
 object Rdr2SettingsRow : SettingsRowComponent {
     @Composable
@@ -158,6 +159,13 @@ object Rdr2SettingsRow : SettingsRowComponent {
             is SettingAction.Link -> ListItem(
                 headlineContent = { Text(text = title) },
                 supportingContent = summary?.let { { Text(text = it) } },
+                colors = colors,
+                modifier = modifier.clickable(role = Role.Button, onClick = action.onClick),
+            )
+            is SettingAction.Copy -> ListItem(
+                headlineContent = { Text(text = title) },
+                supportingContent = summary?.let { { Text(text = it) } },
+                trailingContent = { Icon(imageVector = vectorResource(Res.drawable.ic_copy), contentDescription = null) },
                 colors = colors,
                 modifier = modifier.clickable(role = Role.Button, onClick = action.onClick),
             )

@@ -1,6 +1,5 @@
 package com.onthecrow.interactivegamemap.network
 
-import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.remoteconfig.ConfigUpdate
 import com.google.firebase.remoteconfig.ConfigUpdateListener
@@ -27,15 +26,15 @@ internal class AndroidRemoteConfigProvider : RemoteConfigProviderImpl() {
             }
 
             override fun onError(error: FirebaseRemoteConfigException) {
-                Log.e(javaClass.simpleName, error.message, error)
+                log("updates failed, ${error.code}: ${error.message}")
             }
         })
         Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                Log.d("RemoteConfig", "Initial Fetch Succeeded")
+                log("fetched")
             } else {
                 // TODO implement retry logic
-                Log.e("RemoteConfig", "Initial Fetch Failed")
+                log("fetch failed, ${task.exception?.message}")
             }
             // Falls back to the last activated values when offline
             onConfigUpdated()

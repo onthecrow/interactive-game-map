@@ -144,7 +144,7 @@
 <main>
   <p class="apps">Genshin Map · RDR2 Map</p>
   <h1>Privacy Policy</h1>
-  <p class="updated">Last updated November 2, 2026</p>
+  <p class="updated">Last updated November 3, 2026</p>
 
   <p class="lead">Genshin Map and RDR2 Map are interactive maps of Genshin Impact and Red Dead Redemption 2 for Android
     and iOS, made by onthecrow, an independent developer. This policy explains what data the apps collect, why,
@@ -157,7 +157,7 @@
         location.</li>
       <li>The markers you find and your settings stay on your device.</li>
       <li>The apps send usage statistics and crash reports to Google Firebase, to learn which features are used
-        and to fix bugs. They don't identify you by name.</li>
+and to fix bugs. They come with a random analytics ID, not with your name.</li>
       <li>There are no ads. Your data isn't sold or used for advertising.</li>
     </ul>
   </section>
@@ -175,6 +175,11 @@
 
   <h2 id="collected">2. Data collected automatically</h2>
   <p>The apps use the following services, which receive data over encrypted connections.</p>
+  <p id="analytics-id">The usage statistics and crash reports come with an <strong>analytics ID</strong>: a random
+    code the app creates the first time it's opened. It isn't made from anything on your device or from your
+    accounts. It lets the reports of one installation be put together, and you can find it in Settings → Privacy →
+    Analytics ID to tell it to me when you report a problem or ask about your data. It's deleted when you uninstall
+    the app or clear its data; if backup is on, it may come back with the app's data from the backup.</p>
 
   <article class="service">
     <h3>Usage statistics</h3>
@@ -183,8 +188,8 @@
       <dt>What</dt>
       <dd>
         <ul>
-          <li>an identifier of the app installation and, on Android, the advertising ID of the device unless you
-            have deleted it;</li>
+          <li>the <a href="#analytics-id">analytics ID</a>, an identifier of the app installation made by Firebase
+            and, on Android, the advertising ID of the device unless you have deleted it;</li>
           <li>the device model, screen size, operating system and its version, app version and language;</li>
           <li>your approximate location (country, region and city), which Google derives from your IP address;
             Google Analytics doesn't store the IP address itself;</li>
@@ -207,9 +212,17 @@
     <p class="provider">Firebase Crashlytics</p>
     <dl>
       <dt>What</dt>
-      <dd>When the app crashes or runs into an error: what the app's code was doing at that moment, the device
-        model, operating system and its version, app version, free memory and storage, the time, and an identifier
-        of the app installation.</dd>
+      <dd>When the app crashes or runs into an error, such as a map that doesn't load:
+        <ul>
+          <li>what the app's code was doing at that moment;</li>
+          <li>what the app did before it: the screens and maps you opened, your actions recorded by the usage
+            statistics, how the maps and the app configuration loaded, and the network errors they ran into;</li>
+          <li>your settings in the app;</li>
+          <li>the device model, operating system and its version, app version, free memory and storage, and the
+            time;</li>
+          <li>an identifier of the app installation and the <a href="#analytics-id">analytics ID</a>.</li>
+        </ul>
+      </dd>
       <dt>Why</dt>
       <dd>To find and fix bugs.</dd>
       <dt>Kept</dt>
@@ -284,13 +297,15 @@
   <h2 id="rights">6. Your choices and rights</h2>
   <ul>
     <li>Uninstalling the app stops all collection and deletes the data on your device.</li>
+    <li>To have the usage statistics and crash reports of your installation deleted, send me its
+      <a href="#analytics-id">analytics ID</a>: tap it in Settings → Privacy to copy it.</li>
     <li>On Android, you can delete or reset the advertising ID of your device in Settings → Privacy → Ads, or in
       Settings → Google → Ads on some devices.</li>
     <li>Depending on where you live, for example in the EEA, the United Kingdom or California, you have the right
       to access your personal data, correct it, delete it, get a copy of it, restrict or object to its processing,
       and to complain to a data protection authority.</li>
   </ul>
-  <p>The apps don't know who you are, so I may need details from you to find your data.
+  <p>The apps don't know who you are, the analytics ID is how I can find your data.
     <a href="#contact">Contact me</a> and I'll do what I can.</p>
 
   <h2 id="children">7. Children</h2>

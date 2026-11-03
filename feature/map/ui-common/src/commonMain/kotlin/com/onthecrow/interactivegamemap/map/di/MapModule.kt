@@ -25,7 +25,7 @@ val mapModule = module {
     single { MarkerPinLoader(get()) }
     // At the launch: the first map is measured from it
     single(createdAtStart = true) {
-        MapAnalytics(get()).also { get<ScreenTracker>().addListener(it::onScreenChange) }
+        MapAnalytics(get(), get()).also { get<ScreenTracker>().addListener(it::onScreenChange) }
     }
     viewModelOf(::MapViewModel)
 

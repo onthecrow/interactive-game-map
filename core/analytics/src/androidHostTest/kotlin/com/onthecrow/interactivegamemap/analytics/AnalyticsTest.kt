@@ -8,12 +8,34 @@ import kotlin.time.Duration.Companion.seconds
 
 private class RecordingTracker : AnalyticsTracker {
     val events = mutableListOf<Pair<String, Map<String, Any>>>()
+    var reportedUserId: String? = null
 
     override fun logEvent(name: String, params: Map<String, Any>) {
         events += name to params
     }
 
     override fun setUserProperty(name: String, value: String?) = Unit
+
+    override fun setUserId(id: String) {
+        reportedUserId = id
+    }
+}
+
+private class RecordingCrashTracker : CrashReportTracker {
+    val keys = mutableMapOf<String, Any>()
+    var reportedUserId: String? = null
+
+    override fun log(message: String) = Unit
+
+    override fun setKeys(keys: Map<String, Any>) {
+        this.keys += keys
+    }
+
+    override fun recordNonFatal(throwable: Throwable) = Unit
+
+    override fun setUserId(id: String) {
+        reportedUserId = id
+    }
 }
 
 private class TestEvent(override val params: Map<String, Any?>) : AnalyticsEvent {
@@ -22,7 +44,23 @@ private class TestEvent(override val params: Map<String, Any?>) : AnalyticsEvent
 
 class AnalyticsTest {
     private val tracker = RecordingTracker()
-    private val analytics = AnalyticsImpl(listOf(tracker))
+    private val analytics = AnalyticsImpl(listOf(tracker), userId = "id")
+    private val crashTracker = RecordingCrashTracker()
+    private val crashReporter = CrashReporterImpl(listOf(crashTracker), userId = "id")
+
+    @Test
+    fun `the reports go with the analytics id from the start`() {
+        assertEquals("id", tracker.reportedUserId)
+        assertEquals("id", crashTracker.reportedUserId)
+    }
+
+    @Test
+    fun `keys get the values Firebase takes and an empty one for none`() {
+        crashReporter.setKeys(mapOf("ready" to true, PARAM_MAP_ID to 2, "error" to "timeout"))
+        crashReporter.setKeys(mapOf("error" to null))
+
+        assertEquals<Map<String, Any>>(mapOf("ready" to "true", PARAM_MAP_ID to 2L, "error" to ""), crashTracker.keys)
+    }
 
     @Test
     fun `values become the types Firebase takes`() {
@@ -59,7 +97,7 @@ class AnalyticsTest {
 
     @Test
     fun `screens are logged when they are shown`() {
-        val screens = ScreenTracker(analytics)
+        val screens = ScreenTracker(analytics, crashReporter)
         val shown = mutableListOf<String?>()
         screens.addListener { shown += it }
 
@@ -71,6 +109,7 @@ class AnalyticsTest {
         screens.onTopScreenChange("settings")
 
         assertEquals(listOf("map", "settings", null, "settings"), shown)
+        assertEquals("settings", crashTracker.keys[KEY_SCREEN])
         assertEquals(
             listOf(
                 ScreenViewEvent("map", previousScreen = null),

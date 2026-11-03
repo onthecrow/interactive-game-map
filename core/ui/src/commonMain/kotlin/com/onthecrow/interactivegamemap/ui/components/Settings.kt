@@ -39,6 +39,9 @@ sealed interface SettingAction {
 
     /** Opens something else, like a page. */
     data class Link(val onClick: () -> Unit) : SettingAction
+
+    /** Copies what the summary shows, like an id. */
+    data class Copy(val onClick: () -> Unit) : SettingAction
 }
 
 /** A setting: its [title], what it does in [summary], and its [action]. */

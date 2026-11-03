@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">跟随系统（%1$s）</string>
     <string name="settings_section_privacy">隐私</string>
     <string name="settings_privacy_policy">隐私政策</string>
+    <string name="settings_analytics_id">分析 ID</string>
+    <string name="settings_analytics_id_copied">已复制</string>
     <string name="settings_cancel">取消</string>
     <string name="settings_footer_signature">用 ❤️ 开发：</string>
     <string name="settings_footer_contact">如有任何问题，欢迎联系我</string>

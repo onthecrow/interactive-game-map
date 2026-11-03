@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">System default (%1$s)</string>
     <string name="settings_section_privacy">Privacy</string>
     <string name="settings_privacy_policy">Privacy policy</string>
+    <string name="settings_analytics_id">Analytics ID</string>
+    <string name="settings_analytics_id_copied">Copied</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_footer_signature">Developed with ❤️ by</string>
     <string name="settings_footer_contact">Feel free to reach me if you have any questions</string>

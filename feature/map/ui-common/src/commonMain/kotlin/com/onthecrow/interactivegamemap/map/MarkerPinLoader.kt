@@ -7,6 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -29,12 +31,20 @@ private const val DUNGEON_BADGE_CENTER_X = 0.78f
 private const val DUNGEON_BADGE_CENTER_Y = 0.7f
 private const val DUNGEON_BADGE_RADIUS = 0.2f
 
-/** An image of a pin, the pins with equal images share one bitmap. The size is in dp. */
+// The pin of the selected location: bigger, with a see-through layer of the highlight color over it
+internal const val SELECTED_PIN_SCALE = 1.3f
+private const val SELECTED_PIN_TINT_ALPHA = 0.35f
+
+/**
+ * An image of a pin, the pins with equal images share one bitmap. The size is in dp.
+ * @param highlight the tint of the selected location's pin, which is also [SELECTED_PIN_SCALE] times bigger
+ */
 internal data class MarkerPinImage(
     val icon: MarkerIcon,
     val hasDungeonBadge: Boolean,
     val width: Int,
     val height: Int,
+    val highlight: Color? = null,
 )
 
 internal val MapLocation.pinImage: MarkerPinImage?
@@ -49,6 +59,11 @@ internal val MapLocation.pinImage: MarkerPinImage?
         )
     }
 
+/** The pin of the location, highlighted with [highlight] when it is the selected one. */
+internal fun MapLocation.pinImage(selectedId: Int?, highlight: Color): MarkerPinImage? {
+    return pinImage?.let { if (id == selectedId) it.copy(highlight = highlight) else it }
+}
+
 /** Must be used from one thread. */
 internal class MarkerPinLoader(
     private val iconLoader: MarkerIconLoader,
@@ -62,8 +77,9 @@ internal class MarkerPinLoader(
     }
 
     private fun renderPin(source: ImageBitmap, pin: MarkerPinImage, density: Float): ImageBitmap {
-        val width = (pin.width * density).roundToInt()
-        val height = (pin.height * density).roundToInt()
+        val scale = if (pin.highlight != null) density * SELECTED_PIN_SCALE else density
+        val width = (pin.width * scale).roundToInt()
+        val height = (pin.height * scale).roundToInt()
         val image = ImageBitmap(width, height)
         val canvas = Canvas(image)
         canvas.drawImageRect(
@@ -75,6 +91,16 @@ internal class MarkerPinLoader(
         )
         if (pin.hasDungeonBadge) {
             canvas.drawDungeonBadge(width, height)
+        }
+        pin.highlight?.let { highlight ->
+            // Only over the pin itself, its transparent parts stay so
+            canvas.drawRect(
+                Rect(0f, 0f, width.toFloat(), height.toFloat()),
+                Paint().apply {
+                    color = highlight.copy(alpha = SELECTED_PIN_TINT_ALPHA)
+                    blendMode = BlendMode.SrcAtop
+                },
+            )
         }
         return image
     }
@@ -109,15 +135,22 @@ internal class MarkerPinLoader(
     }
 }
 
-/** The finished loads of the pin images of [locations], null for an image which can't be loaded. */
+/**
+ * The finished loads of the pin images of [locations], null for an image which can't be loaded.
+ * The pin of [selectedId] is highlighted with [highlight].
+ */
 @Composable
-internal fun rememberMarkerPinImages(locations: List<MapLocation>): Map<MarkerPinImage, ImageBitmap?> {
+internal fun rememberMarkerPinImages(
+    locations: List<MapLocation>,
+    selectedId: Int?,
+    highlight: Color,
+): Map<MarkerPinImage, ImageBitmap?> {
     val pinLoader = koinInject<MarkerPinLoader>()
     val density = LocalDensity.current.density
     var images by remember { mutableStateOf(emptyMap<MarkerPinImage, ImageBitmap?>()) }
 
-    LaunchedEffect(locations) {
-        locations.mapNotNullTo(mutableSetOf()) { it.pinImage }
+    LaunchedEffect(locations, selectedId, highlight) {
+        locations.mapNotNullTo(mutableSetOf()) { it.pinImage(selectedId, highlight) }
             .filter { images[it] == null }
             .forEach { pin ->
                 launch {

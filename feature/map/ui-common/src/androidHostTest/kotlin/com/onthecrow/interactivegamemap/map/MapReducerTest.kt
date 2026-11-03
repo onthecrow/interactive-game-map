@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.map
 
+import androidx.compose.ui.graphics.Color
 import com.onthecrow.interactivegamemap.map.model.LocationDungeon
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
@@ -199,6 +200,16 @@ class MapReducerTest {
         assertEquals(MarkerPinImage(plainIcon, false, 28, 28), onSurface.pinImage)
         assertEquals(MarkerPinImage(dungeonIcon, false, 28, 28), inDungeon.pinImage)
         assertEquals(MarkerPinImage(plainIcon, true, 33, 44), withoutImage.pinImage)
+    }
+
+    @Test
+    fun `only the pin of the selected location is highlighted`() {
+        val icon = MarkerIcon("plain")
+        val location = MapLocation.EMPTY.copy(id = 5, pin = MarkerPin(icon, width = 33, height = 44))
+
+        assertEquals(MarkerPinImage(icon, false, 33, 44, Color.Red), location.pinImage(5, Color.Red))
+        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(6, Color.Red))
+        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(null, Color.Red))
     }
 
     @Test

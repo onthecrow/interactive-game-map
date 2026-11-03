@@ -28,6 +28,7 @@ import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.map.trackFirstTile
@@ -199,13 +200,16 @@ internal actual fun MapView(
         isCameraPlaced = true
     }
 
-    val pinImages = rememberMarkerPinImages(locations)
+    // The pin with the popup over it
+    val selectedId = selectedLocation?.id
+    val highlight = GameMapTheme.colors.accent
+    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight)
     val density = LocalDensity.current.density
     val pinIcons = remember { mutableMapOf<MarkerPinImage, UIImage?>() }
     val markers = remember { mutableMapOf<String, GMSMarker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
 
-    LaunchedEffect(mapView, locations, pinImages) {
+    LaunchedEffect(mapView, locations, pinImages, selectedId, highlight) {
         val view = mapView ?: return@LaunchedEffect
         val actualIds = locations.map { it.id.toString() }.toSet()
 
@@ -228,7 +232,7 @@ internal actual fun MapView(
                     userData = location
                 }
             }
-            val pinImage = location.pinImage
+            val pinImage = location.pinImage(selectedId, highlight)
             if (pinImage != null && pinImage !in pinImages) return@forEach
 
             val image = pinImage?.let { pinImages[it] }
@@ -244,14 +248,16 @@ internal actual fun MapView(
         }
     }
 
-    LaunchedEffect(mapView, locations, foundLocationIds, areMarkersHidden, selectedLocation?.id) {
+    LaunchedEffect(mapView, locations, foundLocationIds, areMarkersHidden, selectedId) {
         locations.forEach { location ->
-            markers[location.id.toString()]?.opacity = markerAlpha(
+            val marker = markers[location.id.toString()] ?: return@forEach
+            marker.opacity = markerAlpha(
                 location = location,
                 isFound = location.id in foundLocationIds,
                 areMarkersHidden = areMarkersHidden,
-                selectedId = selectedLocation?.id,
+                selectedId = selectedId,
             )
+            marker.zIndex = if (location.id == selectedId) Z_INDEX_SELECTED_MARKER else 0
         }
     }
 
@@ -381,6 +387,29 @@ internal actual fun MapView(
             entrancePaths += GMSPolyline.polylineWithPath(path).apply {
                 strokeColor = EntrancePathColor.toUIColor()
                 zIndex = Z_INDEX_ENTRANCE_PATH
+                this.map = view
+            }
+        }
+    }
+
+    val areaPolygons = remember { mutableListOf<GMSPolygon>() }
+
+    LaunchedEffect(mapView, selectedLocation) {
+        areaPolygons.forEach { it.map = null }
+        areaPolygons.clear()
+
+        val view = mapView ?: return@LaunchedEffect
+
+        selectedLocation?.areas.orEmpty().forEach { area ->
+            val path = GMSMutablePath().apply {
+                area.outline.forEach { addCoordinate(CLLocationCoordinate2DMake(it.lat, it.lng)) }
+            }
+            areaPolygons += GMSPolygon.polygonWithPath(path).apply {
+                fillColor = mapStyle.areaColor.copy(alpha = AREA_FILL_ALPHA).toUIColor()
+                strokeColor = mapStyle.areaColor.toUIColor()
+                // In points, like the rest of the map
+                strokeWidth = AreaStrokeWidth.value.toDouble()
+                zIndex = Z_INDEX_AREA
                 this.map = view
             }
         }

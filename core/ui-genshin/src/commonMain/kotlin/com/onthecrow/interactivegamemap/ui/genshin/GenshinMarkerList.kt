@@ -91,7 +91,7 @@ object GenshinCategoryItem : CategoryItemComponent {
     @Composable
     override fun Content(
         name: String,
-        count: String,
+        count: String?,
         visible: Boolean,
         onClick: () -> Unit,
         standalone: Boolean,
@@ -122,7 +122,7 @@ object GenshinCategoryItem : CategoryItemComponent {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text(text = count, style = Genshin.type.bodySmall, color = colors.textSecondary)
+            count?.let { Text(text = it, style = Genshin.type.bodySmall, color = colors.textSecondary) }
         }
     }
 }

@@ -2,6 +2,8 @@ package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.data.LocalDataSource
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocation
+import com.onthecrow.interactivegamemap.map.mapper.toMapLocations
+import com.onthecrow.interactivegamemap.map.mapper.withAnimals
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
 import kotlinx.coroutines.CoroutineScope
@@ -16,14 +18,18 @@ internal class LocationsRepositoryImpl(
     // todo inject
     private val scope = CoroutineScope(Dispatchers.Default)
 
+    private val animals = scope.async(start = CoroutineStart.LAZY) {
+        localDataSource.getAnimals()
+    }
+
     private val catalog = scope.async(start = CoroutineStart.LAZY) {
-        localDataSource.getMarkerCatalog()
+        localDataSource.getMarkerCatalog().withAnimals(animals.await(), localDataSource.getAnimalPinUrl())
     }
 
     private val locations = scope.async(start = CoroutineStart.LAZY) {
         val catalog = catalog.await()
-        localDataSource.getLocations()
-            .map { location -> location.toMapLocation(catalog) }
+        localDataSource.getLocations().map { location -> location.toMapLocation(catalog) } +
+            animals.await().toMapLocations(catalog)
     }
 
     // The markers of the source are in English only

@@ -18,6 +18,8 @@ data class MarkerCategory(
     val pin: MarkerPin,
     val visibleByDefault: Boolean,
     val hasCycles: Boolean = false,
+    /** Whether the marker list shows how many markers the category has. */
+    val showsCount: Boolean = true,
 )
 
 /** How the markers of a category look on the map, the size is in dp. */

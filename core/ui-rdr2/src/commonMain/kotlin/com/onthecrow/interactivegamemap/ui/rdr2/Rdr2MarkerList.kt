@@ -76,7 +76,7 @@ object Rdr2CategoryItem : CategoryItemComponent {
     @Composable
     override fun Content(
         name: String,
-        count: String,
+        count: String?,
         visible: Boolean,
         onClick: () -> Unit,
         standalone: Boolean,
@@ -102,10 +102,12 @@ object Rdr2CategoryItem : CategoryItemComponent {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = count,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            count?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }

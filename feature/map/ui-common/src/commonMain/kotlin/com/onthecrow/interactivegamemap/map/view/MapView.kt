@@ -23,8 +23,14 @@ internal val GoogleLogoPadding = 8.dp
 // Drawing order of the map layers, the tiles are at the bottom
 internal const val Z_INDEX_DUNGEON_DIM = 1
 internal const val Z_INDEX_DUNGEON_FLOOR = 2
-internal const val Z_INDEX_ENTRANCE_PATH = 3
-internal const val Z_INDEX_CLUSTER = 4
+internal const val Z_INDEX_AREA = 3
+internal const val Z_INDEX_ENTRANCE_PATH = 4
+internal const val Z_INDEX_CLUSTER = 5
+internal const val Z_INDEX_SELECTED_MARKER = 6
+
+// The areas of the selected location: a see-through fill, so the map under it stays readable
+internal const val AREA_FILL_ALPHA = 0.18f
+internal val AreaStrokeWidth = 2.dp
 
 // The space around the locations of a cluster when the camera is moved to them after a tap
 internal val ClusterBoundsPadding = 64.dp

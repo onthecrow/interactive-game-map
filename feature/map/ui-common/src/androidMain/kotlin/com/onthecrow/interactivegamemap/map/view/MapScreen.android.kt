@@ -63,6 +63,7 @@ import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.map.trackFirstTile
@@ -117,7 +118,10 @@ internal actual fun MapView(
         mapView.getMapAsync { value = it }
     }
 
-    val pinImages = rememberMarkerPinImages(locations)
+    // The pin with the popup over it
+    val selectedId = selectedLocation?.id
+    val highlight = GameMapTheme.colors.accent
+    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight)
     val pinIcons = remember { mutableMapOf<MarkerPinImage, BitmapDescriptor>() }
     val markers = remember { mutableMapOf<String, Marker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
@@ -129,6 +133,7 @@ internal actual fun MapView(
     var isCameraPlaced by remember { mutableStateOf(false) }
     val areMarkersHidden = hideMarkersWhileMoving && isCameraMoving
     val entrancePaths = remember { mutableListOf<Polyline>() }
+    val areaPolygons = remember { mutableListOf<Polygon>() }
     var tileOverlay by remember { mutableStateOf<TileOverlay?>(null) }
     var dungeonDim by remember { mutableStateOf<Polygon?>(null) }
     val floorOverlays = remember { mutableMapOf<Int, GroundOverlay>() }
@@ -173,7 +178,7 @@ internal actual fun MapView(
         mapAnalytics.trackFirstTile(load)
     }
 
-    LaunchedEffect(googleMap, locations, pinImages) {
+    LaunchedEffect(googleMap, locations, pinImages, selectedId, highlight) {
         val googleMap = googleMap ?: return@LaunchedEffect
         val actualIds = locations.map { it.id.toString() }.toSet()
 
@@ -198,7 +203,7 @@ internal actual fun MapView(
                     tag = location
                 }
             }
-            val pinImage = location.pinImage
+            val pinImage = location.pinImage(selectedId, highlight)
             if (pinImage != null && pinImage !in pinImages) return@forEach
 
             val image = pinImage?.let { pinImages[it] }
@@ -215,14 +220,16 @@ internal actual fun MapView(
         }
     }
 
-    LaunchedEffect(googleMap, locations, foundLocationIds, areMarkersHidden, selectedLocation?.id) {
+    LaunchedEffect(googleMap, locations, foundLocationIds, areMarkersHidden, selectedId) {
         locations.forEach { location ->
-            markers[location.id.toString()]?.alpha = markerAlpha(
+            val marker = markers[location.id.toString()] ?: return@forEach
+            marker.alpha = markerAlpha(
                 location = location,
                 isFound = location.id in foundLocationIds,
                 areMarkersHidden = areMarkersHidden,
-                selectedId = selectedLocation?.id,
+                selectedId = selectedId,
             )
+            marker.zIndex = if (location.id == selectedId) Z_INDEX_SELECTED_MARKER.toFloat() else 0f
         }
     }
 
@@ -347,6 +354,24 @@ internal actual fun MapView(
                     )
                     .color(EntrancePathColor.toArgb())
                     .zIndex(Z_INDEX_ENTRANCE_PATH.toFloat())
+            )
+        }
+    }
+
+    LaunchedEffect(googleMap, selectedLocation) {
+        areaPolygons.forEach { it.remove() }
+        areaPolygons.clear()
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+
+        selectedLocation?.areas.orEmpty().forEach { area ->
+            areaPolygons += googleMap.addPolygon(
+                PolygonOptions()
+                    .addAll(area.outline.map { LatLng(it.lat, it.lng) })
+                    .fillColor(mapStyle.areaColor.copy(alpha = AREA_FILL_ALPHA).toArgb())
+                    .strokeColor(mapStyle.areaColor.toArgb())
+                    .strokeWidth(with(density) { AreaStrokeWidth.toPx() })
+                    .zIndex(Z_INDEX_AREA.toFloat())
             )
         }
     }

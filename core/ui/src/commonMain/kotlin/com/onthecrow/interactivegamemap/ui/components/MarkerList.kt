@@ -23,10 +23,11 @@ interface CategoryItemComponent {
     /** The space between the columns and between the rows. */
     val spacing: Dp
 
+    /** @param count null when the category doesn't show how many markers it has */
     @Composable
     fun Content(
         name: String,
-        count: String,
+        count: String?,
         visible: Boolean,
         onClick: () -> Unit,
         standalone: Boolean,
@@ -67,7 +68,7 @@ fun GameGroupHeader(
 @Composable
 fun GameCategoryItem(
     name: String,
-    count: String,
+    count: String?,
     visible: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

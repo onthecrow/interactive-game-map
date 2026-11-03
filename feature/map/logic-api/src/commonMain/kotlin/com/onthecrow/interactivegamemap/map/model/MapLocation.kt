@@ -11,6 +11,8 @@ data class MapLocation(
     val cycle: Int? = null,
     val dungeon: LocationDungeon? = null,
     val pin: MarkerPin? = null,
+    /** The places around the location it is about, like where an animal lives, drawn when it is selected. */
+    val areas: List<LocationArea> = emptyList(),
 ) {
     companion object {
         val EMPTY = MapLocation(
@@ -24,6 +26,16 @@ data class MapLocation(
         )
     }
 }
+
+/** A closed outline, the last point connects to the first one. */
+data class LocationArea(
+    val outline: List<GeoPoint>,
+)
+
+data class GeoPoint(
+    val lat: Double,
+    val lng: Double,
+)
 
 data class LocationDungeon(
     val dungeonId: Int,

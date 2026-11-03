@@ -207,7 +207,7 @@ private fun CategoryView(
         modifier = modifier,
         // Some names hold non-breaking spaces, which would break them inside a word instead
         name = category.category.name.replace('\u00A0', ' '),
-        count = count.toString(),
+        count = count.toString().takeIf { category.category.showsCount },
         visible = isVisible,
         standalone = standalone,
         onClick = onClick,

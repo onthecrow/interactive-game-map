@@ -51,7 +51,7 @@ import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2ZoomControl
 import com.onthecrow.interactivegamemap.ui.theme.GameMapStyle
 import org.koin.dsl.module
 
-/** The Red Dead Redemption 2 look for GameMapTheme: Material components in the Material colors. */
+/** The Red Dead Redemption 2 look for GameMapTheme: black ink, white type and the red outline of the game. */
 val rdr2UiModule = module {
     single<ButtonComponent> { Rdr2Button }
     single<TextButtonComponent> { Rdr2TextButton }

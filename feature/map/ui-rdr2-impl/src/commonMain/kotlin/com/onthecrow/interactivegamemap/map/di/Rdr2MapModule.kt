@@ -7,5 +7,6 @@ import org.koin.dsl.module
 
 val rdr2MapModule = module {
     single { MapTileProvider(get()) }
-    single { MapStyle(backgroundColor = Color(0xFFD3B790)) }
+    // The areas of an animal in the red of the guides' circles and of the selection
+    single { MapStyle(backgroundColor = Color(0xFFD3B790), areaColor = Color(0xFFB5161B)) }
 }

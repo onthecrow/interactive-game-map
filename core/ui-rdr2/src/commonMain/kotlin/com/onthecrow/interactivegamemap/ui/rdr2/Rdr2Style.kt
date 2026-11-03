@@ -1,80 +1,76 @@
 package com.onthecrow.interactivegamemap.ui.rdr2
 
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.Typography
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.font.FontWeight
 import com.onthecrow.interactivegamemap.ui.components.GameMapComponents
-import com.onthecrow.interactivegamemap.ui.rdr2.resources.Res
-import com.onthecrow.interactivegamemap.ui.rdr2.resources.ic_filter_list
-import com.onthecrow.interactivegamemap.ui.rdr2.resources.ic_layers
-import com.onthecrow.interactivegamemap.ui.rdr2.resources.ic_settings
 import com.onthecrow.interactivegamemap.ui.theme.GameMapColors
 import com.onthecrow.interactivegamemap.ui.theme.GameMapIcons
 import com.onthecrow.interactivegamemap.ui.theme.GameMapStyle
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTypography
-import org.jetbrains.compose.resources.vectorResource
 
-/** The Material colors of the app, the system's ones on Android 12 and later when [dynamicColor]. */
-@Composable
-internal expect fun rdr2ColorScheme(darkTheme: Boolean, dynamicColor: Boolean): ColorScheme
-
-private const val SCRIM_ALPHA = 0.32f
-
-/** The look of Red Dead Redemption 2: Material components in the Material colors. */
+/**
+ * The look of Red Dead Redemption 2, as the RDR2 page of the Figma file: black ink panels and strokes, white
+ * type, the red outline of the selection, over the paper of the map or the night. The colors are the game's,
+ * the system's ones don't apply.
+ */
 class Rdr2Style(override val components: GameMapComponents) : GameMapStyle {
 
-    override val supportsDynamicColor: Boolean = true
+    override val supportsDynamicColor: Boolean = false
 
     @Composable
-    override fun colors(darkTheme: Boolean, dynamicColor: Boolean): GameMapColors {
-        val scheme = rdr2ColorScheme(darkTheme, dynamicColor)
-        return remember(scheme, darkTheme) {
-            GameMapColors(
-                isDark = darkTheme,
-                background = scheme.background,
-                panel = scheme.surface,
-                content = scheme.onSurface,
-                contentSecondary = scheme.onSurfaceVariant,
-                accent = scheme.primary,
-                link = scheme.primary,
-                outline = scheme.outlineVariant,
-                scrim = scheme.scrim.copy(alpha = SCRIM_ALPHA),
-                mapControl = scheme.secondaryContainer,
-                cluster = scheme.primary,
-                onCluster = scheme.onPrimary,
-                clusterBorder = scheme.onPrimary,
-                material = scheme,
+    override fun colors(darkTheme: Boolean, dynamicColor: Boolean): GameMapColors = remember(darkTheme) {
+        rdr2Colors(darkTheme).toGameMapColors()
+    }
+
+    @Composable
+    override fun typography(colors: GameMapColors): GameMapTypography {
+        val type = rememberRdr2Type()
+        val rdr2Colors = rdr2Colors(colors.isDark)
+        return remember(type, rdr2Colors) {
+            GameMapTypography(
+                headline = type.display,
+                title = type.title,
+                bodyLarge = type.bodyLarge,
+                body = type.bodyMedium,
+                caption = type.bodySmall,
+                label = type.badge,
+                // Places and names stand out in gold, as in the game's objectives
+                emphasis = SpanStyle(color = rdr2Colors.textAccent),
+                material = materialTypography(type),
             )
         }
     }
 
     @Composable
-    override fun typography(colors: GameMapColors): GameMapTypography = remember {
-        val material = Typography()
-        GameMapTypography(
-            headline = material.headlineMedium,
-            title = material.titleMedium,
-            bodyLarge = material.bodyLarge,
-            body = material.bodyMedium,
-            caption = material.bodySmall,
-            label = material.labelLarge.copy(fontWeight = FontWeight.Bold),
-            emphasis = SpanStyle(fontWeight = FontWeight.Bold),
-            material = material,
-        )
-    }
-
-    @Composable
     override fun icons(): GameMapIcons = GameMapIcons(
-        layers = vectorResource(Res.drawable.ic_layers),
-        markers = vectorResource(Res.drawable.ic_filter_list),
-        settings = vectorResource(Res.drawable.ic_settings),
+        layers = Rdr2Icons.Layers,
+        markers = Rdr2Icons.Index,
+        settings = Rdr2Icons.Settings,
     )
 
     @Composable
     override fun Provide(colors: GameMapColors, content: @Composable () -> Unit) {
-        content()
+        val rdr2Colors = rdr2Colors(colors.isDark)
+        CompositionLocalProvider(
+            LocalRdr2Colors provides rdr2Colors,
+            LocalRdr2Type provides rememberRdr2Type(),
+            LocalContentColor provides rdr2Colors.textPrimary,
+            content = content,
+        )
     }
+}
+
+private fun rdr2Colors(darkTheme: Boolean) = if (darkTheme) Rdr2Colors.Dark else Rdr2Colors.Light
+
+/** The colors and the type of the Red Dead Redemption 2 components, inside GameMapTheme with [Rdr2Style]. */
+internal object Rdr2 {
+    val colors: Rdr2Colors
+        @Composable @ReadOnlyComposable get() = LocalRdr2Colors.current
+
+    val type: Rdr2Type
+        @Composable @ReadOnlyComposable get() = LocalRdr2Type.current
 }

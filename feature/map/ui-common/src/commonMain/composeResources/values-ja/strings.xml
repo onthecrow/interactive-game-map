@@ -1,0 +1,16 @@
+<resources>
+    <string name="map_screen_search_hint">場所を検索</string>
+    <string name="map_screen_search_in_map_hint">%1$sで検索</string>
+    <string name="location_view_exit_dungeon">退出</string>
+    <string name="location_view_found">発見済み</string>
+    <string name="marker_list_show_all">すべて表示</string>
+    <string name="marker_list_hide_all">すべて非表示</string>
+    <string name="marker_list_search_hint">マーカーを検索</string>
+    <string name="marker_list_nothing_found">見つかりませんでした</string>
+    <string name="map_screen_maps">マップ</string>
+    <string name="map_screen_settings">設定</string>
+    <string name="map_screen_markers">マーカー</string>
+    <string name="map_screen_layers">レイヤー</string>
+    <string name="map_screen_zoom_in">ズームイン</string>
+    <string name="map_screen_zoom_out">ズームアウト</string>
+</resources>

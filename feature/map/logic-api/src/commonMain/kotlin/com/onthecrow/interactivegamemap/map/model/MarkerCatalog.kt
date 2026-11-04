@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 data class MarkerCatalog(
     val categories: Map<String, MarkerCategory>,
     val groupsByMap: Map<Int, List<MarkerGroup>>,
+    /** The names of the maps by their ids where they differ from the remote config's ones. */
+    val mapNames: Map<Int, String> = emptyMap(),
 )
 
 @Serializable

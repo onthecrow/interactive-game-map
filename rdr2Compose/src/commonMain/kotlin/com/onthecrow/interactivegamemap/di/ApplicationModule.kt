@@ -6,6 +6,8 @@ import com.onthecrow.interactivegamemap.map.di.mapModule
 import com.onthecrow.interactivegamemap.map.di.rdr2MapModule
 import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
+import com.onthecrow.interactivegamemap.settings.di.settingsModule
+import com.onthecrow.interactivegamemap.settings.di.settingsUiModule
 import com.onthecrow.nomadrates.database.di.databaseModule
 import com.onthecrow.nomadrates.navigation.Destination
 import com.onthecrow.nomadrates.navigation.di.StartDestination
@@ -22,6 +24,8 @@ val applicationModule = module {
         databaseModule,
         networkModule,
         remoteConfigModule,
+        settingsModule,
+        settingsUiModule,
         mapModule,
         rdr2MapModule,
         mapLogicModule,

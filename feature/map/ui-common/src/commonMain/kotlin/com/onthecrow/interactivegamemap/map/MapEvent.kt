@@ -13,11 +13,12 @@ internal sealed interface MapEvent : Event {
     data object OnDungeonsClick : MapEvent
     data object OnMarkerListClick : MapEvent
     data object OnMarkerListDismiss : MapEvent
+    data object OnSettingsClick : MapEvent
     data class OnConfigLoaded(val config: RemoteConfig) : MapEvent
     data class OnMapSelect(val map: GameMap) : MapEvent
-    data class OnCameraIdle(val viewport: MapBounds) : MapEvent
+    data class OnCameraIdle(val viewport: MapBounds, val camera: CameraPosition) : MapEvent
     data class OnSearchValueChange(val value: String) : MapEvent
-    data class OnLocationsLoaded(val locations: List<MapLocation>) : MapEvent
+    data class OnLocationsLoaded(val locations: List<MapLocation>, val clusters: List<MarkerCluster>) : MapEvent
     data class OnMarkerGroupsLoaded(val groups: List<MapMarkerGroup>) : MapEvent
     data class OnLocationClick(val location: MapLocation) : MapEvent
     data class OnEntrancesLoaded(val entrances: List<MapLocation>) : MapEvent
@@ -32,4 +33,6 @@ internal sealed interface MapEvent : Event {
     data class OnFoundLocationsLoaded(val locationIds: Set<Int>) : MapEvent
     data class OnLocationLinkClick(val locationId: Int) : MapEvent
     data class OnLocationLinkLoaded(val location: MapLocation) : MapEvent
+    data class OnLanguageChange(val language: String) : MapEvent
+    data class OnSettingsChange(val hideMarkersWhileMoving: Boolean, val clusterMarkers: Boolean) : MapEvent
 }

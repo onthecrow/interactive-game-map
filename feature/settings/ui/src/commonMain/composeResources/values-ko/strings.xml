@@ -1,0 +1,26 @@
+<resources>
+    <string name="settings_title">설정</string>
+    <string name="settings_back">뒤로</string>
+    <string name="settings_section_map">지도</string>
+    <string name="settings_hide_markers">이동 중 마커 숨기기</string>
+    <string name="settings_hide_markers_summary">지도가 더 부드럽게 움직입니다</string>
+    <string name="settings_cluster_markers">마커 그룹화</string>
+    <string name="settings_cluster_markers_summary">지도를 축소하면 가까운 마커가 하나로 합쳐집니다</string>
+    <string name="settings_section_appearance">화면</string>
+    <string name="settings_theme">테마</string>
+    <string name="settings_theme_system">시스템 기본값</string>
+    <string name="settings_theme_light">라이트</string>
+    <string name="settings_theme_dark">다크</string>
+    <string name="settings_system_colors">시스템 색상</string>
+    <string name="settings_system_colors_summary">휴대전화 테마의 색상 사용</string>
+    <string name="settings_section_language">언어</string>
+    <string name="settings_language">앱 언어</string>
+    <string name="settings_language_system">시스템 기본값</string>
+    <string name="settings_language_system_summary">시스템 기본값(%1$s)</string>
+    <string name="settings_section_privacy">개인정보 보호</string>
+    <string name="settings_privacy_policy">개인정보처리방침</string>
+    <string name="settings_cancel">취소</string>
+    <string name="settings_footer_signature">❤️을 담아 개발:</string>
+    <string name="settings_footer_contact">궁금한 점이 있으면 언제든지 연락해 주세요</string>
+    <string name="settings_version">버전 %1$s</string>
+</resources>

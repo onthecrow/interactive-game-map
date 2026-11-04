@@ -61,7 +61,7 @@ class MapReducerTest {
     fun `floors outside the screen are not displayed`() {
         val floors = state
             .after(MapEvent.OnDungeonsClick)
-            .after(MapEvent.OnCameraIdle(MapBounds(west = 15.0, south = 0.0, east = 35.0, north = 1.0)))
+            .after(MapEvent.OnCameraIdle(MapBounds(west = 15.0, south = 0.0, east = 35.0, north = 1.0), CameraPosition(0.5, 25.0, 1f)))
             .displayedFloors
 
         assertEquals(listOf(4, 6), floors.map { it.id }.sorted())
@@ -198,5 +198,39 @@ class MapReducerTest {
         assertEquals(MarkerPinImage(plainIcon, false, 28, 28), onSurface.pinImage)
         assertEquals(MarkerPinImage(dungeonIcon, false, 28, 28), inDungeon.pinImage)
         assertEquals(MarkerPinImage(plainIcon, true, 33, 44), withoutImage.pinImage)
+    }
+
+    @Test
+    fun `markers are clustered until the maximum zoom`() {
+        val zoomedOut = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 1f)))
+        assertEquals(1f, zoomedOut.clusterZoom)
+        assertTrue(zoomedOut.canZoomIn)
+        assertFalse(zoomedOut.canZoomOut)
+
+        val zoomedIn = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 2f)))
+        assertEquals(null, zoomedIn.clusterZoom)
+        assertFalse(zoomedIn.canZoomIn)
+
+        val turnedOff = zoomedOut.after(MapEvent.OnSettingsChange(hideMarkersWhileMoving = false, clusterMarkers = false))
+        assertEquals(null, turnedOff.clusterZoom)
+    }
+
+    @Test
+    fun `another map starts at its own camera`() {
+        val moved = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 2f)))
+
+        val other = moved.after(MapEvent.OnMapSelect(map.copy(id = 2)))
+
+        assertEquals(null, other.camera)
+    }
+
+    @Test
+    fun `new language closes the popup and reloads the names`() {
+        val selected = state.after(MapEvent.OnLocationClick(location))
+
+        val translated = selected.after(MapEvent.OnLanguageChange("ru"))
+
+        assertEquals(null, translated.selectedLocation)
+        assertEquals("ru", translated.locationsFilter?.language)
     }
 }

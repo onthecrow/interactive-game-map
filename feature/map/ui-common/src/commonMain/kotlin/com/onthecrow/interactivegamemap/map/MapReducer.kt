@@ -26,21 +26,31 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
                     state.copy(
                         currentMap = event.map,
                         locations = emptyList(),
+                        clusters = emptyList(),
                         markerGroups = emptyList(),
                         viewport = null,
+                        camera = null,
                         showAllDungeons = false,
                     ).withoutSelection()
                 }
             }
-            is MapEvent.OnCameraIdle -> state.copy(viewport = event.viewport)
-            is MapEvent.OnLocationsLoaded -> state.copy(locations = event.locations)
+            is MapEvent.OnCameraIdle -> state.copy(viewport = event.viewport, camera = event.camera)
+            is MapEvent.OnLocationsLoaded -> state.copy(locations = event.locations, clusters = event.clusters)
             is MapEvent.OnMarkerGroupsLoaded -> state.copy(markerGroups = event.groups)
             is MapEvent.OnLocationClick -> state.withSelection(event.location)
             is MapEvent.OnLocationLinkLoaded -> state.withSelection(event.location)
                 .copy(focusedLocation = event.location)
             is MapEvent.OnFoundLocationsLoaded -> state.copy(foundLocationIds = event.locationIds)
             // The view model handles these, the state changes when the data comes back
-            is MapEvent.OnFoundClick, is MapEvent.OnLocationLinkClick -> state
+            is MapEvent.OnFoundClick,
+            is MapEvent.OnLocationLinkClick,
+            is MapEvent.OnSettingsClick -> state
+            // The names of the selected location are in the previous language
+            is MapEvent.OnLanguageChange -> state.copy(language = event.language).withoutSelection()
+            is MapEvent.OnSettingsChange -> state.copy(
+                hideMarkersWhileMoving = event.hideMarkersWhileMoving,
+                clusterMarkers = event.clusterMarkers,
+            )
             is MapEvent.OnEntrancesLoaded -> state.copy(entrances = event.entrances)
             is MapEvent.OnFloorClick -> state.copy(selectedFloorId = event.floorId)
             is MapEvent.OnLocationDismiss -> state.withoutSelection()

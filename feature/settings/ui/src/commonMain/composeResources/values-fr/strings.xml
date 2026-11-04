@@ -1,0 +1,26 @@
+<resources>
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_back">Retour</string>
+    <string name="settings_section_map">Carte</string>
+    <string name="settings_hide_markers">Masquer les marqueurs pendant le déplacement</string>
+    <string name="settings_hide_markers_summary">La carte se déplace de façon plus fluide</string>
+    <string name="settings_cluster_markers">Regrouper les marqueurs</string>
+    <string name="settings_cluster_markers_summary">Les marqueurs proches sont regroupés quand vous dézoomez</string>
+    <string name="settings_section_appearance">Apparence</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_system">Paramètre par défaut du système</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_system_colors">Couleurs du système</string>
+    <string name="settings_system_colors_summary">Utiliser les couleurs du thème de votre téléphone</string>
+    <string name="settings_section_language">Langue</string>
+    <string name="settings_language">Langue de l'application</string>
+    <string name="settings_language_system">Paramètre par défaut du système</string>
+    <string name="settings_language_system_summary">Paramètre par défaut du système (%1$s)</string>
+    <string name="settings_section_privacy">Confidentialité</string>
+    <string name="settings_privacy_policy">Règles de confidentialité</string>
+    <string name="settings_cancel">Annuler</string>
+    <string name="settings_footer_signature">Développé avec ❤️ par</string>
+    <string name="settings_footer_contact">N'hésitez pas à me contacter si vous avez des questions</string>
+    <string name="settings_version">Version %1$s</string>
+</resources>

@@ -1,0 +1,26 @@
+<resources>
+    <string name="settings_title">设置</string>
+    <string name="settings_back">返回</string>
+    <string name="settings_section_map">地图</string>
+    <string name="settings_hide_markers">移动时隐藏标记</string>
+    <string name="settings_hide_markers_summary">地图移动更流畅</string>
+    <string name="settings_cluster_markers">合并标记</string>
+    <string name="settings_cluster_markers_summary">缩小地图时，相邻的标记会合并为一个</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_system_colors">系统颜色</string>
+    <string name="settings_system_colors_summary">使用手机主题的颜色</string>
+    <string name="settings_section_language">语言</string>
+    <string name="settings_language">应用语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_system_summary">跟随系统（%1$s）</string>
+    <string name="settings_section_privacy">隐私</string>
+    <string name="settings_privacy_policy">隐私政策</string>
+    <string name="settings_cancel">取消</string>
+    <string name="settings_footer_signature">用 ❤️ 开发：</string>
+    <string name="settings_footer_contact">如有任何问题，欢迎联系我</string>
+    <string name="settings_version">版本 %1$s</string>
+</resources>

@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -50,12 +51,18 @@ import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
+import com.onthecrow.interactivegamemap.map.CameraCommand
+import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
+import com.onthecrow.interactivegamemap.map.MarkerCluster
+import com.onthecrow.interactivegamemap.map.label
 import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.network.GameMap
 import com.onthecrow.interactivegamemap.network.MapBounds
@@ -69,11 +76,16 @@ import org.koin.compose.koinInject
 internal actual fun MapView(
     map: GameMap?,
     locations: List<MapLocation>,
+    clusters: List<MarkerCluster>,
     selectedLocation: MapLocation?,
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
     foundLocationIds: Set<Int>,
     focusedLocation: MapLocation?,
+    camera: CameraPosition?,
+    cameraController: MapCameraController,
+    hideMarkersWhileMoving: Boolean,
+    bottomPadding: Dp,
     modifier: Modifier,
     onEvent: (MapEvent) -> Unit,
 ) {
@@ -106,6 +118,13 @@ internal actual fun MapView(
     val pinIcons = remember { mutableMapOf<MarkerPinImage, BitmapDescriptor>() }
     val markers = remember { mutableMapOf<String, Marker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
+    val clusterImages = rememberClusterImages(clusters)
+    val clusterIcons = remember { mutableMapOf<ImageBitmap, BitmapDescriptor>() }
+    val clusterMarkers = remember { mutableMapOf<Int, Marker>() }
+    var isCameraMoving by remember { mutableStateOf(false) }
+    // The view starts somewhere else, that camera isn't the user's one
+    var isCameraPlaced by remember { mutableStateOf(false) }
+    val areMarkersHidden = hideMarkersWhileMoving && isCameraMoving
     val entrancePaths = remember { mutableListOf<Polyline>() }
     var tileOverlay by remember { mutableStateOf<TileOverlay?>(null) }
     var dungeonDim by remember { mutableStateOf<Polygon?>(null) }
@@ -117,7 +136,7 @@ internal actual fun MapView(
             uiSettings.isRotateGesturesEnabled = false
             uiSettings.isTiltGesturesEnabled = false
             uiSettings.isCompassEnabled = false
-            uiSettings.isMyLocationButtonEnabled = true
+            uiSettings.isMyLocationButtonEnabled = false
         }
     }
 
@@ -126,7 +145,7 @@ internal actual fun MapView(
     val systemInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
     val logoPadding = with(density) { GoogleLogoPadding.roundToPx() }
     val logoPaddingLeft = systemInsets.getLeft(density, layoutDirection) + logoPadding
-    val logoPaddingBottom = systemInsets.getBottom(density) + logoPadding
+    val logoPaddingBottom = systemInsets.getBottom(density) + with(density) { bottomPadding.roundToPx() } + logoPadding
 
     LaunchedEffect(googleMap, logoPaddingLeft, logoPaddingBottom) {
         googleMap?.setPadding(logoPaddingLeft, 0, 0, logoPaddingBottom)
@@ -141,12 +160,9 @@ internal actual fun MapView(
         googleMap.setLatLngBoundsForCameraTarget(map.bounds?.toLatLngBounds())
         googleMap.setMinZoomPreference(map.minZoom.toFloat())
         googleMap.setMaxZoomPreference(map.maxZoom.toFloat())
-        googleMap.moveCamera(
-            CameraUpdateFactory.newLatLngZoom(
-                LatLng(map.camera.lat, map.camera.lng),
-                map.camera.zoom.toFloat(),
-            )
-        )
+        val position = camera ?: CameraPosition(map.camera.lat, map.camera.lng, map.camera.zoom.toFloat())
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(position.lat, position.lng), position.zoom))
+        isCameraPlaced = true
         tileOverlay = googleMap.addTileOverlay(
             TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom))
         )
@@ -194,9 +210,59 @@ internal actual fun MapView(
         }
     }
 
-    LaunchedEffect(googleMap, locations, foundLocationIds) {
+    LaunchedEffect(googleMap, locations, foundLocationIds, areMarkersHidden, selectedLocation?.id) {
         locations.forEach { location ->
-            markers[location.id.toString()]?.alpha = if (location.id in foundLocationIds) FOUND_MARKER_ALPHA else 1f
+            markers[location.id.toString()]?.alpha = markerAlpha(
+                location = location,
+                isFound = location.id in foundLocationIds,
+                areMarkersHidden = areMarkersHidden,
+                selectedId = selectedLocation?.id,
+            )
+        }
+    }
+
+    LaunchedEffect(googleMap, clusters, clusterImages) {
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val actualIds = clusters.map { it.id }.toSet()
+
+        clusterMarkers.entries.removeAll { entry ->
+            val shouldRemove = entry.key !in actualIds
+            if (shouldRemove) {
+                entry.value.remove()
+            }
+            shouldRemove
+        }
+
+        clusters.forEach { cluster ->
+            val image = clusterImages[cluster.label] ?: return@forEach
+            val icon = clusterIcons.getOrPut(image) { BitmapDescriptorFactory.fromBitmap(image.asAndroidBitmap()) }
+            val marker = clusterMarkers.getOrPut(cluster.id) {
+                googleMap.addMarker(
+                    MarkerOptions()
+                        .position(LatLng(cluster.lat, cluster.lng))
+                        .anchor(0.5f, 0.5f)
+                        .zIndex(Z_INDEX_CLUSTER.toFloat())
+                        .icon(icon)
+                )!!
+            }
+            marker.setIcon(icon)
+            marker.tag = cluster
+        }
+    }
+
+    LaunchedEffect(googleMap, clusters, areMarkersHidden) {
+        clusterMarkers.values.forEach { it.alpha = if (areMarkersHidden) HIDDEN_MARKER_ALPHA else 1f }
+    }
+
+    LaunchedEffect(googleMap, cameraController) {
+        val googleMap = googleMap ?: return@LaunchedEffect
+        cameraController.commands.collect { command ->
+            googleMap.animateCamera(
+                when (command) {
+                    CameraCommand.ZOOM_IN -> CameraUpdateFactory.zoomIn()
+                    CameraCommand.ZOOM_OUT -> CameraUpdateFactory.zoomOut()
+                }
+            )
         }
     }
 
@@ -286,24 +352,40 @@ internal actual fun MapView(
             mapView.apply {
                 getMapAsync { mapView ->
                     mapView.setOnMarkerClickListener {
-                        onEvent(MapEvent.OnLocationClick(it.tag as MapLocation))
+                        when (val tag = it.tag) {
+                            is MapLocation -> onEvent(MapEvent.OnLocationClick(tag))
+                            // Close enough for the locations of the cluster to be apart
+                            is MarkerCluster -> mapView.animateCamera(
+                                CameraUpdateFactory.newLatLngBounds(
+                                    tag.bounds.toLatLngBounds(),
+                                    with(density) { ClusterBoundsPadding.roundToPx() },
+                                )
+                            )
+                        }
                         true
+                    }
+                    mapView.setOnCameraMoveStartedListener {
+                        isCameraMoving = true
                     }
                     mapView.setOnMapClickListener {
                         onEvent(MapEvent.OnLocationDismiss)
                     }
                     mapView.setOnCameraIdleListener {
+                        isCameraMoving = false
+                        if (!isCameraPlaced) return@setOnCameraIdleListener
+                        val position = mapView.cameraPosition
                         // The visible region of the projection doesn't include the padding
                         val southWest = mapView.projection.fromScreenLocation(Point(0, height))
                         val northEast = mapView.projection.fromScreenLocation(Point(width, 0))
                         onEvent(
                             MapEvent.OnCameraIdle(
-                                MapBounds(
+                                viewport = MapBounds(
                                     west = southWest.longitude,
                                     south = southWest.latitude,
                                     east = northEast.longitude,
                                     north = northEast.latitude,
-                                )
+                                ),
+                                camera = CameraPosition(position.target.latitude, position.target.longitude, position.zoom),
                             )
                         )
                     }

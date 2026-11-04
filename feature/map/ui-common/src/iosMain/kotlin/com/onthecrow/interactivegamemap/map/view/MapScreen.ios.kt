@@ -13,18 +13,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.UIKitView
+import com.onthecrow.interactivegamemap.map.CameraCommand
+import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
+import com.onthecrow.interactivegamemap.map.MarkerCluster
+import com.onthecrow.interactivegamemap.map.label
 import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.network.GameMap
 import com.onthecrow.interactivegamemap.network.MapBounds
 import com.onthecrow.interactivegamemap.network.MapFloor
 import googlemaps.GMSCameraPosition
+import googlemaps.GMSCameraUpdate
 import googlemaps.GMSCoordinateBounds
 import googlemaps.GMSGroundOverlay
 import googlemaps.GMSMapView
@@ -37,6 +45,7 @@ import googlemaps.GMSPolyline
 import googlemaps.GMSTileLayer
 import googlemaps.GMSTileReceiverProtocol
 import googlemaps.animateToLocation
+import googlemaps.animateWithCameraUpdate
 import googlemaps.kGMSTileLayerNoTile
 import googlemaps.kGMSTypeNone
 import kotlinx.cinterop.BetaInteropApi
@@ -87,11 +96,16 @@ internal fun ByteArray?.toUIImageOrNull(): UIImage? {
 internal actual fun MapView(
     map: GameMap?,
     locations: List<MapLocation>,
+    clusters: List<MarkerCluster>,
     selectedLocation: MapLocation?,
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
     foundLocationIds: Set<Int>,
     focusedLocation: MapLocation?,
+    camera: CameraPosition?,
+    cameraController: MapCameraController,
+    hideMarkersWhileMoving: Boolean,
+    bottomPadding: Dp,
     modifier: Modifier,
     onEvent: (MapEvent) -> Unit,
 ) {
@@ -100,14 +114,26 @@ internal actual fun MapView(
     val mapStyle: MapStyle = koinInject<MapStyle>()
 
     var mapView by remember { mutableStateOf<GMSMapView?>(null) }
+    var isCameraMoving by remember { mutableStateOf(false) }
+    // The view starts somewhere else, that camera isn't the user's one
+    var isCameraPlaced by remember { mutableStateOf(false) }
+    val areMarkersHidden = hideMarkersWhileMoving && isCameraMoving
 
     val mapDelegate = remember(onEvent) {
         object : NSObject(), GMSMapViewDelegateProtocol {
             override fun mapView(mapView: GMSMapView, didTapMarker: GMSMarker): Boolean {
-                (didTapMarker.userData as? MapLocation)?.let {
-                    onEvent(MapEvent.OnLocationClick(it))
+                when (val data = didTapMarker.userData) {
+                    is MapLocation -> onEvent(MapEvent.OnLocationClick(data))
+                    // Close enough for the locations of the cluster to be apart
+                    is MarkerCluster -> mapView.animateWithCameraUpdate(
+                        GMSCameraUpdate.fitBounds(data.bounds.toCoordinateBounds(), ClusterBoundsPadding.value.toDouble())
+                    )
                 }
                 return true
+            }
+
+            override fun mapView(mapView: GMSMapView, willMove: Boolean) {
+                isCameraMoving = true
             }
 
             override fun mapView(
@@ -118,7 +144,16 @@ internal actual fun MapView(
             }
 
             override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
-                onEvent(MapEvent.OnCameraIdle(mapView.visibleBounds()))
+                isCameraMoving = false
+                if (!isCameraPlaced) return
+                val camera = mapView.camera
+                val (lat, lng) = camera.target.useContents { latitude to longitude }
+                onEvent(
+                    MapEvent.OnCameraIdle(
+                        viewport = mapView.visibleBounds(),
+                        camera = CameraPosition(lat, lng, camera.zoom),
+                    )
+                )
             }
         }
     }
@@ -141,7 +176,7 @@ internal actual fun MapView(
         }
     }
 
-    val camera: GMSCameraPosition = remember {
+    val defaultCamera: GMSCameraPosition = remember {
         val target = CLLocationCoordinate2DMake(55.751244, 37.618423) // Москва
         GMSCameraPosition.cameraWithTarget(target = target, zoom = 12f)
     }
@@ -157,11 +192,9 @@ internal actual fun MapView(
 
         view.cameraTargetBounds = gameMap.bounds?.toCoordinateBounds()
         view.setMinZoom(gameMap.minZoom.toFloat(), gameMap.maxZoom.toFloat())
-        view.camera = GMSCameraPosition(
-            gameMap.camera.lat,
-            gameMap.camera.lng,
-            gameMap.camera.zoom.toFloat(),
-        )
+        val position = camera ?: CameraPosition(gameMap.camera.lat, gameMap.camera.lng, gameMap.camera.zoom.toFloat())
+        view.camera = GMSCameraPosition(position.lat, position.lng, position.zoom)
+        isCameraPlaced = true
     }
 
     val pinImages = rememberMarkerPinImages(locations)
@@ -209,9 +242,61 @@ internal actual fun MapView(
         }
     }
 
-    LaunchedEffect(mapView, locations, foundLocationIds) {
+    LaunchedEffect(mapView, locations, foundLocationIds, areMarkersHidden, selectedLocation?.id) {
         locations.forEach { location ->
-            markers[location.id.toString()]?.opacity = if (location.id in foundLocationIds) FOUND_MARKER_ALPHA else 1f
+            markers[location.id.toString()]?.opacity = markerAlpha(
+                location = location,
+                isFound = location.id in foundLocationIds,
+                areMarkersHidden = areMarkersHidden,
+                selectedId = selectedLocation?.id,
+            )
+        }
+    }
+
+    val clusterImages = rememberClusterImages(clusters)
+    val clusterIcons = remember { mutableMapOf<ImageBitmap, UIImage?>() }
+    val clusterMarkers = remember { mutableMapOf<Int, GMSMarker>() }
+
+    LaunchedEffect(mapView, clusters, clusterImages) {
+        val view = mapView ?: return@LaunchedEffect
+        val actualIds = clusters.map { it.id }.toSet()
+
+        clusterMarkers.entries.removeAll { entry ->
+            val shouldRemove = entry.key !in actualIds
+            if (shouldRemove) {
+                entry.value.map = null
+            }
+            shouldRemove
+        }
+
+        clusters.forEach { cluster ->
+            val image = clusterImages[cluster.label] ?: return@forEach
+            val marker = clusterMarkers.getOrPut(cluster.id) {
+                GMSMarker().apply {
+                    position = CLLocationCoordinate2DMake(cluster.lat, cluster.lng)
+                    groundAnchor = CGPointMake(0.5, 0.5)
+                    zIndex = Z_INDEX_CLUSTER
+                    this.map = view
+                }
+            }
+            marker.icon = clusterIcons.getOrPut(image) { image.toPinIcon(density) }
+            marker.userData = cluster
+        }
+    }
+
+    LaunchedEffect(mapView, clusters, areMarkersHidden) {
+        clusterMarkers.values.forEach { it.opacity = if (areMarkersHidden) HIDDEN_MARKER_ALPHA else 1f }
+    }
+
+    LaunchedEffect(mapView, cameraController) {
+        val view = mapView ?: return@LaunchedEffect
+        cameraController.commands.collect { command ->
+            view.animateWithCameraUpdate(
+                when (command) {
+                    CameraCommand.ZOOM_IN -> GMSCameraUpdate.zoomIn()
+                    CameraCommand.ZOOM_OUT -> GMSCameraUpdate.zoomOut()
+                }
+            )
         }
     }
 
@@ -303,18 +388,22 @@ internal actual fun MapView(
         modifier = modifier,
         factory = {
             val options = GMSMapViewOptions().apply {
-                this.camera = camera
+                this.camera = defaultCamera
                 backgroundColor = mapStyle.backgroundColor.toUIColor()
             }
             mapView = GMSMapView(options = options).apply {
                 mapType = kGMSTypeNone
                 // The map view adds the safe area to the padding by itself
-                padding = UIEdgeInsetsMake(0.0, GoogleLogoPadding.value.toDouble(), GoogleLogoPadding.value.toDouble(), 0.0)
-                myLocationEnabled = true
+                padding = UIEdgeInsetsMake(
+                    0.0,
+                    GoogleLogoPadding.value.toDouble(),
+                    (bottomPadding + GoogleLogoPadding).value.toDouble(),
+                    0.0,
+                )
                 settings.rotateGestures = false
                 settings.tiltGestures = false
                 settings.compassButton = false
-                settings.myLocationButton = true
+                settings.myLocationButton = false
             }
             mapView!!
         },

@@ -1,9 +1,8 @@
 package com.onthecrow.interactivegamemap.map.di
 
 import com.onthecrow.interactivegamemap.map.MapTileProvider
-import com.onthecrow.interactivegamemap.map.MapTileProviderImpl
 import org.koin.dsl.module
 
 val rdr2MapModule = module {
-    single<MapTileProvider> { MapTileProviderImpl(get(), get()) }
+    single { MapTileProvider(get()) }
 }

@@ -1,45 +1,68 @@
 package com.onthecrow.interactivegamemap.map.view
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.GroundOverlay
+import com.google.android.gms.maps.model.GroundOverlayOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.Tile
+import com.google.android.gms.maps.model.Polygon
+import com.google.android.gms.maps.model.PolygonOptions
+import com.google.android.gms.maps.model.Polyline
+import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.onthecrow.interactivegamemap.map.MapEvent
 import com.onthecrow.interactivegamemap.map.MapTileProvider
+import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
-import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
+import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
+import com.onthecrow.interactivegamemap.network.GameMap
+import com.onthecrow.interactivegamemap.network.MapBounds
+import com.onthecrow.interactivegamemap.network.MapFloor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 
 @Composable
 internal actual fun MapView(
+    map: GameMap?,
     locations: List<MapLocation>,
+    selectedLocation: MapLocation?,
+    entrances: List<MapLocation>,
+    floors: List<MapFloor>,
     modifier: Modifier,
     onEvent: (MapEvent) -> Unit,
 ) {
@@ -61,88 +84,163 @@ internal actual fun MapView(
         }
     }
 
-    val configProvider: RemoteConfigProvider = koinInject<RemoteConfigProvider>()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
 
+    val googleMap by produceState<GoogleMap?>(null, mapView) {
+        mapView.getMapAsync { value = it }
+    }
+
+    val pinImages = rememberMarkerPinImages(locations)
+    val pinIcons = remember { mutableMapOf<MarkerPinImage, BitmapDescriptor>() }
     val markers = remember { mutableMapOf<String, Marker>() }
+    val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
+    val entrancePaths = remember { mutableListOf<Polyline>() }
+    var tileOverlay by remember { mutableStateOf<TileOverlay?>(null) }
+    var dungeonDim by remember { mutableStateOf<Polygon?>(null) }
+    val floorOverlays = remember { mutableMapOf<Int, GroundOverlay>() }
 
-    LaunchedEffect(locations) {
-        mapView.getMapAsync { map ->
-            val actualIds = locations.map { it.id.toString() }.toSet()
-
-            markers.entries.removeAll { entry ->
-                val shouldRemove = entry.key !in actualIds
-                if (shouldRemove) {
-                    entry.value.remove()
-                }
-                shouldRemove
-            }
-
-            locations.forEach { location ->
-                val existing = markers[location.id.toString()]
-                val pos = LatLng(location.lat, location.lng)
-                if (existing == null) {
-                    markers[location.id.toString()] =
-                        map.addMarker(MarkerOptions().position(pos))!!.apply {
-                            tag = location
-                        }
-                } else {
-                    existing.position = pos
-                }
-            }
+    LaunchedEffect(googleMap) {
+        googleMap?.run {
+            mapType = GoogleMap.MAP_TYPE_NONE
+            uiSettings.isCompassEnabled = true
+            uiSettings.isMyLocationButtonEnabled = true
         }
     }
 
-    LaunchedEffect(Unit) {
-        configProvider.getRemoteConfigFlow().collect { config ->
-            mapView.getMapAsync {
-                it.setMaxZoomPreference(config.maxZoom.toFloat())
-                it.setMinZoomPreference(config.minZoom.toFloat())
+    LaunchedEffect(googleMap, map) {
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val map = map ?: return@LaunchedEffect
 
-                // todo map setting for each app
-//                val mobiCenter = LatLng(0.25, 0.4) // lat, lng
-//                it.moveCamera(CameraUpdateFactory.newLatLngZoom(mobiCenter, 12f))
+        tileOverlay?.remove()
+        googleMap.resetMinMaxZoomPreference()
+        googleMap.setLatLngBoundsForCameraTarget(map.bounds?.toLatLngBounds())
+        googleMap.setMinZoomPreference(map.minZoom.toFloat())
+        googleMap.setMaxZoomPreference(map.maxZoom.toFloat())
+        googleMap.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(map.camera.lat, map.camera.lng),
+                map.camera.zoom.toFloat(),
+            )
+        )
+        tileOverlay = googleMap.addTileOverlay(
+            TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom))
+        )
+    }
 
-                val north = config.boundsNorth ?: return@getMapAsync
-                val south = config.boundsSouth ?: return@getMapAsync
-                val east = config.boundsEast ?: return@getMapAsync
-                val west = config.boundsWest ?: return@getMapAsync
+    LaunchedEffect(googleMap, locations, pinImages) {
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val actualIds = locations.map { it.id.toString() }.toSet()
 
-                Log.d("$$$$", "$north $south $east $west")
+        markers.entries.removeAll { entry ->
+            val shouldRemove = entry.key !in actualIds
+            if (shouldRemove) {
+                entry.value.remove()
+                markerImages.remove(entry.key)
+            }
+            shouldRemove
+        }
 
-                val bounds = LatLngBounds(
-                    LatLng(south.toDouble(), west.toDouble()),
-                    LatLng(north.toDouble(), east.toDouble()),
+        locations.forEach { location ->
+            val id = location.id.toString()
+            val marker = markers.getOrPut(id) {
+                // A marker stays hidden until the load of its image is finished
+                googleMap.addMarker(
+                    MarkerOptions()
+                        .position(LatLng(location.lat, location.lng))
+                        .visible(false)
+                )!!.apply {
+                    tag = location
+                }
+            }
+            val pinImage = location.pinImage
+            if (pinImage != null && pinImage !in pinImages) return@forEach
+
+            val image = pinImage?.let { pinImages[it] }
+            if (id !in markerImages || markerImages[id] !== image) {
+                // The default pin is displayed when there is no image
+                marker.setIcon(
+                    image?.let {
+                        pinIcons.getOrPut(pinImage) { BitmapDescriptorFactory.fromBitmap(it.asAndroidBitmap()) }
+                    }
                 )
-                it.setLatLngBoundsForCameraTarget(bounds)
-//                val startLatLng = LatLng(config.startLat.toDouble(), config.startLng.toDouble())
-//                it.moveCamera(CameraUpdateFactory.newLatLngZoom(startLatLng, config.initialZoom.toFloat()))
+                marker.isVisible = true
+                markerImages[id] = image
             }
         }
     }
 
-    LaunchedEffect(mapView) {
-        mapView.getMapAsync { map: GoogleMap ->
-//            val target = LatLng(55.751244, 37.618423) // Москва
-//            map.moveCamera(CameraUpdateFactory.newLatLngZoom(target, 12f))
-//            val bounds = LatLngBounds(
-//                LatLng(-0.75, -1.0),  // south, west
-//                LatLng(1.0, 1.0)   // north, east
-//            )
-//            map.setLatLngBoundsForCameraTarget(bounds)
+    val hasFloors = floors.isNotEmpty()
 
-            val tileOverlayOptions = TileOverlayOptions().tileProvider { i, i1, i2 ->
-                val tile = mapTileProvider.getTile(i, i1, i2)
-                if (tile == null) {
-                    null
-                } else {
-                    Tile(tile.width, tile.height, tile.data)
-                }
+    LaunchedEffect(googleMap, map, hasFloors) {
+        dungeonDim?.remove()
+        dungeonDim = null
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val map = map ?: return@LaunchedEffect
+        val bounds = map.bounds ?: return@LaunchedEffect
+
+        if (hasFloors && map.dungeonBaseOpacity < 1f) {
+            dungeonDim = googleMap.addPolygon(
+                PolygonOptions()
+                    .add(
+                        LatLng(bounds.south, bounds.west),
+                        LatLng(bounds.north, bounds.west),
+                        LatLng(bounds.north, bounds.east),
+                        LatLng(bounds.south, bounds.east),
+                    )
+                    .fillColor(Color.Black.copy(alpha = 1f - map.dungeonBaseOpacity).toArgb())
+                    .strokeWidth(0f)
+                    .zIndex(Z_INDEX_DUNGEON_DIM.toFloat())
+            )
+        }
+    }
+
+    LaunchedEffect(googleMap, floors) {
+        val actualIds = floors.map { it.id }.toSet()
+
+        floorOverlays.entries.removeAll { entry ->
+            val shouldRemove = entry.key !in actualIds
+            if (shouldRemove) {
+                entry.value.remove()
             }
-            map.mapType = GoogleMap.MAP_TYPE_NONE
-            map.addTileOverlay(tileOverlayOptions)
-            map.uiSettings.isCompassEnabled = true
-            map.uiSettings.isMyLocationButtonEnabled = true
+            shouldRemove
+        }
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+
+        floors.filter { it.id !in floorOverlays }.forEach { floor ->
+            launch {
+                val bitmap = withContext(Dispatchers.IO) {
+                    mapTileProvider.getImage(floor.imageUrl)?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                } ?: return@launch
+
+                googleMap.addGroundOverlay(
+                    GroundOverlayOptions()
+                        .image(BitmapDescriptorFactory.fromBitmap(bitmap))
+                        .positionFromBounds(floor.bounds.toLatLngBounds())
+                        .zIndex(Z_INDEX_DUNGEON_FLOOR.toFloat())
+                )?.let { floorOverlays[floor.id] = it }
+            }
+        }
+    }
+
+    LaunchedEffect(googleMap, selectedLocation, entrances) {
+        entrancePaths.forEach { it.remove() }
+        entrancePaths.clear()
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val selectedLocation = selectedLocation ?: return@LaunchedEffect
+
+        entrances.forEach { entrance ->
+            entrancePaths += googleMap.addPolyline(
+                PolylineOptions()
+                    .add(
+                        LatLng(selectedLocation.lat, selectedLocation.lng),
+                        LatLng(entrance.lat, entrance.lng),
+                    )
+                    .color(EntrancePathColor.toArgb())
+                    .zIndex(Z_INDEX_ENTRANCE_PATH.toFloat())
+            )
         }
     }
 
@@ -157,6 +255,19 @@ internal actual fun MapView(
                     }
                     mapView.setOnMapClickListener {
                         onEvent(MapEvent.OnLocationDismiss)
+                    }
+                    mapView.setOnCameraIdleListener {
+                        val bounds = mapView.projection.visibleRegion.latLngBounds
+                        onEvent(
+                            MapEvent.OnCameraIdle(
+                                MapBounds(
+                                    west = bounds.southwest.longitude,
+                                    south = bounds.southwest.latitude,
+                                    east = bounds.northeast.longitude,
+                                    north = bounds.northeast.latitude,
+                                )
+                            )
+                        )
                     }
                 }
             }
@@ -178,4 +289,8 @@ internal actual fun MapView(
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+}
+
+private fun MapBounds.toLatLngBounds(): LatLngBounds {
+    return LatLngBounds(LatLng(south, west), LatLng(north, east))
 }

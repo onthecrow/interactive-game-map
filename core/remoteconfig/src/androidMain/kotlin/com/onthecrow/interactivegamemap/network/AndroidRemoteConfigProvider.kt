@@ -33,11 +33,12 @@ internal class AndroidRemoteConfigProvider : RemoteConfigProviderImpl() {
         Firebase.remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Log.d("RemoteConfig", "Initial Fetch Succeeded")
-                onConfigUpdated()
             } else {
                 // TODO implement retry logic
                 Log.e("RemoteConfig", "Initial Fetch Failed")
             }
+            // Falls back to the last activated values when offline
+            onConfigUpdated()
         }
     }
 

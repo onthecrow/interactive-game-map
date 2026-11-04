@@ -1,40 +1,34 @@
 package com.onthecrow.interactivegamemap.map.data
 
 import com.onthecrow.interactivegamemap.map.LocationsRepository
+import com.onthecrow.interactivegamemap.map.mapper.toMapLocations
 import com.onthecrow.interactivegamemap.map.model.MapLocation
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
+import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 
-class LocationsRepositoryImpl(
-    private val remoteDataSource: RemoteDataSource,
+internal class LocationsRepositoryImpl(
+    private val localDataSource: LocalDataSource,
 ) : LocationsRepository {
 
-    private val locationsFlow = MutableStateFlow<List<MapLocation>>(emptyList())
+    // todo inject
+    private val scope = CoroutineScope(Dispatchers.Default)
 
-    init {
-        // todo inject
-        MainScope().launch {
-            val locale = remoteDataSource.getLocale()
-            locationsFlow.emit(
-                remoteDataSource.getLocations().data
-                    .map {
-                        MapLocation(
-                            id = it.id,
-                            mapId = it.mapId,
-                            name = locale.en?.get(it.type) ?: "",
-                            description = "",
-                            lat = it.lat,
-                            lng = it.lng,
-                        )
-                    }
-            )
-        }
+    private val catalog = scope.async(start = CoroutineStart.LAZY) {
+        localDataSource.getMarkerCatalog()
+    }
+
+    private val locations = scope.async(start = CoroutineStart.LAZY) {
+        localDataSource.getLocations().toMapLocations(catalog.await())
     }
 
     override suspend fun getLocations(): List<MapLocation> {
-        return locationsFlow.value
+        return locations.await()
+    }
+
+    override suspend fun getMarkerCatalog(): MarkerCatalog {
+        return catalog.await()
     }
 }

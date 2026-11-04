@@ -1,11 +1,11 @@
 package com.onthecrow.interactivegamemap.settings.view
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import interactivegamemap.feature.settings.ui.generated.resources.Res
 import interactivegamemap.feature.settings.ui.generated.resources.settings_version
 import org.jetbrains.compose.resources.stringResource
@@ -20,9 +20,9 @@ internal fun AppVersion(modifier: Modifier = Modifier) {
     val version = rememberAppVersion() ?: return
     Text(
         text = stringResource(Res.string.settings_version, version),
-        style = MaterialTheme.typography.bodySmall,
+        style = GameMapTheme.typography.caption,
         fontWeight = FontWeight.Light,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = GameMapTheme.colors.contentSecondary,
         textAlign = TextAlign.Center,
         modifier = modifier,
     )

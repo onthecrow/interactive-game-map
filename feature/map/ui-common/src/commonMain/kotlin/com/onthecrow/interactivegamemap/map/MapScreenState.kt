@@ -52,6 +52,9 @@ data class MapScreenState(
     internal val markerListSettings: MarkerListSettings
         get() = MarkerListSettings(collapsedGroupIds, categoryVisibility, cycles)
 
+    internal val mapViewSettings: MapViewSettings?
+        get() = currentMap?.let { MapViewSettings(mapId = it.id, camera = camera) }
+
     val isMarkerListSearching: Boolean
         get() = markerListQuery.isNotBlank()
 

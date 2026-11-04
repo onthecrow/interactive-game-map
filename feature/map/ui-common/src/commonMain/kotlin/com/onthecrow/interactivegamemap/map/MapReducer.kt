@@ -13,10 +13,14 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
             is MapEvent.OnConfigLoaded -> {
                 val maps = event.config.maps
+                val saved = event.savedMapView.takeIf { state.currentMap == null }
+                val currentMap = maps.firstOrNull { it.id == state.currentMap?.id }
+                    ?: maps.firstOrNull { it.id == saved?.mapId }
+                    ?: maps.firstOrNull { it.id == event.config.defaultMapId }
                 state.copy(
                     maps = maps,
-                    currentMap = maps.firstOrNull { it.id == state.currentMap?.id }
-                        ?: maps.firstOrNull { it.id == event.config.defaultMapId },
+                    currentMap = currentMap,
+                    camera = if (saved != null && currentMap?.id == saved.mapId) saved.camera else state.camera,
                 )
             }
             is MapEvent.OnMapSelect -> {

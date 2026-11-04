@@ -3,10 +3,6 @@ package com.onthecrow.interactivegamemap.settings.view
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,8 +13,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import com.onthecrow.interactivegamemap.ui.components.GameIconButton
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import interactivegamemap.feature.settings.ui.generated.resources.Res
 import interactivegamemap.feature.settings.ui.generated.resources.ic_github
 import interactivegamemap.feature.settings.ui.generated.resources.ic_instagram
@@ -37,6 +33,8 @@ private const val INSTAGRAM_URL = "https://www.instagram.com/onthecrow"
 /** The author's card, as in Caffeine and Wallper: who made the app and where to reach the author. */
 @Composable
 internal fun SignatureFooter(modifier: Modifier = Modifier) {
+    val colors = GameMapTheme.colors
+    val typography = GameMapTheme.typography
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -48,11 +46,12 @@ internal fun SignatureFooter(modifier: Modifier = Modifier) {
                     append(signature)
                     append(' ')
                 }
-                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = colors.accent)) {
                     append(HANDLE)
                 }
             },
-            style = MaterialTheme.typography.bodyMedium,
+            style = typography.body,
+            color = colors.contentSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -63,8 +62,9 @@ internal fun SignatureFooter(modifier: Modifier = Modifier) {
         }
         Text(
             text = stringResource(Res.string.settings_footer_contact),
-            style = MaterialTheme.typography.bodySmall,
+            style = typography.caption,
             fontWeight = FontWeight.Light,
+            color = colors.contentSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -74,21 +74,10 @@ internal fun SignatureFooter(modifier: Modifier = Modifier) {
 @Composable
 private fun Link(icon: DrawableResource, name: String, url: String) {
     val uriHandler = LocalUriHandler.current
-    IconButton(
+    GameIconButton(
+        icon = vectorResource(icon),
+        contentDescription = name,
         // A device with nothing to open the link with keeps the screen
         onClick = { runCatching { uriHandler.openUri(url) } },
-        modifier = Modifier.size(48.dp),
-    ) {
-        Icon(
-            imageVector = vectorResource(icon),
-            contentDescription = name,
-            modifier = Modifier.size(32.dp),
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun SignatureFooterPreview() {
-    SignatureFooter()
+    )
 }

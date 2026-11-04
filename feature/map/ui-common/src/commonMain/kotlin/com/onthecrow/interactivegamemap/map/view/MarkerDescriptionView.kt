@@ -2,7 +2,6 @@ package com.onthecrow.interactivegamemap.map.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,6 +21,7 @@ import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import androidx.compose.ui.unit.sp
 
 // ***bold italic***, **bold**, *italic*, _italic_, [text](url)
@@ -43,7 +43,6 @@ private const val SPOILER_MARKER = "||"
 
 private val BoldStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val ItalicStyle = SpanStyle(fontStyle = FontStyle.Italic)
-private val BoldItalicStyle = SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)
 private val LineStyle = ParagraphStyle()
 private val BulletStyle = ParagraphStyle(textIndent = TextIndent(restLine = 10.sp))
 
@@ -62,8 +61,10 @@ internal fun parseDescriptionLink(url: String): DescriptionLink {
 internal fun parseDescription(
     description: String,
     linkStyles: TextLinkStyles? = null,
+    emphasis: SpanStyle = BoldStyle,
     onLinkClick: (String) -> Unit = {},
 ): List<AnnotatedString> {
+    val markup = Markup(linkStyles, emphasis, onLinkClick)
     return description.split(BlankLine)
         .map { paragraph -> paragraph.lines().map { it.trim() }.filter { it.isNotEmpty() } }
         .filter { it.isNotEmpty() }
@@ -75,31 +76,32 @@ internal fun parseDescription(
                         if (isBullet) append(BULLET)
                         // A spoiler is displayed as a regular text, one of them has a broken end: "|"
                         val text = line.removePrefix(BULLET_MARKER).replace(SPOILER_MARKER, "").removeSuffix("|")
-                        appendInline(text, linkStyles, onLinkClick)
+                        appendInline(text, markup)
                     }
                 }
             }
         }
 }
 
-private fun AnnotatedString.Builder.appendInline(
-    text: String,
-    linkStyles: TextLinkStyles?,
-    onLinkClick: (String) -> Unit,
-) {
+/** How the inline markup of a description looks and what its links do. */
+private class Markup(
+    val linkStyles: TextLinkStyles?,
+    val emphasis: SpanStyle,
+    val onLinkClick: (String) -> Unit,
+)
+
+private fun AnnotatedString.Builder.appendInline(text: String, markup: Markup) {
     var position = 0
     InlineMarkup.findAll(text).forEach { match ->
         append(text.substring(position, match.range.first))
         val (boldItalic, bold, italic, underscoreItalic, linkText, linkUrl) = match.destructured
         when {
-            boldItalic.isNotEmpty() -> withStyle(BoldItalicStyle) { appendInline(boldItalic, linkStyles, onLinkClick) }
-            bold.isNotEmpty() -> withStyle(BoldStyle) { appendInline(bold, linkStyles, onLinkClick) }
-            italic.isNotEmpty() -> withStyle(ItalicStyle) { appendInline(italic, linkStyles, onLinkClick) }
-            underscoreItalic.isNotEmpty() -> withStyle(ItalicStyle) {
-                appendInline(underscoreItalic, linkStyles, onLinkClick)
-            }
-            else -> withLink(LinkAnnotation.Clickable(linkUrl, linkStyles) { onLinkClick(linkUrl) }) {
-                appendInline(linkText, linkStyles, onLinkClick)
+            boldItalic.isNotEmpty() -> withStyle(markup.emphasis.merge(ItalicStyle)) { appendInline(boldItalic, markup) }
+            bold.isNotEmpty() -> withStyle(markup.emphasis) { appendInline(bold, markup) }
+            italic.isNotEmpty() -> withStyle(ItalicStyle) { appendInline(italic, markup) }
+            underscoreItalic.isNotEmpty() -> withStyle(ItalicStyle) { appendInline(underscoreItalic, markup) }
+            else -> withLink(LinkAnnotation.Clickable(linkUrl, markup.linkStyles) { markup.onLinkClick(linkUrl) }) {
+                appendInline(linkText, markup)
             }
         }
         position = match.range.last + 1
@@ -114,11 +116,13 @@ internal fun MarkerDescriptionView(
     onLinkClick: (String) -> Unit = {},
 ) {
     val currentOnLinkClick by rememberUpdatedState(onLinkClick)
-    val linkColor = MaterialTheme.colorScheme.primary
-    val paragraphs = remember(description, linkColor) {
+    val linkColor = GameMapTheme.colors.link
+    val emphasis = GameMapTheme.typography.emphasis
+    val paragraphs = remember(description, linkColor, emphasis) {
         parseDescription(
             description = description,
             linkStyles = TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)),
+            emphasis = emphasis,
             onLinkClick = { currentOnLinkClick(it) },
         )
     }
@@ -130,7 +134,8 @@ internal fun MarkerDescriptionView(
         paragraphs.forEach { paragraph ->
             Text(
                 text = paragraph,
-                style = MaterialTheme.typography.bodyMedium,
+                style = GameMapTheme.typography.body,
+                color = GameMapTheme.colors.content,
             )
         }
     }

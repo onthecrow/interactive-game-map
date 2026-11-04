@@ -17,5 +17,5 @@ expect fun AppEnvironment(
     content: @Composable () -> Unit,
 )
 
-/** Whether [AppTheme] can use the colors of the system's theme. */
+/** Whether the system has colors of its own for the theme, Android 12 and later. */
 expect val isDynamicColorSupported: Boolean

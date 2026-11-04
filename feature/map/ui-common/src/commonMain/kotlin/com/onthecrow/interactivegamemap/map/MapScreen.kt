@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,43 +25,41 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.view.DescriptionLink
 import com.onthecrow.interactivegamemap.map.view.LocationView
-import com.onthecrow.interactivegamemap.map.view.MapActionButton
-import com.onthecrow.interactivegamemap.map.view.MapControlSize
 import com.onthecrow.interactivegamemap.map.view.MapSelectorView
 import com.onthecrow.interactivegamemap.map.view.MapView
 import com.onthecrow.interactivegamemap.map.view.MarkerListView
 import com.onthecrow.interactivegamemap.map.view.SystemBackHandler
-import com.onthecrow.interactivegamemap.map.view.ZoomButtonsView
 import com.onthecrow.interactivegamemap.map.view.parseDescriptionLink
-import com.onthecrow.interactivegamemap.ui.AppTheme
-import com.onthecrow.interactivegamemap.ui.view.SearchFieldView
+import com.onthecrow.interactivegamemap.ui.components.GameMapButton
+import com.onthecrow.interactivegamemap.ui.components.GameModalSheet
+import com.onthecrow.interactivegamemap.ui.components.GameSearchField
+import com.onthecrow.interactivegamemap.ui.components.GameZoomControl
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import interactivegamemap.feature.map.ui_common.generated.resources.Res
-import interactivegamemap.feature.map.ui_common.generated.resources.ic_filter_list
-import interactivegamemap.feature.map.ui_common.generated.resources.ic_layers
-import interactivegamemap.feature.map.ui_common.generated.resources.ic_settings
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_layers
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_markers
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_search_hint
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_search_in_map_hint
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_settings
+import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_zoom_in
+import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_zoom_out
 import kotlin.math.min
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.vectorResource
+
+/** The size of the buttons over the map, the search field is as tall. */
+internal val MapControlSize = 48.dp
 
 // The space between the controls and the edges of the screen, and between the controls
 private val ControlsMargin = 16.dp
 private val ControlsGap = 8.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MapScreen(
     state: MapScreenState,
@@ -107,25 +101,27 @@ internal fun MapScreen(
             MapControlsLayout(
                 modifier = Modifier.fillMaxSize(),
                 zoomButtons = {
-                    ZoomButtonsView(
+                    GameZoomControl(
                         canZoomIn = state.canZoomIn,
                         canZoomOut = state.canZoomOut,
                         onZoomInClick = cameraController::zoomIn,
                         onZoomOutClick = cameraController::zoomOut,
+                        zoomInDescription = stringResource(Res.string.map_screen_zoom_in),
+                        zoomOutDescription = stringResource(Res.string.map_screen_zoom_out),
                     )
                 },
                 sideButtons = {
                     Column(verticalArrangement = Arrangement.spacedBy(ControlsGap)) {
                         if (state.hasDungeonFloors) {
-                            MapActionButton(
-                                imageVector = vectorResource(Res.drawable.ic_layers),
+                            GameMapButton(
+                                icon = GameMapTheme.icons.layers,
                                 contentDescription = stringResource(Res.string.map_screen_layers),
-                                isActive = state.isDungeonsActive,
+                                active = state.isDungeonsActive,
                                 onClick = { onEvent(MapEvent.OnDungeonsClick) },
                             )
                         }
-                        MapActionButton(
-                            imageVector = vectorResource(Res.drawable.ic_filter_list),
+                        GameMapButton(
+                            icon = GameMapTheme.icons.markers,
                             contentDescription = stringResource(Res.string.map_screen_markers),
                             onClick = { onEvent(MapEvent.OnMarkerListClick) },
                         )
@@ -138,8 +134,7 @@ internal fun MapScreen(
         }
 
         if (state.isMarkerListVisible) {
-            ModalBottomSheet(
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            GameModalSheet(
                 onDismissRequest = { onEvent(MapEvent.OnMarkerListDismiss) },
             ) {
                 MarkerListView(
@@ -225,9 +220,8 @@ private fun SearchBar(
                 onMapSelect = { onEvent(MapEvent.OnMapSelect(it)) },
             )
         }
-        SearchFieldView(
-            modifier = Modifier.weight(1f)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(100.dp)),
+        GameSearchField(
+            modifier = Modifier.weight(1f),
             value = state.searchValue,
             hint = state.currentMap?.takeIf { hasMapChoice }
                 ?.let { stringResource(Res.string.map_screen_search_in_map_hint, it.name) }
@@ -235,8 +229,8 @@ private fun SearchBar(
             onClearClick = { onEvent(MapEvent.OnClearSearchClick) },
             onValueChange = { onEvent(MapEvent.OnSearchValueChange(it)) },
         )
-        MapActionButton(
-            imageVector = vectorResource(Res.drawable.ic_settings),
+        GameMapButton(
+            icon = GameMapTheme.icons.settings,
             contentDescription = stringResource(Res.string.map_screen_settings),
             onClick = { onEvent(MapEvent.OnSettingsClick) },
         )
@@ -288,16 +282,5 @@ private fun MapControlsLayout(
                 it.place(right - it.width, min(centered, lowest - gap - it.height).coerceAtLeast(top))
             }
         }
-    }
-}
-
-@Preview
-@Composable
-private fun MapScreenPreview() {
-    AppTheme {
-        MapScreen(
-            modifier = Modifier.fillMaxSize(),
-            state = MapScreenState(),
-        )
     }
 }

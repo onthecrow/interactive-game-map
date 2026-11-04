@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -14,8 +13,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.onthecrow.interactivegamemap.settings.AppLanguageProvider
 import com.onthecrow.interactivegamemap.settings.SettingsRepository
 import com.onthecrow.interactivegamemap.ui.AppEnvironment
+import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.nomadrates.navigation.NavigationProvider
-import com.onthecrow.interactivegamemap.ui.AppTheme
 import com.onthecrow.interactivegamemap.ui.view.ShadePosition
 import com.onthecrow.interactivegamemap.ui.view.SystemBarShadeView
 import org.koin.compose.getKoin
@@ -35,12 +34,12 @@ fun App() {
     }
 
     AppEnvironment(language = language, isDarkTheme = settings.theme.isDark) {
-        AppTheme(dynamicColor = settings.dynamicColor) {
+        GameMapTheme(dynamicColor = settings.dynamicColor) {
             val navigationProvider = getKoin().get<NavigationProvider>()
 
             Box(
                 modifier = Modifier.fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
+                    .background(GameMapTheme.colors.background),
             ) {
                 navigationProvider.Navigation(modifier = Modifier.fillMaxSize(), contentKey = language)
 

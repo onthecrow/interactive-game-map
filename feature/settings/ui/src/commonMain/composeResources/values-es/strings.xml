@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_back">Atrás</string>
+    <string name="settings_section_map">Mapa</string>
+    <string name="settings_hide_markers">Ocultar marcadores al mover el mapa</string>
+    <string name="settings_hide_markers_summary">El mapa se mueve con más fluidez</string>
+    <string name="settings_cluster_markers">Agrupar marcadores</string>
+    <string name="settings_cluster_markers_summary">Los marcadores cercanos se combinan en uno al alejar el mapa</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_system">Predeterminado del sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_system_colors">Colores del sistema</string>
+    <string name="settings_system_colors_summary">Usar los colores del tema del teléfono</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_language">Idioma de la aplicación</string>
+    <string name="settings_language_system">Predeterminado del sistema</string>
+    <string name="settings_language_system_summary">Predeterminado del sistema (%1$s)</string>
+    <string name="settings_section_privacy">Privacidad</string>
+    <string name="settings_privacy_policy">Política de privacidad</string>
+    <string name="settings_analytics_id">ID de analítica</string>
+    <string name="settings_analytics_id_copied">Copiado</string>
+    <string name="settings_cancel">Cancelar</string>
+    <string name="settings_footer_signature">Desarrollado con ❤️ por</string>
+    <string name="settings_footer_contact">Si tienes alguna pregunta, no dudes en escribirme</string>
+    <string name="settings_version">Versión %1$s</string>
+</resources>

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.googleServices)
+    alias(libs.plugins.firebaseCrashlytics)
 }
 
 kotlin {
@@ -14,6 +15,7 @@ kotlin {
         implementation(libs.androidx.activity.compose)
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
+        implementation(libs.firebase.crashlytics)
     }
 }
 
@@ -26,6 +28,11 @@ val mapsKey = (System.getenv("GENSHIN_MAPS_API_KEY")
     ?: localProps.getProperty("GENSHIN_MAPS_API_KEY")
     ?: "")
 
+val signingProps = Properties().apply {
+    val f = rootProject.file("signing.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.onthecrow.genshinmap"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -35,7 +42,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.1"
 
         resValue("string", "google_maps_key", mapsKey)
     }
@@ -44,9 +51,24 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        if (signingProps.containsKey("genshin.storeFile")) {
+            create("release") {
+                storeFile = rootProject.file(signingProps.getProperty("genshin.storeFile"))
+                storePassword = signingProps.getProperty("genshin.storePassword")
+                keyAlias = signingProps.getProperty("genshin.keyAlias")
+                keyPassword = signingProps.getProperty("genshin.keyPassword")
+            }
+        }
+    }
     buildTypes {
+        getByName("debug") {
+            manifestPlaceholders["firebaseCollectionEnabled"] = false
+        }
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("release")
+            manifestPlaceholders["firebaseCollectionEnabled"] = true
         }
     }
     buildFeatures {

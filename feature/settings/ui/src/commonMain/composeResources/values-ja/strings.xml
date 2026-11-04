@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_title">設定</string>
+    <string name="settings_back">戻る</string>
+    <string name="settings_section_map">マップ</string>
+    <string name="settings_hide_markers">移動中はマーカーを非表示</string>
+    <string name="settings_hide_markers_summary">マップがよりスムーズに動きます</string>
+    <string name="settings_cluster_markers">マーカーをグループ化</string>
+    <string name="settings_cluster_markers_summary">ズームアウトすると近くのマーカーがまとめて表示されます</string>
+    <string name="settings_section_appearance">表示</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_system">システムのデフォルト</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_system_colors">システムの色</string>
+    <string name="settings_system_colors_summary">スマートフォンのテーマの色を使用します</string>
+    <string name="settings_section_language">言語</string>
+    <string name="settings_language">アプリの言語</string>
+    <string name="settings_language_system">システムのデフォルト</string>
+    <string name="settings_language_system_summary">システムのデフォルト（%1$s）</string>
+    <string name="settings_section_privacy">プライバシー</string>
+    <string name="settings_privacy_policy">プライバシー ポリシー</string>
+    <string name="settings_analytics_id">分析ID</string>
+    <string name="settings_analytics_id_copied">コピーしました</string>
+    <string name="settings_cancel">キャンセル</string>
+    <string name="settings_footer_signature">❤️を込めて開発：</string>
+    <string name="settings_footer_contact">ご質問があればお気軽にご連絡ください</string>
+    <string name="settings_version">バージョン %1$s</string>
+</resources>

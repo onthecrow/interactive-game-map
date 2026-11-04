@@ -1,0 +1,16 @@
+<resources>
+    <string name="map_screen_search_hint">搜索地点</string>
+    <string name="map_screen_search_in_map_hint">在%1$s中搜索</string>
+    <string name="location_view_exit_dungeon">退出</string>
+    <string name="location_view_found">已找到</string>
+    <string name="marker_list_show_all">全部显示</string>
+    <string name="marker_list_hide_all">全部隐藏</string>
+    <string name="marker_list_search_hint">搜索标记</string>
+    <string name="marker_list_nothing_found">未找到结果</string>
+    <string name="map_screen_maps">地图</string>
+    <string name="map_screen_settings">设置</string>
+    <string name="map_screen_markers">标记</string>
+    <string name="map_screen_layers">图层</string>
+    <string name="map_screen_zoom_in">放大</string>
+    <string name="map_screen_zoom_out">缩小</string>
+</resources>

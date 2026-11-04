@@ -18,15 +18,24 @@ private const val MAX_DISPLAYED_FLOORS = 8
 // Markers just outside the screen are also loaded, so they don't pop in during small moves
 private const val VIEWPORT_MARGIN = 0.25
 
+// The clusters take few markers on the screen, so more locations are loaded for them
+private const val CLUSTERED_LOCATIONS_LIMIT = 20_000
+
+// The zoom of the camera is a float, it may stop a bit before the maximum one
+private const val ZOOM_EPSILON = 0.01f
+
 data class MapScreenState(
     val searchValue: String = "",
     val maps: List<GameMap> = emptyList(),
     val currentMap: GameMap? = null,
     val viewport: MapBounds? = null,
+    val camera: CameraPosition? = null,
     val selectedLocation: MapLocation? = null,
     val selectedFloorId: Int? = null,
     val showAllDungeons: Boolean = false,
+    /** The loaded locations which aren't in [clusters]. */
     val locations: List<MapLocation> = emptyList(),
+    val clusters: List<MarkerCluster> = emptyList(),
     val entrances: List<MapLocation> = emptyList(),
     val isMarkerListVisible: Boolean = false,
     val markerGroups: List<MapMarkerGroup> = emptyList(),
@@ -34,9 +43,17 @@ data class MapScreenState(
     val cycles: Map<String, Int> = emptyMap(),
     val markerListQuery: String = "",
     val collapsedGroupIds: Set<String> = emptySet(),
+    val foundLocationIds: Set<Int> = emptySet(),
+    val focusedLocation: MapLocation? = null,
+    val language: String = LocationsFilter.DEFAULT_LANGUAGE,
+    val hideMarkersWhileMoving: Boolean = false,
+    val clusterMarkers: Boolean = true,
 ): State {
     internal val markerListSettings: MarkerListSettings
         get() = MarkerListSettings(collapsedGroupIds, categoryVisibility, cycles)
+
+    internal val mapViewSettings: MapViewSettings?
+        get() = currentMap?.let { MapViewSettings(mapId = it.id, camera = camera) }
 
     val isMarkerListSearching: Boolean
         get() = markerListQuery.isNotBlank()
@@ -72,6 +89,16 @@ data class MapScreenState(
                 .take(MAX_DISPLAYED_FLOORS)
         }
 
+    val canZoomIn: Boolean
+        get() = camera != null && currentMap != null && camera.zoom + ZOOM_EPSILON < currentMap.maxZoom
+
+    val canZoomOut: Boolean
+        get() = camera != null && currentMap != null && camera.zoom - ZOOM_EPSILON > currentMap.minZoom
+
+    /** The zoom to cluster the locations at, null when they are displayed apart, like at the maximum zoom. */
+    val clusterZoom: Float?
+        get() = camera?.zoom?.takeIf { clusterMarkers && canZoomIn }
+
     val locationsFilter: LocationsFilter?
         get() {
             val mapId = currentMap?.id ?: return null
@@ -81,8 +108,13 @@ data class MapScreenState(
                 categoryVisibility = categoryVisibility,
                 cycles = cycles,
                 bounds = viewport?.takeIf { searchValue.isBlank() }?.toLocationBounds(),
+                language = language,
+                limit = if (clusterZoom != null) CLUSTERED_LOCATIONS_LIMIT else LocationsFilter.DEFAULT_LIMIT,
             )
         }
+
+    internal val locationsRequest: LocationsRequest?
+        get() = locationsFilter?.let { LocationsRequest(it, clusterZoom) }
 
     fun isGroupCollapsed(groupId: String): Boolean {
         return groupId in collapsedGroupIds
@@ -96,6 +128,8 @@ data class MapScreenState(
         return cycles[categoryId] ?: LocationsFilter.DEFAULT_CYCLE
     }
 }
+
+internal data class LocationsRequest(val filter: LocationsFilter, val clusterZoom: Float?)
 
 internal fun GameMap?.findDungeon(location: MapLocation?): MapDungeon? {
     val dungeonId = location?.dungeon?.dungeonId ?: return null

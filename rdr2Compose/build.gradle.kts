@@ -29,15 +29,20 @@ kotlin {
             implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
+            implementation(projects.core.database)
             implementation(projects.core.navigation.api)
             implementation(projects.core.navigation.impl)
             implementation(projects.core.network)
             implementation(projects.core.remoteconfig)
+            implementation(projects.core.settings)
             implementation(projects.core.ui)
+            implementation(projects.core.uiRdr2)
             implementation(projects.feature.map.uiApi)
             implementation(projects.feature.map.uiCommon)
             implementation(projects.feature.map.uiRdr2Impl)
             implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.settings.ui)
             implementation(projects.feature.map.logicRdr2Impl)
 
             implementation(libs.compose.runtime)

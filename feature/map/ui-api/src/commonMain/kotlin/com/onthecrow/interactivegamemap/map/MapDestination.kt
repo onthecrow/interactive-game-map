@@ -4,4 +4,6 @@ import com.onthecrow.nomadrates.navigation.Destination
 import kotlinx.serialization.Serializable
 
 @Serializable
-data object MapDestination : Destination
+data object MapDestination : Destination {
+    override val screenName get() = "map"
+}

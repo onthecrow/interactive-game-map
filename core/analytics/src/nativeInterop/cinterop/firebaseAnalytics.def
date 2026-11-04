@@ -1,0 +1,3 @@
+language = Objective-C
+headers = FirebaseAnalytics/FirebaseAnalytics.h
+package = platform.FirebaseAnalytics

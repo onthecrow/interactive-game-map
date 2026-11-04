@@ -74,16 +74,20 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
             implementation(libs.play.services.maps)
             implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
             implementation(projects.core.navigation.api)
             implementation(projects.core.remoteconfig)
+            implementation(projects.core.settings)
             implementation(projects.core.ui)
             implementation(projects.core.uiCore)
             implementation(projects.feature.map.uiApi)
             implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.settings.uiApi)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)

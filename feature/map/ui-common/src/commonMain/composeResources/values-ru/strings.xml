@@ -1,0 +1,16 @@
+<resources>
+    <string name="map_screen_search_hint">Поиск мест</string>
+    <string name="map_screen_search_in_map_hint">Поиск: %1$s</string>
+    <string name="location_view_exit_dungeon">Выйти</string>
+    <string name="location_view_found">Найдено</string>
+    <string name="marker_list_show_all">Показать все</string>
+    <string name="marker_list_hide_all">Скрыть все</string>
+    <string name="marker_list_search_hint">Поиск маркеров</string>
+    <string name="marker_list_nothing_found">Ничего не найдено</string>
+    <string name="map_screen_maps">Карты</string>
+    <string name="map_screen_settings">Настройки</string>
+    <string name="map_screen_markers">Маркеры</string>
+    <string name="map_screen_layers">Слои</string>
+    <string name="map_screen_zoom_in">Приблизить</string>
+    <string name="map_screen_zoom_out">Отдалить</string>
+</resources>

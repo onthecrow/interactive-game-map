@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import com.google.android.gms.maps.model.Tile
 import com.google.android.gms.maps.model.TileProvider
+import com.onthecrow.interactivegamemap.map.MapLoad
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.model.MapTile
 import com.onthecrow.interactivegamemap.network.MapTiles
@@ -35,27 +36,36 @@ internal fun mergedTileParts(x: Int, y: Int): List<MergedTilePart> {
 /**
  * The map draws a tile on 256 dp, so a 256 px tile is stretched on high density screens.
  * The four tiles of the next zoom cover the same part of the world and have twice as many pixels.
+ * Each tile the map gets goes to [load].
  */
 internal class MergedTileProvider(
     private val mapTileProvider: MapTileProvider,
     private val tiles: MapTiles,
     private val maxZoom: Int,
+    private val load: MapLoad,
 ) : TileProvider {
 
     override fun getTile(x: Int, y: Int, zoom: Int): Tile? {
-        return runBlocking {
-            if (zoom < maxZoom) getMergedTile(x, y, zoom) else getSingleTile(x, y, zoom)
+        var error: String? = null
+        val tile = runBlocking {
+            val onError = { reason: String -> error = reason }
+            if (zoom < maxZoom) getMergedTile(x, y, zoom, onError) else getSingleTile(x, y, zoom, onError)
         }
+        load.onTile(
+            hasImage = tile != null && tile !== TileProvider.NO_TILE,
+            error = error ?: "unknown".takeIf { tile == null },
+        )
+        return tile
     }
 
-    private suspend fun getSingleTile(x: Int, y: Int, zoom: Int): Tile? {
-        return mapTileProvider.getTileAsync(tiles, x, y, zoom)?.toGoogleTile()
+    private suspend fun getSingleTile(x: Int, y: Int, zoom: Int, onError: (String) -> Unit): Tile? {
+        return mapTileProvider.getTileAsync(tiles, x, y, zoom, onError)?.toGoogleTile()
     }
 
-    private suspend fun getMergedTile(x: Int, y: Int, zoom: Int): Tile? {
+    private suspend fun getMergedTile(x: Int, y: Int, zoom: Int, onError: (String) -> Unit): Tile? {
         val parts = coroutineScope {
             mergedTileParts(x, y).map { part ->
-                async { part to mapTileProvider.getTileAsync(tiles, part.x, part.y, zoom + 1) }
+                async { part to mapTileProvider.getTileAsync(tiles, part.x, part.y, zoom + 1, onError) }
             }.awaitAll()
         }
         // The map requests a tile again when it can't be loaded right now
@@ -65,7 +75,7 @@ internal class MergedTileProvider(
             tile?.data?.toBitmap()?.let { part to it }
         }
         return if (images.isEmpty()) {
-            getSingleTile(x, y, zoom)
+            getSingleTile(x, y, zoom, onError)
         } else {
             merge(images, isComplete = images.size == parts.size)
         }

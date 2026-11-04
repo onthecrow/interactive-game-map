@@ -13,6 +13,7 @@ import com.onthecrow.interactivegamemap.network.MapCamera
 import com.onthecrow.interactivegamemap.network.MapDungeon
 import com.onthecrow.interactivegamemap.network.MapFloor
 import com.onthecrow.interactivegamemap.network.MapTiles
+import com.onthecrow.interactivegamemap.network.RemoteConfig
 import com.onthecrow.interactivegamemap.network.TileScheme
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -61,7 +62,7 @@ class MapReducerTest {
     fun `floors outside the screen are not displayed`() {
         val floors = state
             .after(MapEvent.OnDungeonsClick)
-            .after(MapEvent.OnCameraIdle(MapBounds(west = 15.0, south = 0.0, east = 35.0, north = 1.0)))
+            .after(MapEvent.OnCameraIdle(MapBounds(west = 15.0, south = 0.0, east = 35.0, north = 1.0), CameraPosition(0.5, 25.0, 1f)))
             .displayedFloors
 
         assertEquals(listOf(4, 6), floors.map { it.id }.sorted())
@@ -168,6 +169,26 @@ class MapReducerTest {
     }
 
     @Test
+    fun `found markers come from the data, a click alone changes nothing`() {
+        assertEquals(emptySet(), state.after(MapEvent.OnFoundClick(7)).foundLocationIds)
+        assertEquals(setOf(7), state.after(MapEvent.OnFoundLocationsLoaded(setOf(7))).foundLocationIds)
+    }
+
+    @Test
+    fun `a link opens a marker and moves the camera, a tap only opens it`() {
+        val linked = state.after(MapEvent.OnLocationLinkLoaded(location))
+        assertEquals(location, linked.selectedLocation)
+        assertEquals(location, linked.focusedLocation)
+        assertEquals(7, linked.selectedFloorId)
+
+        val tapped = linked.after(MapEvent.OnLocationClick(location))
+        assertEquals(location, tapped.selectedLocation)
+        assertEquals(null, tapped.focusedLocation)
+
+        assertEquals(null, linked.after(MapEvent.OnLocationDismiss).focusedLocation)
+    }
+
+    @Test
     fun `pin image depends on the dungeon`() {
         val plainIcon = MarkerIcon("plain")
         val dungeonIcon = MarkerIcon("dungeon")
@@ -178,5 +199,87 @@ class MapReducerTest {
         assertEquals(MarkerPinImage(plainIcon, false, 28, 28), onSurface.pinImage)
         assertEquals(MarkerPinImage(dungeonIcon, false, 28, 28), inDungeon.pinImage)
         assertEquals(MarkerPinImage(plainIcon, true, 33, 44), withoutImage.pinImage)
+    }
+
+    @Test
+    fun `markers are clustered until the maximum zoom`() {
+        val zoomedOut = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 1f)))
+        assertEquals(1f, zoomedOut.clusterZoom)
+        assertTrue(zoomedOut.canZoomIn)
+        assertFalse(zoomedOut.canZoomOut)
+
+        val zoomedIn = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 2f)))
+        assertEquals(null, zoomedIn.clusterZoom)
+        assertFalse(zoomedIn.canZoomIn)
+
+        val turnedOff = zoomedOut.after(MapEvent.OnSettingsChange(hideMarkersWhileMoving = false, clusterMarkers = false))
+        assertEquals(null, turnedOff.clusterZoom)
+    }
+
+    @Test
+    fun `another map starts at its own camera`() {
+        val moved = state.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 2f)))
+
+        val other = moved.after(MapEvent.OnMapSelect(map.copy(id = 2)))
+
+        assertEquals(null, other.camera)
+    }
+
+    @Test
+    fun `the map of the last launch opens where it was left`() {
+        val other = map.copy(id = 2)
+        val config = RemoteConfig(defaultMapId = 1, maps = listOf(map, other))
+        val saved = MapViewSettings(mapId = 2, camera = CameraPosition(0.5, 25.0, 2f))
+
+        val opened = MapScreenState().after(MapEvent.OnConfigLoaded(config, saved))
+        assertEquals(other, opened.currentMap)
+        assertEquals(saved.camera, opened.camera)
+        assertEquals(saved, opened.mapViewSettings)
+
+        // The names come again in another language, the map stays where the user moved it
+        val moved = opened.after(MapEvent.OnCameraIdle(world, CameraPosition(0.0, 0.0, 1f)))
+        val translated = moved.after(MapEvent.OnConfigLoaded(config, saved))
+        assertEquals(other, translated.currentMap)
+        assertEquals(CameraPosition(0.0, 0.0, 1f), translated.camera)
+    }
+
+    @Test
+    fun `a map which is gone opens the default one at its start`() {
+        val config = RemoteConfig(defaultMapId = 1, maps = listOf(map))
+        val saved = MapViewSettings(mapId = 5, camera = CameraPosition(0.5, 25.0, 2f))
+
+        val opened = MapScreenState().after(MapEvent.OnConfigLoaded(config, saved))
+
+        assertEquals(map, opened.currentMap)
+        assertEquals(null, opened.camera)
+    }
+
+    @Test
+    fun `preferences keep the map and its camera`() {
+        val values = mutableMapOf<String, String>()
+        val preferences = MapPreferences(object : PreferencesStorage {
+            override fun getString(key: String) = values[key]
+            override fun putString(key: String, value: String) {
+                values[key] = value
+            }
+        })
+        val settings = MapViewSettings(mapId = 2, camera = CameraPosition(0.5, 25.0, 2.5f))
+
+        assertEquals(MapViewSettings(), preferences.getMapViewSettings())
+        preferences.setMapViewSettings(settings)
+        assertEquals(settings, preferences.getMapViewSettings())
+
+        values.replaceAll { _, _ -> "not json" }
+        assertEquals(MapViewSettings(), preferences.getMapViewSettings())
+    }
+
+    @Test
+    fun `new language closes the popup and reloads the names`() {
+        val selected = state.after(MapEvent.OnLocationClick(location))
+
+        val translated = selected.after(MapEvent.OnLanguageChange("ru"))
+
+        assertEquals(null, translated.selectedLocation)
+        assertEquals("ru", translated.locationsFilter?.language)
     }
 }

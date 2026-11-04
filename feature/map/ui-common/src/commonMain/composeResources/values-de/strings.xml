@@ -1,0 +1,16 @@
+<resources>
+    <string name="map_screen_search_hint">Orte suchen</string>
+    <string name="map_screen_search_in_map_hint">In %1$s suchen</string>
+    <string name="location_view_exit_dungeon">Verlassen</string>
+    <string name="location_view_found">Gefunden</string>
+    <string name="marker_list_show_all">Alle anzeigen</string>
+    <string name="marker_list_hide_all">Alle ausblenden</string>
+    <string name="marker_list_search_hint">Markierungen suchen</string>
+    <string name="marker_list_nothing_found">Nichts gefunden</string>
+    <string name="map_screen_maps">Karten</string>
+    <string name="map_screen_settings">Einstellungen</string>
+    <string name="map_screen_markers">Markierungen</string>
+    <string name="map_screen_layers">Ebenen</string>
+    <string name="map_screen_zoom_in">Vergrößern</string>
+    <string name="map_screen_zoom_out">Verkleinern</string>
+</resources>

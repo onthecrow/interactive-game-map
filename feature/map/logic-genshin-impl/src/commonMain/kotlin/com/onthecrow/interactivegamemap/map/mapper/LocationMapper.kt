@@ -4,6 +4,7 @@ import com.onthecrow.interactivegamemap.map.model.LocationDungeon
 import com.onthecrow.interactivegamemap.map.model.LocationResponse
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
+import com.onthecrow.interactivegamemap.map.model.MarkerLocale
 
 private const val META_DUNGEON_PREFIX = "l="
 
@@ -38,5 +39,18 @@ private fun parseDungeon(meta: String): LocationDungeon? {
         dungeonId = dungeonId.toInt(),
         floorId = floorId.toIntOrNull(),
         entranceIds = entranceIds.split('_').mapNotNull { it.toIntOrNull() },
+    )
+}
+
+/** The names of [locale] in place of the English ones, the untranslated ones stay. */
+internal fun MarkerCatalog.localized(locale: MarkerLocale): MarkerCatalog {
+    return copy(
+        categories = categories.mapValues { (id, category) ->
+            locale.categories[id]?.let { category.copy(name = it) } ?: category
+        },
+        groupsByMap = groupsByMap.mapValues { (_, groups) ->
+            groups.map { group -> locale.groups[group.id]?.let { group.copy(name = it) } ?: group }
+        },
+        mapNames = locale.maps,
     )
 }

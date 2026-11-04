@@ -90,6 +90,7 @@ kotlin {
             implementation(libs.firebase.config)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.kotlinx.coroutines.core)

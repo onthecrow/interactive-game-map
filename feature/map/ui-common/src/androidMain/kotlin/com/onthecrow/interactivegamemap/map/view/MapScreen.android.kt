@@ -1,9 +1,14 @@
 package com.onthecrow.interactivegamemap.map.view
 
 import android.graphics.BitmapFactory
+import android.graphics.Point
 import android.os.Bundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -20,13 +25,16 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -43,6 +51,7 @@ import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.onthecrow.interactivegamemap.map.MapEvent
+import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
@@ -79,9 +88,10 @@ internal actual fun MapView(
     }
 
     val context = LocalContext.current
+    val mapStyle: MapStyle = koinInject<MapStyle>()
 
     val mapView = remember {
-        MapView(context).apply {
+        MapView(context, GoogleMapOptions().backgroundColor(mapStyle.backgroundColor.toArgb())).apply {
             onCreate(Bundle())
         }
     }
@@ -104,9 +114,22 @@ internal actual fun MapView(
     LaunchedEffect(googleMap) {
         googleMap?.run {
             mapType = GoogleMap.MAP_TYPE_NONE
-            uiSettings.isCompassEnabled = true
+            uiSettings.isRotateGesturesEnabled = false
+            uiSettings.isTiltGesturesEnabled = false
+            uiSettings.isCompassEnabled = false
             uiSettings.isMyLocationButtonEnabled = true
         }
+    }
+
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val systemInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+    val logoPadding = with(density) { GoogleLogoPadding.roundToPx() }
+    val logoPaddingLeft = systemInsets.getLeft(density, layoutDirection) + logoPadding
+    val logoPaddingBottom = systemInsets.getBottom(density) + logoPadding
+
+    LaunchedEffect(googleMap, logoPaddingLeft, logoPaddingBottom) {
+        googleMap?.setPadding(logoPaddingLeft, 0, 0, logoPaddingBottom)
     }
 
     LaunchedEffect(googleMap, map) {
@@ -270,14 +293,16 @@ internal actual fun MapView(
                         onEvent(MapEvent.OnLocationDismiss)
                     }
                     mapView.setOnCameraIdleListener {
-                        val bounds = mapView.projection.visibleRegion.latLngBounds
+                        // The visible region of the projection doesn't include the padding
+                        val southWest = mapView.projection.fromScreenLocation(Point(0, height))
+                        val northEast = mapView.projection.fromScreenLocation(Point(width, 0))
                         onEvent(
                             MapEvent.OnCameraIdle(
                                 MapBounds(
-                                    west = bounds.southwest.longitude,
-                                    south = bounds.southwest.latitude,
-                                    east = bounds.northeast.longitude,
-                                    north = bounds.northeast.latitude,
+                                    west = southWest.longitude,
+                                    south = southWest.latitude,
+                                    east = northEast.longitude,
+                                    north = northEast.latitude,
                                 )
                             )
                         )

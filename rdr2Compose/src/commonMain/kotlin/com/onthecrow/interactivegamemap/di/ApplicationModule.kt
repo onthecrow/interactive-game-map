@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.di
 
+import com.onthecrow.interactivegamemap.analytics.di.analyticsModule
 import com.onthecrow.interactivegamemap.map.MapDestination
 import com.onthecrow.interactivegamemap.map.di.mapLogicModule
 import com.onthecrow.interactivegamemap.map.di.mapModule
@@ -21,6 +22,7 @@ val applicationModule = module {
     single { Json { ignoreUnknownKeys = true } }
     single(StartDestination) { MapDestination } bind Destination::class
     includes(
+        analyticsModule,
         navigationModule,
         databaseModule,
         networkModule,

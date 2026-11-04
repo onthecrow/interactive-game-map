@@ -79,6 +79,7 @@ kotlin {
             implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
+            implementation(projects.core.analytics)
             implementation(projects.core.navigation.api)
             implementation(projects.core.remoteconfig)
             implementation(projects.core.settings)

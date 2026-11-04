@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">Padrão do sistema (%1$s)</string>
     <string name="settings_section_privacy">Privacidade</string>
     <string name="settings_privacy_policy">Política de Privacidade</string>
+    <string name="settings_analytics_id">ID de análise</string>
+    <string name="settings_analytics_id_copied">Copiado</string>
     <string name="settings_cancel">Cancelar</string>
     <string name="settings_footer_signature">Desenvolvido com ❤️ por</string>
     <string name="settings_footer_contact">Se tiver alguma dúvida, fale comigo</string>

@@ -53,6 +53,7 @@ import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.onthecrow.interactivegamemap.map.CameraCommand
 import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.MapAnalytics
 import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
 import com.onthecrow.interactivegamemap.map.MarkerCluster
@@ -64,6 +65,7 @@ import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.pinImage
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
+import com.onthecrow.interactivegamemap.map.trackFirstTile
 import com.onthecrow.interactivegamemap.network.GameMap
 import com.onthecrow.interactivegamemap.network.MapBounds
 import com.onthecrow.interactivegamemap.network.MapFloor
@@ -109,6 +111,7 @@ internal actual fun MapView(
     }
 
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
+    val mapAnalytics: MapAnalytics = koinInject<MapAnalytics>()
 
     val googleMap by produceState<GoogleMap?>(null, mapView) {
         mapView.getMapAsync { value = it }
@@ -163,9 +166,11 @@ internal actual fun MapView(
         val position = camera ?: CameraPosition(map.camera.lat, map.camera.lng, map.camera.zoom.toFloat())
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(position.lat, position.lng), position.zoom))
         isCameraPlaced = true
+        val load = mapAnalytics.startLoad(map.id)
         tileOverlay = googleMap.addTileOverlay(
-            TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom))
+            TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom, load))
         )
+        mapAnalytics.trackFirstTile(load)
     }
 
     LaunchedEffect(googleMap, locations, pinImages) {

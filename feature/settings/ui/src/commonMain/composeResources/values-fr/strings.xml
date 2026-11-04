@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">Paramètre par défaut du système (%1$s)</string>
     <string name="settings_section_privacy">Confidentialité</string>
     <string name="settings_privacy_policy">Règles de confidentialité</string>
+    <string name="settings_analytics_id">ID d'analyse</string>
+    <string name="settings_analytics_id_copied">Copié</string>
     <string name="settings_cancel">Annuler</string>
     <string name="settings_footer_signature">Développé avec ❤️ par</string>
     <string name="settings_footer_contact">N'hésitez pas à me contacter si vous avez des questions</string>

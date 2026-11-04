@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
@@ -14,11 +15,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.onthecrow.interactivegamemap.analytics.ScreenTracker
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import org.koin.core.component.KoinComponent
@@ -30,6 +35,7 @@ private val LocalContentKey = compositionLocalOf<Any?> { null }
 internal class NavigationProviderImpl(
     private val navigator: NavigatorImpl,
     private val startDestination: Destination,
+    private val screenTracker: ScreenTracker,
 ): NavigationProvider, KoinComponent {
 
     private val scopeController = NavigationScopeController()
@@ -64,6 +70,8 @@ internal class NavigationProviderImpl(
                 }
             }
         }
+
+        TrackScreens(backStack)
 
         // NavDisplay composes only the screen on top, so the first one is kept under the others instead:
         // the map isn't created again, black, on the way back. The others slide in and out over it.
@@ -105,6 +113,28 @@ internal class NavigationProviderImpl(
                     )
                 }
             }
+        }
+    }
+
+    @Composable
+    private fun TrackScreens(backStack: List<NavKey>) {
+        val topScreen = (backStack.lastOrNull() as? Destination)?.screenName
+        LaunchedEffect(topScreen) {
+            topScreen?.let(screenTracker::onTopScreenChange)
+        }
+
+        // Compose doesn't recompose in the background, the lifecycle is followed right away instead
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> screenTracker.onForegroundChange(true)
+                    Lifecycle.Event.ON_STOP -> screenTracker.onForegroundChange(false)
+                    else -> Unit
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
         }
     }
 

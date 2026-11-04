@@ -1,6 +1,10 @@
 package com.onthecrow.interactivegamemap.map
 
 import androidx.lifecycle.viewModelScope
+import com.onthecrow.interactivegamemap.analytics.Analytics
+import com.onthecrow.interactivegamemap.analytics.MarkerFoundChangeEvent
+import com.onthecrow.interactivegamemap.analytics.SearchEvent
+import com.onthecrow.interactivegamemap.analytics.SearchType
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import com.onthecrow.interactivegamemap.settings.AppLanguageProvider
@@ -9,17 +13,29 @@ import com.onthecrow.interactivegamemap.settings.SettingsRepository
 import com.onthecrow.nomadrates.navigation.Navigator
 import com.onthecrow.nomadrates.uicore.BaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+
+// A search is logged once the user stops typing
+private val SEARCH_LOG_DELAY = 1500.milliseconds
+private const val MIN_SEARCH_TERM_LENGTH = 2
+
+private data class SearchInput(val type: SearchType, val term: String)
 
 internal class MapViewModel(
     private val getLocationsUseCase: GetLocationsUseCase,
@@ -33,6 +49,7 @@ internal class MapViewModel(
     settingsRepository: SettingsRepository,
     languageProvider: AppLanguageProvider,
     navigator: Navigator,
+    private val analytics: Analytics,
     reducer: MapReducer,
 ): BaseViewModel<MapEvent, MapScreenState, MapReducer>(reducer) {
     private var getLocationJob: Job? = null
@@ -92,8 +109,9 @@ internal class MapViewModel(
             .launchIn(viewModelScope)
         eventFlow
             .filterIsInstance<MapEvent.OnFoundClick>()
-            .onEach { setLocationFoundUseCase(it.locationId, it.locationId !in state.value.foundLocationIds) }
+            .onEach { setLocationFound(it.locationId) }
             .launchIn(viewModelScope)
+        logSearches()
         eventFlow
             .filterIsInstance<MapEvent.OnLocationLinkClick>()
             .onEach { openLocationLink(it.locationId) }
@@ -102,6 +120,49 @@ internal class MapViewModel(
             .filterIsInstance<MapEvent.OnSettingsClick>()
             .onEach { navigator.navigate(SettingsDestination) }
             .launchIn(viewModelScope)
+    }
+
+    private suspend fun setLocationFound(locationId: Int) {
+        val state = state.value
+        val isFound = locationId !in state.foundLocationIds
+        setLocationFoundUseCase(locationId, isFound)
+        analytics.log(
+            MarkerFoundChangeEvent(
+                locationId = locationId,
+                categoryId = state.selectedLocation?.takeIf { it.id == locationId }?.categoryId,
+                isFound = isFound,
+                foundTotal = state.foundLocationIds.size + if (isFound) 1 else -1,
+            )
+        )
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun logSearches() {
+        merge(
+            searchInputs<MapEvent.OnSearchValueChange>(SearchType.MAP) { it.value },
+            searchInputs<MapEvent.OnClearSearchClick>(SearchType.MAP) { "" },
+            searchInputs<MapEvent.OnSearchLinkClick>(SearchType.LINK) { it.query },
+            searchInputs<MapEvent.OnMarkerListQueryChange>(SearchType.MARKER_LIST) { it.value },
+            searchInputs<MapEvent.OnMarkerListDismiss>(SearchType.MARKER_LIST) { "" },
+        )
+            .debounce(SEARCH_LOG_DELAY)
+            .distinctUntilChanged()
+            .filter { it.term.length >= MIN_SEARCH_TERM_LENGTH }
+            .onEach { input -> analytics.log(SearchEvent(input.type, input.term, searchResultsCount(input.type))) }
+            .launchIn(viewModelScope)
+    }
+
+    private inline fun <reified T : MapEvent> searchInputs(type: SearchType, crossinline term: (T) -> String): Flow<SearchInput> {
+        return eventFlow.filterIsInstance<T>().map { SearchInput(type, term(it).trim().lowercase()) }
+    }
+
+    // The locations of the term are loaded by the time it's logged
+    private fun searchResultsCount(type: SearchType): Int {
+        val state = state.value
+        return when (type) {
+            SearchType.MARKER_LIST -> state.foundCategories.size
+            SearchType.MAP, SearchType.LINK -> state.locations.size + state.clusters.sumOf { it.count }
+        }
     }
 
     private fun openLocationLink(locationId: Int) {

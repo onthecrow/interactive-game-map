@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">Как в системе (%1$s)</string>
     <string name="settings_section_privacy">Конфиденциальность</string>
     <string name="settings_privacy_policy">Политика конфиденциальности</string>
+    <string name="settings_analytics_id">ID аналитики</string>
+    <string name="settings_analytics_id_copied">Скопировано</string>
     <string name="settings_cancel">Отмена</string>
     <string name="settings_footer_signature">С ❤️ от</string>
     <string name="settings_footer_contact">Пишите, если есть вопросы</string>

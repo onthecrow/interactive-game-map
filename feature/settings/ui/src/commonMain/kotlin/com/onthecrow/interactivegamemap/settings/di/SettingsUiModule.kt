@@ -2,6 +2,7 @@ package com.onthecrow.interactivegamemap.settings.di
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.onthecrow.interactivegamemap.settings.SettingsCrashKeys
 import com.onthecrow.interactivegamemap.settings.SettingsDestination
 import com.onthecrow.interactivegamemap.settings.SettingsReducer
 import com.onthecrow.interactivegamemap.settings.SettingsScreen
@@ -13,6 +14,8 @@ import org.koin.dsl.module
 
 val settingsUiModule = module {
     single { SettingsReducer() }
+    // At the launch, so the crash reports have the settings from the start
+    single(createdAtStart = true) { SettingsCrashKeys(get(), get()) }
     viewModelOf(::SettingsViewModel)
 
     registerScreen<SettingsDestination> { _, modifier ->

@@ -16,4 +16,5 @@ internal sealed interface SettingsEvent : Event {
     data object OnDialogDismiss : SettingsEvent
     data class OnSettingsChanged(val settings: AppSettings) : SettingsEvent
     data class OnSystemLanguageChanged(val language: String) : SettingsEvent
+    data class OnAnalyticsIdLoaded(val id: String) : SettingsEvent
 }

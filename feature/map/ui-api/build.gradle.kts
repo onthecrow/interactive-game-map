@@ -17,6 +17,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.core.navigation.api)
+            implementation(projects.core.network)
             implementation(projects.core.remoteconfig)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)

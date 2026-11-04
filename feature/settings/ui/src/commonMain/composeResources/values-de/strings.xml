@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">Systemstandard (%1$s)</string>
     <string name="settings_section_privacy">Datenschutz</string>
     <string name="settings_privacy_policy">Datenschutzerklärung</string>
+    <string name="settings_analytics_id">Analyse-ID</string>
+    <string name="settings_analytics_id_copied">Kopiert</string>
     <string name="settings_cancel">Abbrechen</string>
     <string name="settings_footer_signature">Mit ❤️ entwickelt von</string>
     <string name="settings_footer_contact">Bei Fragen kannst du mich gern kontaktieren</string>

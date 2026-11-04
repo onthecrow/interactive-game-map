@@ -19,6 +19,8 @@
     <string name="settings_language_system_summary">システムのデフォルト（%1$s）</string>
     <string name="settings_section_privacy">プライバシー</string>
     <string name="settings_privacy_policy">プライバシー ポリシー</string>
+    <string name="settings_analytics_id">分析ID</string>
+    <string name="settings_analytics_id_copied">コピーしました</string>
     <string name="settings_cancel">キャンセル</string>
     <string name="settings_footer_signature">❤️を込めて開発：</string>
     <string name="settings_footer_contact">ご質問があればお気軽にご連絡ください</string>

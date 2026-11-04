@@ -22,6 +22,8 @@ internal sealed interface MapEvent : Event {
     data class OnMapSelect(val map: GameMap) : MapEvent
     data class OnCameraIdle(val viewport: MapBounds, val camera: CameraPosition) : MapEvent
     data class OnSearchValueChange(val value: String) : MapEvent
+    /** A search link in the description of a marker. */
+    data class OnSearchLinkClick(val query: String) : MapEvent
     data class OnLocationsLoaded(val locations: List<MapLocation>, val clusters: List<MarkerCluster>) : MapEvent
     data class OnMarkerGroupsLoaded(val groups: List<MapMarkerGroup>) : MapEvent
     data class OnLocationClick(val location: MapLocation) : MapEvent

@@ -29,6 +29,10 @@
         <meta-data
             android:name="firebase_crashlytics_collection_enabled"
             android:value="${firebaseCollectionEnabled}" />
+        <!-- The app logs screen_view itself, Firebase sees only the activity -->
+        <meta-data
+            android:name="google_analytics_automatic_screen_reporting_enabled"
+            android:value="false" />
     </application>
 
 </manifest>

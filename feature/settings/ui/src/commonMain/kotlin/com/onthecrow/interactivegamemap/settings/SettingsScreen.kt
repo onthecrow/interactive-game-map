@@ -9,11 +9,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.settings.view.AppVersion
 import com.onthecrow.interactivegamemap.settings.view.ChoiceDialog
 import com.onthecrow.interactivegamemap.settings.view.SignatureFooter
+import com.onthecrow.interactivegamemap.settings.view.plainTextClipEntry
 import com.onthecrow.interactivegamemap.ui.components.GameScreenScaffold
 import com.onthecrow.interactivegamemap.ui.components.GameSectionHeader
 import com.onthecrow.interactivegamemap.ui.components.GameSettingsGroup
@@ -22,6 +30,8 @@ import com.onthecrow.interactivegamemap.ui.components.SettingAction
 import com.onthecrow.interactivegamemap.ui.isDynamicColorSupported
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import interactivegamemap.feature.settings.ui.generated.resources.Res
+import interactivegamemap.feature.settings.ui.generated.resources.settings_analytics_id
+import interactivegamemap.feature.settings.ui.generated.resources.settings_analytics_id_copied
 import interactivegamemap.feature.settings.ui.generated.resources.settings_back
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers_summary
@@ -42,8 +52,11 @@ import interactivegamemap.feature.settings.ui.generated.resources.settings_theme
 import interactivegamemap.feature.settings.ui.generated.resources.settings_theme_light
 import interactivegamemap.feature.settings.ui.generated.resources.settings_theme_system
 import interactivegamemap.feature.settings.ui.generated.resources.settings_title
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Duration.Companion.seconds
 
 // Each language is named in itself, so it can be found whatever the current one is
 private val LanguageNames = mapOf(
@@ -60,6 +73,9 @@ private val LanguageNames = mapOf(
 
 private val String.languageName: String
     get() = LanguageNames[this] ?: this
+
+// How long a copied id says so
+private val CopiedDuration = 2.seconds
 
 @Composable
 internal fun SettingsScreen(
@@ -83,7 +99,7 @@ internal fun SettingsScreen(
                 MapSection(state.settings, onEvent)
                 AppearanceSection(state.settings, onEvent)
                 LanguageSection(state, onEvent)
-                PrivacySection(onEvent)
+                PrivacySection(state.analyticsId, onEvent)
                 Spacer(modifier = Modifier.weight(1f))
                 SignatureFooter(
                     modifier = Modifier
@@ -195,13 +211,32 @@ private fun LanguageSection(state: SettingsState, onEvent: (SettingsEvent) -> Un
 }
 
 @Composable
-private fun PrivacySection(onEvent: (SettingsEvent) -> Unit) {
+private fun PrivacySection(analyticsId: String, onEvent: (SettingsEvent) -> Unit) {
     GameSectionHeader(text = stringResource(Res.string.settings_section_privacy))
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    var isCopied by remember { mutableStateOf(false) }
+    LaunchedEffect(isCopied) {
+        if (isCopied) {
+            delay(CopiedDuration)
+            isCopied = false
+        }
+    }
     GameSettingsGroup {
         item {
             GameSettingsRow(
                 title = stringResource(Res.string.settings_privacy_policy),
                 action = SettingAction.Link { onEvent(SettingsEvent.OnPrivacyPolicyClick) },
+            )
+        }
+        item {
+            GameSettingsRow(
+                title = stringResource(Res.string.settings_analytics_id),
+                summary = if (isCopied) stringResource(Res.string.settings_analytics_id_copied) else analyticsId,
+                action = SettingAction.Copy {
+                    scope.launch { clipboard.setClipEntry(plainTextClipEntry(analyticsId)) }
+                    isCopied = true
+                },
             )
         }
     }

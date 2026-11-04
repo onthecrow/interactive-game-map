@@ -18,11 +18,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.androidx.navigation3)
+            implementation(projects.core.analytics)
             implementation(projects.core.navigation.api)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.ui)
             implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.koin.core)
         }

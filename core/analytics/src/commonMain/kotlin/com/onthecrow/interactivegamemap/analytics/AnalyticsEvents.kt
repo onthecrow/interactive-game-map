@@ -2,7 +2,8 @@ package com.onthecrow.interactivegamemap.analytics
 
 import kotlin.time.Duration
 
-// The events of every app and platform. The privacy policy, docs/privacy-policy, tells what they send: keep it in step
+// The events of every app and platform. The privacy policies, docs/genshin/privacy-policy and docs/rdr2/privacy-policy,
+// tell what they send: keep them in step
 
 /** The map open on the screen, a default parameter of the events. */
 const val PARAM_MAP_ID = "map_id"

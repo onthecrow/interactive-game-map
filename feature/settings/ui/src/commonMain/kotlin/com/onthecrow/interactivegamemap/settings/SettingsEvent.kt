@@ -12,7 +12,6 @@ internal sealed interface SettingsEvent : Event {
     data object OnLanguageClick : SettingsEvent
     /** @param language null to follow the system */
     data class OnLanguageSelect(val language: String?) : SettingsEvent
-    data object OnPrivacyPolicyClick : SettingsEvent
     data object OnDialogDismiss : SettingsEvent
     data class OnSettingsChanged(val settings: AppSettings) : SettingsEvent
     data class OnSystemLanguageChanged(val language: String) : SettingsEvent

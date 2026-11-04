@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.settings.view.AppVersion
 import com.onthecrow.interactivegamemap.settings.view.ChoiceDialog
@@ -80,6 +81,7 @@ private val CopiedDuration = 2.seconds
 @Composable
 internal fun SettingsScreen(
     state: SettingsState,
+    privacyPolicyUrl: String,
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -99,7 +101,7 @@ internal fun SettingsScreen(
                 MapSection(state.settings, onEvent)
                 AppearanceSection(state.settings, onEvent)
                 LanguageSection(state, onEvent)
-                PrivacySection(state.analyticsId, onEvent)
+                PrivacySection(state.analyticsId, privacyPolicyUrl)
                 Spacer(modifier = Modifier.weight(1f))
                 SignatureFooter(
                     modifier = Modifier
@@ -211,8 +213,9 @@ private fun LanguageSection(state: SettingsState, onEvent: (SettingsEvent) -> Un
 }
 
 @Composable
-private fun PrivacySection(analyticsId: String, onEvent: (SettingsEvent) -> Unit) {
+private fun PrivacySection(analyticsId: String, privacyPolicyUrl: String) {
     GameSectionHeader(text = stringResource(Res.string.settings_section_privacy))
+    val uriHandler = LocalUriHandler.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var isCopied by remember { mutableStateOf(false) }
@@ -226,7 +229,8 @@ private fun PrivacySection(analyticsId: String, onEvent: (SettingsEvent) -> Unit
         item {
             GameSettingsRow(
                 title = stringResource(Res.string.settings_privacy_policy),
-                action = SettingAction.Link { onEvent(SettingsEvent.OnPrivacyPolicyClick) },
+                // A device with nothing to open the link with keeps the screen
+                action = SettingAction.Link { runCatching { uriHandler.openUri(privacyPolicyUrl) } },
             )
         }
         item {

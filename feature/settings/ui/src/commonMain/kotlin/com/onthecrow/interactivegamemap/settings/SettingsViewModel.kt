@@ -31,9 +31,6 @@ internal class SettingsViewModel(
                 is SettingsEvent.OnThemeSelect -> update { it.copy(theme = event.theme) }
                 is SettingsEvent.OnDynamicColorChange -> update { it.copy(dynamicColor = event.enabled) }
                 is SettingsEvent.OnLanguageSelect -> update { it.copy(language = event.language) }
-                SettingsEvent.OnPrivacyPolicyClick -> {
-                    // TODO: open the privacy policy when it's published
-                }
                 else -> Unit
             }
         }.launchIn(viewModelScope)

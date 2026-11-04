@@ -7,6 +7,7 @@ import com.onthecrow.interactivegamemap.map.di.mapModule
 import com.onthecrow.interactivegamemap.map.di.rdr2MapModule
 import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
+import com.onthecrow.interactivegamemap.settings.PrivacyPolicyUrl
 import com.onthecrow.interactivegamemap.settings.di.settingsModule
 import com.onthecrow.interactivegamemap.settings.di.settingsUiModule
 import com.onthecrow.interactivegamemap.ui.rdr2.di.rdr2UiModule
@@ -21,6 +22,7 @@ import org.koin.dsl.module
 val applicationModule = module {
     single { Json { ignoreUnknownKeys = true } }
     single(StartDestination) { MapDestination } bind Destination::class
+    single { PrivacyPolicyUrl("https://onthecrow.github.io/interactive-game-map/rdr2/privacy-policy/") }
     includes(
         analyticsModule,
         navigationModule,

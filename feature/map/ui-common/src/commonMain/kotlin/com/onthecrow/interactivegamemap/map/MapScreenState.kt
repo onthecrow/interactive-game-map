@@ -34,6 +34,8 @@ data class MapScreenState(
     val cycles: Map<String, Int> = emptyMap(),
     val markerListQuery: String = "",
     val collapsedGroupIds: Set<String> = emptySet(),
+    val foundLocationIds: Set<Int> = emptySet(),
+    val focusedLocation: MapLocation? = null,
 ): State {
     internal val markerListSettings: MarkerListSettings
         get() = MarkerListSettings(collapsedGroupIds, categoryVisibility, cycles)

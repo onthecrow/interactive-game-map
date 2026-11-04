@@ -26,14 +26,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.model.MapLocation
+import com.onthecrow.interactivegamemap.map.view.DescriptionLink
 import com.onthecrow.interactivegamemap.map.view.LocationView
 import com.onthecrow.interactivegamemap.map.view.MapActionButton
 import com.onthecrow.interactivegamemap.map.view.MapSelectorView
 import com.onthecrow.interactivegamemap.map.view.MapView
 import com.onthecrow.interactivegamemap.map.view.MarkerListView
+import com.onthecrow.interactivegamemap.map.view.SystemBackHandler
+import com.onthecrow.interactivegamemap.map.view.parseDescriptionLink
 import com.onthecrow.interactivegamemap.ui.AppTheme
 import com.onthecrow.interactivegamemap.ui.view.AppBarSearchView
 import interactivegamemap.feature.map.ui_common.generated.resources.Res
@@ -64,6 +68,8 @@ internal fun MapScreen(
             selectedLocation = state.selectedLocation,
             entrances = state.entrances,
             floors = state.displayedFloors,
+            foundLocationIds = state.foundLocationIds,
+            focusedLocation = state.focusedLocation,
             onEvent = onEvent,
         )
 
@@ -126,6 +132,11 @@ internal fun MapScreen(
         }
 
         var displayedLocation by remember { mutableStateOf(MapLocation.EMPTY) }
+        val uriHandler = LocalUriHandler.current
+
+        SystemBackHandler(enabled = state.selectedLocation != null) {
+            onEvent(MapEvent.OnLocationDismiss)
+        }
 
         LaunchedEffect(state.selectedLocation) {
             if (state.selectedLocation != null) {
@@ -159,8 +170,20 @@ internal fun MapScreen(
                 floors = state.currentMap.findDungeon(displayedLocation)?.floors.orEmpty(),
                 selectedFloorId = state.selectedFloorId,
                 locationFloorId = displayedLocation.dungeon?.floorId,
+                isFound = displayedLocation.id in state.foundLocationIds,
                 onFloorClick = { onEvent(MapEvent.OnFloorClick(it)) },
                 onExitClick = { onEvent(MapEvent.OnLocationDismiss) },
+                onFoundClick = { onEvent(MapEvent.OnFoundClick(displayedLocation.id)) },
+                onLinkClick = { url ->
+                    when (val link = parseDescriptionLink(url)) {
+                        is DescriptionLink.Location -> onEvent(MapEvent.OnLocationLinkClick(link.id))
+                        is DescriptionLink.Search -> {
+                            onEvent(MapEvent.OnLocationDismiss)
+                            onEvent(MapEvent.OnSearchValueChange(link.query))
+                        }
+                        is DescriptionLink.External -> uriHandler.openUri(link.url)
+                    }
+                },
             )
         }
     }

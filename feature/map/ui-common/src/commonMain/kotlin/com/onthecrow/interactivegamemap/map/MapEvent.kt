@@ -28,4 +28,8 @@ internal sealed interface MapEvent : Event {
     data class OnMarkerListQueryChange(val value: String) : MapEvent
     data class OnGroupClick(val groupId: String) : MapEvent
     data class OnMarkerListSettingsLoaded(val settings: MarkerListSettings) : MapEvent
+    data class OnFoundClick(val locationId: Int) : MapEvent
+    data class OnFoundLocationsLoaded(val locationIds: Set<Int>) : MapEvent
+    data class OnLocationLinkClick(val locationId: Int) : MapEvent
+    data class OnLocationLinkLoaded(val location: MapLocation) : MapEvent
 }

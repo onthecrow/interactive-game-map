@@ -168,6 +168,26 @@ class MapReducerTest {
     }
 
     @Test
+    fun `found markers come from the data, a click alone changes nothing`() {
+        assertEquals(emptySet(), state.after(MapEvent.OnFoundClick(7)).foundLocationIds)
+        assertEquals(setOf(7), state.after(MapEvent.OnFoundLocationsLoaded(setOf(7))).foundLocationIds)
+    }
+
+    @Test
+    fun `a link opens a marker and moves the camera, a tap only opens it`() {
+        val linked = state.after(MapEvent.OnLocationLinkLoaded(location))
+        assertEquals(location, linked.selectedLocation)
+        assertEquals(location, linked.focusedLocation)
+        assertEquals(7, linked.selectedFloorId)
+
+        val tapped = linked.after(MapEvent.OnLocationClick(location))
+        assertEquals(location, tapped.selectedLocation)
+        assertEquals(null, tapped.focusedLocation)
+
+        assertEquals(null, linked.after(MapEvent.OnLocationDismiss).focusedLocation)
+    }
+
+    @Test
     fun `pin image depends on the dungeon`() {
         val plainIcon = MarkerIcon("plain")
         val dungeonIcon = MarkerIcon("dungeon")

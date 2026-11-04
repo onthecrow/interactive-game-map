@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.map
 
+import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.nomadrates.uicore.Reducer
 
 internal class MapReducer: Reducer<MapScreenState, MapEvent> {
@@ -34,11 +35,12 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnCameraIdle -> state.copy(viewport = event.viewport)
             is MapEvent.OnLocationsLoaded -> state.copy(locations = event.locations)
             is MapEvent.OnMarkerGroupsLoaded -> state.copy(markerGroups = event.groups)
-            is MapEvent.OnLocationClick -> state.copy(
-                selectedLocation = event.location,
-                selectedFloorId = event.location.dungeon?.floorId,
-                entrances = emptyList(),
-            )
+            is MapEvent.OnLocationClick -> state.withSelection(event.location)
+            is MapEvent.OnLocationLinkLoaded -> state.withSelection(event.location)
+                .copy(focusedLocation = event.location)
+            is MapEvent.OnFoundLocationsLoaded -> state.copy(foundLocationIds = event.locationIds)
+            // The view model handles these, the state changes when the data comes back
+            is MapEvent.OnFoundClick, is MapEvent.OnLocationLinkClick -> state
             is MapEvent.OnEntrancesLoaded -> state.copy(entrances = event.entrances)
             is MapEvent.OnFloorClick -> state.copy(selectedFloorId = event.floorId)
             is MapEvent.OnLocationDismiss -> state.withoutSelection()
@@ -80,7 +82,16 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         }
     }
 
+    private fun MapScreenState.withSelection(location: MapLocation): MapScreenState {
+        return copy(
+            selectedLocation = location,
+            selectedFloorId = location.dungeon?.floorId,
+            entrances = emptyList(),
+            focusedLocation = null,
+        )
+    }
+
     private fun MapScreenState.withoutSelection(): MapScreenState {
-        return copy(selectedLocation = null, selectedFloorId = null, entrances = emptyList())
+        return copy(selectedLocation = null, selectedFloorId = null, entrances = emptyList(), focusedLocation = null)
     }
 }

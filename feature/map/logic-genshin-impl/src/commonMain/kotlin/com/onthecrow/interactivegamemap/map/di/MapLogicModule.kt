@@ -12,6 +12,7 @@ import com.onthecrow.interactivegamemap.map.data.LocationsRepositoryImpl
 import org.koin.dsl.module
 
 val mapLogicModule = module {
+    includes(foundLocationsModule)
     single<GetLocationsUseCase> { GetLocationsUseCaseImpl(get()) }
     single<GetLocationsByIdsUseCase> { GetLocationsByIdsUseCaseImpl(get()) }
     single<GetMarkerGroupsUseCase> { GetMarkerGroupsUseCaseImpl(get()) }

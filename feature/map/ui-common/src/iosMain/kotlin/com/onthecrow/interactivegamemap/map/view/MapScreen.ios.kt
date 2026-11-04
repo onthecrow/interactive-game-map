@@ -34,6 +34,7 @@ import googlemaps.GMSPolygon
 import googlemaps.GMSPolyline
 import googlemaps.GMSTileLayer
 import googlemaps.GMSTileReceiverProtocol
+import googlemaps.animateToLocation
 import googlemaps.kGMSTileLayerNoTile
 import googlemaps.kGMSTypeNone
 import kotlinx.cinterop.BetaInteropApi
@@ -86,6 +87,8 @@ internal actual fun MapView(
     selectedLocation: MapLocation?,
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
+    foundLocationIds: Set<Int>,
+    focusedLocation: MapLocation?,
     modifier: Modifier,
     onEvent: (MapEvent) -> Unit,
 ) {
@@ -200,6 +203,17 @@ internal actual fun MapView(
                 markerImages[id] = image
             }
         }
+    }
+
+    LaunchedEffect(mapView, locations, foundLocationIds) {
+        locations.forEach { location ->
+            markers[location.id.toString()]?.opacity = if (location.id in foundLocationIds) FOUND_MARKER_ALPHA else 1f
+        }
+    }
+
+    LaunchedEffect(mapView, focusedLocation) {
+        val location = focusedLocation ?: return@LaunchedEffect
+        mapView?.animateToLocation(CLLocationCoordinate2DMake(location.lat, location.lng))
     }
 
     var dungeonDim by remember { mutableStateOf<GMSPolygon?>(null) }

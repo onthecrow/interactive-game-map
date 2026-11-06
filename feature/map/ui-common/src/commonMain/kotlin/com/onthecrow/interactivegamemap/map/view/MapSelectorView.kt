@@ -13,11 +13,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.MarkerIconLoader
+import com.onthecrow.interactivegamemap.map.MarkerImage
+import com.onthecrow.interactivegamemap.map.painter
 import com.onthecrow.interactivegamemap.network.GameMap
 import com.onthecrow.interactivegamemap.ui.components.GameDropdownMenu
 import com.onthecrow.interactivegamemap.ui.components.GameMapButton
@@ -83,14 +84,14 @@ private fun MapIconView(
     modifier: Modifier = Modifier,
 ) {
     val iconLoader = koinInject<MarkerIconLoader>()
-    val image by produceState<ImageBitmap?>(null, iconUrl) {
+    val image by produceState<MarkerImage?>(null, iconUrl) {
         value = iconUrl?.let { iconLoader.load(it) }
     }
 
-    image?.let { bitmap ->
+    image?.let {
         Image(
             modifier = modifier,
-            bitmap = bitmap,
+            painter = it.painter(),
             contentDescription = null,
             colorFilter = ColorFilter.tint(tint),
         )

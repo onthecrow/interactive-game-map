@@ -241,6 +241,8 @@ internal actual fun MapView(
                 marker.icon = image?.let {
                     pinIcons.getOrPut(pinImage) { it.toPinIcon(density) }
                 }
+                // At its point by default, a disc lies on the location by its middle
+                marker.groundAnchor = CGPointMake(0.5, (pinImage?.anchorY?.takeIf { image != null } ?: 1f).toDouble())
                 // A marker stays hidden until the load of its image is finished
                 marker.map = view
                 markerImages[id] = image

@@ -6,6 +6,7 @@ import com.onthecrow.interactivegamemap.map.mapper.categoryId
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocation
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocations
 import com.onthecrow.interactivegamemap.map.mapper.withAnimals
+import com.onthecrow.interactivegamemap.map.mapper.withIconUrls
 import com.onthecrow.interactivegamemap.map.model.AnimalCompendium
 import com.onthecrow.interactivegamemap.map.model.Location
 import com.onthecrow.interactivegamemap.map.model.GeoPoint
@@ -29,7 +30,7 @@ class AnimalsTest {
     }
 
     private val animals = json.decodeFromString<AnimalCompendium>(read("animals.json")).animals
-    private val catalog = json.decodeFromString<MarkerCatalog>(read("marker_catalog.json")).withAnimals(animals, PIN_URL)
+    private val catalog = json.decodeFromString<MarkerCatalog>(read("marker_catalog.json")).withAnimals(animals)
     private val markers = json.decodeFromString<List<Location>>(read("markers.json")).map { it.toMapLocation(catalog) }
     private val animalLocations = animals.toMapLocations(catalog)
 
@@ -49,10 +50,30 @@ class AnimalsTest {
         assertEquals(expected.map { it.name }, animalLocations.map { it.name })
         assertTrue(
             animalLocations.all {
-                it.mapId == 1 && it.categoryId.startsWith("animal-") && it.pin?.icon?.url == PIN_URL &&
+                it.mapId == 1 && it.categoryId.startsWith("animal-") && it.pin?.pictogram?.url == PAW &&
                     it.description.startsWith("**")
             }
         )
+    }
+
+    @Test
+    fun `an animal is the light paw on the disc of the legendary animals`() {
+        val legendary = catalog.categories.getValue("37")
+        val pin = animalLocations.first().pin!!
+
+        assertTrue(animalLocations.all { it.pin == pin })
+        // The worn paw on the disc, as the lists show it
+        assertEquals(legendary.pin.copy(pictogram = legendary.icon.copy(url = PAW)), pin)
+        assertEquals(pin.pictogram, catalog.categories.getValue(animals.first { !it.legendary }.categoryId).icon)
+        assertEquals(0.5f, pin.anchorY)
+    }
+
+    @Test
+    fun `the paw of an animal becomes a data URL as well`() = runBlocking {
+        val animal = catalog.withIconUrls { url -> "data:$url" }.categories.getValue(animals.first { !it.legendary }.categoryId)
+
+        assertEquals("data:$PAW", animal.pin.pictogram?.url)
+        assertEquals("data:files/textures/grunge.png", animal.pin.pictogram?.wear?.texture?.url)
     }
 
     @Test
@@ -146,6 +167,6 @@ class AnimalsTest {
     }
 
     private companion object {
-        private const val PIN_URL = "data:image/png;base64,pin"
+        private const val PAW = "files/pictograms/animal.xml"
     }
 }

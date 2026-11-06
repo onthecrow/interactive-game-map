@@ -1,6 +1,8 @@
 package com.onthecrow.interactivegamemap.map
 
 import androidx.compose.ui.graphics.Color
+import com.onthecrow.interactivegamemap.map.model.GeoPoint
+import com.onthecrow.interactivegamemap.map.model.LocationArea
 import com.onthecrow.interactivegamemap.map.model.LocationDungeon
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
@@ -210,6 +212,28 @@ class MapReducerTest {
         assertEquals(MarkerPinImage(icon, false, 33, 44, Color.Red), location.pinImage(5, Color.Red))
         assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(6, Color.Red))
         assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(null, Color.Red))
+    }
+
+    @Test
+    fun `the selected pin keeps its pictogram and lies on the location as before`() {
+        val disc = MarkerIcon("disc")
+        val paw = MarkerIcon("paw")
+        val pin = MarkerPin(disc, pictogram = paw, width = 30, height = 30, anchorY = 0.5f)
+        val location = MapLocation.EMPTY.copy(id = 5, pin = pin, areas = listOf(LocationArea(listOf(GeoPoint(0.0, 0.0)))))
+
+        assertEquals(MarkerPinImage(disc, false, 30, 30, pictogram = paw, anchorY = 0.5f), location.pinImage(6, Color.Red))
+        assertEquals(MarkerPinImage(disc, false, 30, 30, Color.Red, paw, 0.5f), location.pinImage(5, Color.Red))
+    }
+
+    @Test
+    fun `the pictogram of a pin is drawn over it, in dungeons as well`() {
+        val icon = MarkerIcon("pin")
+        val pictogram = MarkerIcon("pictogram")
+        val location = MapLocation.EMPTY.copy(pin = MarkerPin(icon, pictogram = pictogram, width = 33, height = 44))
+        val inDungeon = location.copy(dungeon = LocationDungeon(1, 1, emptyList()))
+
+        assertEquals(MarkerPinImage(icon, false, 33, 44, pictogram = pictogram), location.pinImage)
+        assertEquals(MarkerPinImage(icon, true, 33, 44, pictogram = pictogram), inDungeon.pinImage)
     }
 
     @Test

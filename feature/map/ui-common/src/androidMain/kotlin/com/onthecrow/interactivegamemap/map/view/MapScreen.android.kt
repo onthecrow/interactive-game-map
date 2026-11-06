@@ -214,6 +214,8 @@ internal actual fun MapView(
                         pinIcons.getOrPut(pinImage) { BitmapDescriptorFactory.fromBitmap(it.asAndroidBitmap()) }
                     }
                 )
+                // At its point by default, a disc lies on the location by its middle
+                marker.setAnchor(0.5f, pinImage?.anchorY?.takeIf { image != null } ?: 1f)
                 marker.isVisible = true
                 markerImages[id] = image
             }

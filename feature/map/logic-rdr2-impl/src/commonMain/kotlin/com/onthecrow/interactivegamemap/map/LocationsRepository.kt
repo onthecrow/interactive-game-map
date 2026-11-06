@@ -4,6 +4,7 @@ import com.onthecrow.interactivegamemap.map.data.LocalDataSource
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocation
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocations
 import com.onthecrow.interactivegamemap.map.mapper.withAnimals
+import com.onthecrow.interactivegamemap.map.mapper.withIconUrls
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +24,9 @@ internal class LocationsRepositoryImpl(
     }
 
     private val catalog = scope.async(start = CoroutineStart.LAZY) {
-        localDataSource.getMarkerCatalog().withAnimals(animals.await(), localDataSource.getAnimalPinUrl())
+        localDataSource.getMarkerCatalog()
+            .withAnimals(animals.await())
+            .withIconUrls(localDataSource::getIconUrl)
     }
 
     private val locations = scope.async(start = CoroutineStart.LAZY) {

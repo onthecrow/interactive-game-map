@@ -1,6 +1,7 @@
 package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.mapper.toMapLocation
+import com.onthecrow.interactivegamemap.map.mapper.withIconUrls
 import com.onthecrow.interactivegamemap.map.model.Location
 import com.onthecrow.interactivegamemap.map.model.LocationBounds
 import com.onthecrow.interactivegamemap.map.model.LocationDungeon
@@ -42,10 +43,44 @@ class LocationsFilteringTest {
     }
 
     @Test
-    fun `every marker has a pin from the sprite`() {
-        assertTrue(locations.all { it.pin?.icon?.x != null && it.pin?.dungeonIcon == null })
-        assertEquals(33, locations.first().pin?.width)
-        assertEquals(44, locations.first().pin?.height)
+    fun `every marker has a pin of the app with the pictogram of its category`() {
+        assertTrue(
+            locations.all {
+                it.pin?.icon?.url?.startsWith("files/pins/") == true &&
+                    it.pin?.pictogram?.url?.startsWith("files/pictograms/") == true &&
+                    it.pin?.dungeonIcon == null
+            }
+        )
+        assertEquals(30, locations.first().pin?.width)
+        assertEquals(30, locations.first().pin?.height)
+    }
+
+    @Test
+    fun `the icons of every category are files of the app, the list shows the pictogram`() {
+        catalog.categories.values.forEach { category ->
+            assertEquals(category.pin.pictogram, category.icon, category.name)
+            val icons = listOfNotNull(category.icon, category.pin.icon, category.pin.pictogram)
+            (icons + icons.mapNotNull { it.wear?.texture }).forEach {
+                assertTrue(File("src/commonMain/composeResources/${it.url}").isFile, it.url)
+            }
+            // As on the map of the game: the worn pictogram on a whole disc, the location at its middle
+            assertTrue(category.icon.wear != null && category.pin.icon.wear == null, category.name)
+            assertEquals("files/pins/disc.xml", category.pin.icon.url)
+            assertEquals(0.5f, category.pin.anchorY)
+        }
+        // Nothing is downloaded from the source of the markers
+        assertTrue(read("marker_catalog.json").contains("http").not())
+    }
+
+    @Test
+    fun `the files of the icons become data URLs, read once for every file`() = runBlocking {
+        val reads = mutableListOf<String>()
+        val result = catalog.withIconUrls { url -> reads += url; "data:$url" }
+
+        assertEquals(reads.distinct(), reads)
+        assertTrue(result.categories.values.all { it.icon.url.startsWith("data:files/") && it.pin.pictogram?.url == it.icon.url })
+        assertEquals("data:files/pins/disc.xml", result.categories.getValue("33").pin.icon.url)
+        assertEquals("data:files/textures/grunge.png", result.categories.getValue("33").pin.pictogram?.wear?.texture?.url)
     }
 
     @Test

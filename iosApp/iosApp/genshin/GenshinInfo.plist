@@ -6,6 +6,8 @@
 	<dict>
 		<key>UIColorName</key>
 		<string>GenshinLaunchBackground</string>
+		<key>UIImageName</key>
+		<string>GenshinLaunchIcon</string>
 	</dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

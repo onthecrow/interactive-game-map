@@ -2,8 +2,21 @@
 <resources>
     <!-- The paper of the map under the Red Dead Redemption 2 theme, so the splash screen and the first frame match it -->
     <color name="window_background">#DEC29C</color>
+    <!-- The icons of the status bar dark over it -->
+    <bool name="light_system_bars">true</bool>
 
     <style name="Theme.InteractiveGameMap" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!--
+        The splash screen: the icon of the app on the background of the theme, the one the app chose from Android 12.
+        The library draws it on Android 8 to 11 as well.
+    -->
+    <style name="Theme.InteractiveGameMap.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.InteractiveGameMap</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
     </style>
 </resources>

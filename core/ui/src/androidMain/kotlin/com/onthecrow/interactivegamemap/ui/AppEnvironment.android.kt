@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.ui
 
+import android.app.UiModeManager
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
@@ -35,8 +36,23 @@ actual fun AppEnvironment(
         )
     }
 
+    val context = LocalContext.current
+    LaunchedEffect(isDarkTheme) {
+        // The system draws the splash screen before the app runs: from Android 12 it takes the app's theme from
+        // here. It changes the configuration of the app, the activity handles that without restarting.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val mode = when (isDarkTheme) {
+                true -> UiModeManager.MODE_NIGHT_YES
+                false -> UiModeManager.MODE_NIGHT_NO
+                // The system's theme
+                null -> UiModeManager.MODE_NIGHT_AUTO
+            }
+            context.getSystemService(UiModeManager::class.java)?.setApplicationNightMode(mode)
+        }
+    }
+
     val systemConfiguration = LocalConfiguration.current
-    val resources = LocalContext.current.resources
+    val resources = context.resources
     val configuration = remember(systemConfiguration, language, isDarkTheme) {
         val locale = Locale.forLanguageTag(language)
         // Compose resources take the default locale, the strings of Material components take the resources'

@@ -139,6 +139,7 @@
 		060092D42F3FD5F6002FD2A0 /* Exceptions for "iosApp" folder in "rdr2" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				genshin/GenshinAssets.xcassets,
 				genshin/GenshinInfo.plist,
 				"genshin/GoogleService-Info.plist",
 				rdr2/Users/onthecrow/Documents/Projects/InteractiveGameMap/iosApp/iosApp/rdr2/Rdr2Info.plist,
@@ -149,6 +150,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				genshin/GenshinInfo.plist,
+				rdr2/Rdr2Assets.xcassets,
 				"rdr2/GoogleService-Info.plist",
 				rdr2/Users/onthecrow/Documents/Projects/InteractiveGameMap/iosApp/iosApp/rdr2/Rdr2Info.plist,
 			);
@@ -549,7 +551,7 @@
 		060092D12F3FD5F6002FD2A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Rdr2AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -578,7 +580,7 @@
 		060092D22F3FD5F6002FD2A0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Rdr2AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -733,7 +735,7 @@
 		8F886B0990B16E3546FD88D1 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = GenshinAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
@@ -760,7 +762,7 @@
 		D940F4BFBE63BF7C906EC19C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = GenshinAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;

@@ -20,15 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.MapEvent
 import com.onthecrow.interactivegamemap.map.MapScreenState
 import com.onthecrow.interactivegamemap.map.MarkerIconLoader
+import com.onthecrow.interactivegamemap.map.MarkerImage
+import com.onthecrow.interactivegamemap.map.painter
+import com.onthecrow.interactivegamemap.map.wear
 import com.onthecrow.interactivegamemap.map.model.LocationsFilter
 import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MarkerIcon
@@ -222,19 +222,19 @@ private fun MarkerIconView(
     modifier: Modifier = Modifier,
 ) {
     val iconLoader = koinInject<MarkerIconLoader>()
-    val image by produceState<ImageBitmap?>(null, icon.url) {
+    val image by produceState<MarkerImage?>(null, icon.url) {
         value = iconLoader.load(icon.url)
+    }
+    val wearTexture by produceState<ImageBitmap?>(null, icon.wear) {
+        value = icon.wear?.let { iconLoader.loadTexture(it) }
     }
 
     Box(modifier = modifier) {
-        image?.let { bitmap ->
+        image?.let {
             Image(
-                modifier = Modifier.fillMaxSize(),
-                painter = BitmapPainter(
-                    image = bitmap,
-                    srcOffset = IntOffset(icon.x ?: 0, icon.y ?: 0),
-                    srcSize = IntSize(icon.width ?: bitmap.width, icon.height ?: bitmap.height),
-                ),
+                // Worn as the pictogram of the category's pins
+                modifier = Modifier.fillMaxSize().wear(icon.wear, wearTexture, seed = icon.url.hashCode()),
+                painter = it.painter(icon),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
             )

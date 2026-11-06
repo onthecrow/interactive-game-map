@@ -7,8 +7,6 @@ import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
 import com.onthecrow.interactivegamemap.map.model.MarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MarkerGroup
-import com.onthecrow.interactivegamemap.map.model.MarkerIcon
-import com.onthecrow.interactivegamemap.map.model.MarkerPin
 
 private const val ANIMAL_CATEGORY_ID_PREFIX = "animal-"
 private const val ANIMALS_GROUP_ID = "animals"
@@ -19,9 +17,9 @@ private const val WORLD_MAP_ID = 1
 internal const val ANIMAL_ID_OFFSET = 10_000_000
 internal const val MAX_ANIMAL_POINTS = 10
 
-// As big as the pins of the source's sprite
-private const val PIN_WIDTH = 33
-private const val PIN_HEIGHT = 44
+// An animal is marked as on the map of the game: the paw on the black disc of the other pins
+private const val LEGENDARY_ANIMAL_CATEGORY_ID = "37"
+private const val PAW_URL = "files/pictograms/animal.xml"
 
 /** Every animal is a category of its own, the categories are in the order of the compendium. */
 internal val Animal.categoryId: String
@@ -32,14 +30,15 @@ private val List<Animal>.displayed: List<Animal>
     get() = filter { !it.legendary && it.map == WORLD_MAP && it.points.isNotEmpty() }.sortedBy { it.compendium }
 
 /** Adds a category for every animal, hidden until the user shows it, in a group of the world map. */
-internal fun MarkerCatalog.withAnimals(animals: List<Animal>, pinUrl: String): MarkerCatalog {
-    val icon = MarkerIcon(url = pinUrl)
-    val pin = MarkerPin(icon = icon, width = PIN_WIDTH, height = PIN_HEIGHT)
+internal fun MarkerCatalog.withAnimals(animals: List<Animal>): MarkerCatalog {
+    val legendary = categories.getValue(LEGENDARY_ANIMAL_CATEGORY_ID)
+    val paw = legendary.icon.copy(url = PAW_URL)
+    val pin = legendary.pin.copy(pictogram = paw)
     val animalCategories = animals.displayed.map { animal ->
         MarkerCategory(
             id = animal.categoryId,
             name = animal.name,
-            icon = icon,
+            icon = paw,
             pin = pin,
             visibleByDefault = false,
             // An animal has one marker, the count would say nothing

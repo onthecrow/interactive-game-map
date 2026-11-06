@@ -9,9 +9,12 @@
         android:supportsRtl="true"
         android:name=".GenshinMapApplication"
         android:theme="@style/Theme.InteractiveGameMap">
+        <!-- The app follows its own theme without restarting the activity, see AppEnvironment -->
         <activity
+            android:configChanges="uiMode"
             android:exported="true"
             android:name=".MainActivity"
+            android:theme="@style/Theme.InteractiveGameMap.Starting"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

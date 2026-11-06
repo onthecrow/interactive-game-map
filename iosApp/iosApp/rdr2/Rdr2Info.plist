@@ -6,6 +6,8 @@
 	<dict>
 		<key>UIColorName</key>
 		<string>Rdr2LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>Rdr2LaunchIcon</string>
 	</dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

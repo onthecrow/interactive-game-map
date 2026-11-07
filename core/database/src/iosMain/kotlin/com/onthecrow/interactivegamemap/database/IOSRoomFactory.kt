@@ -3,6 +3,7 @@ package com.onthecrow.nomadrates.database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import platform.Foundation.NSHomeDirectory
 import kotlin.reflect.KClass
 
@@ -22,6 +23,7 @@ internal class IosRoomFactory : RoomFactory() {
             factory = { constructor.initialize() }
         ) as RoomDatabase.Builder<T>
 
+        builder.setDriver(BundledSQLiteDriver())
         builder.applyCommonConfig()
         config(builder)
         return builder.build()

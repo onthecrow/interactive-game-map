@@ -28,8 +28,12 @@ kotlin {
             implementation(libs.koin.compose)
         }
         androidMain.dependencies {
-            implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
         }
     }
+}
+
+// Compose previews of this module in Android Studio, kept out of the apps that use it
+dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
 }

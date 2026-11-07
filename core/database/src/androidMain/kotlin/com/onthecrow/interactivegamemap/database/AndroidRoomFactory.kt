@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.sqlite.driver.AndroidSQLiteDriver
 import kotlin.reflect.KClass
 
 internal class AndroidRoomFactory(private val context: Context) : RoomFactory() {
@@ -15,6 +16,7 @@ internal class AndroidRoomFactory(private val context: Context) : RoomFactory() 
         config: (RoomDatabase.Builder<T>) -> Unit
     ): T {
         val builder = Room.databaseBuilder(context, klass.java, name)
+            .setDriver(AndroidSQLiteDriver())
             .applyCommonConfig()
 
         config(builder)

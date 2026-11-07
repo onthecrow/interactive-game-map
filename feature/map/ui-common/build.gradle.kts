@@ -76,7 +76,6 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.play.services.maps)
-            implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
             implementation(projects.core.analytics)
@@ -105,4 +104,9 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+}
+
+// Compose previews of this module in Android Studio, kept out of the apps that use it
+dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
 }

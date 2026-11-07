@@ -68,7 +68,9 @@ android {
             manifestPlaceholders["firebaseCollectionEnabled"] = false
         }
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
             manifestPlaceholders["firebaseCollectionEnabled"] = true
         }
@@ -76,4 +78,9 @@ android {
     buildFeatures {
         resValues = true
     }
+}
+
+// Compose tooling (previews on a device, the layout inspector) only in debug builds
+dependencies {
+    debugImplementation(libs.compose.uiTooling)
 }

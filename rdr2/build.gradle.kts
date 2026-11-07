@@ -36,15 +36,15 @@ val signingProps = Properties().apply {
 }
 
 android {
-    namespace = "com.onthecrow.rdr2map"
+    namespace = "com.onthecrow.mapslinger"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.onthecrow.rdr2map"
+        applicationId = "com.onthecrow.mapslinger"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0.0"
 
         resValue("string", "google_maps_key", mapsKey)
     }

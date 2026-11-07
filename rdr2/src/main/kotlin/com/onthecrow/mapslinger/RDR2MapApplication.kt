@@ -1,4 +1,4 @@
-package com.onthecrow.rdr2map
+package com.onthecrow.mapslinger
 
 import android.app.Application
 import com.onthecrow.interactivegamemap.AndroidPlatform

@@ -27,6 +27,13 @@ data class GameMap(
 data class MapTiles(
     val urlTemplate: String,
     val scheme: TileScheme,
+    /**
+     * [TileScheme.XYZ] only: the tiles of zoom z are drawn at zoom z + [zoomOffset], in the middle of the world.
+     * A map that fills its whole tile grid spans most of the longitudes, and the camera kept in the bounds of
+     * such a map jumps to its other side across the antimeridian. The map's zooms in the config are the drawn
+     * ones, and the minimal one is above [zoomOffset] so that the map lies on whole tiles.
+     */
+    val zoomOffset: Int = 0,
 )
 
 @Serializable

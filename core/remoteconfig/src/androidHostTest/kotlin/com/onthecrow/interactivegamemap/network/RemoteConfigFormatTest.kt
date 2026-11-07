@@ -4,7 +4,7 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RemoteConfigFormatTest {
@@ -32,7 +32,13 @@ class RemoteConfigFormatTest {
 
         assertEquals(1, map.id)
         assertEquals(TileScheme.XYZ, map.tiles.scheme)
-        assertNull(map.bounds)
+        // Drawn in the middle of the world on whole tiles, so the camera kept in the bounds doesn't jump across
+        // the antimeridian
+        assertEquals(2, map.tiles.zoomOffset)
+        assertTrue(map.minZoom > map.tiles.zoomOffset)
+        val bounds = assertNotNull(map.bounds)
+        assertTrue(bounds.west > -90.0 && bounds.east < 90.0)
+        assertTrue(map.camera.lng in bounds.west..bounds.east && map.camera.lat in bounds.south..bounds.north)
         assertEquals(1f, map.dungeonBaseOpacity)
         assertEquals(21, map.dungeons.size)
         assertTrue(map.dungeons.all { it.floors.size == 1 })

@@ -28,11 +28,13 @@ class MapTileProvider(
         zoom: Int,
         onError: (String) -> Unit = {},
     ): MapTile? {
+        // Outside the map there is nothing to ask the server for
+        val url = getUrl(tiles, x, y, zoom) ?: return MapTile(width = SIZE_TILE_PX, height = SIZE_TILE_PX, data = null)
         return nullOnFailure(onError) {
             MapTile(
                 width = SIZE_TILE_PX,
                 height = SIZE_TILE_PX,
-                data = download(getUrl(tiles, x, y, zoom), onError),
+                data = download(url, onError),
             )
         }
     }
@@ -41,9 +43,21 @@ class MapTileProvider(
         return nullOnFailure { download(url) }
     }
 
-    private fun getUrl(tiles: MapTiles, x: Int, y: Int, zoom: Int): String {
+    /** @return null for a tile outside the map */
+    private fun getUrl(tiles: MapTiles, x: Int, y: Int, zoom: Int): String? {
+        var tileZoom = zoom
         val (tileX, tileY) = when (tiles.scheme) {
-            TileScheme.XYZ -> x to y
+            TileScheme.XYZ -> {
+                // The tile grid of the map's zoom lies in the middle of the grid of the drawn zoom
+                tileZoom = zoom - tiles.zoomOffset
+                if (tileZoom < 0) return null
+                val count = 1 shl tileZoom
+                val start = ((1 shl zoom) - count) / 2
+                val tileX = x - start
+                val tileY = y - start
+                if (tileX !in 0 until count || tileY !in 0 until count) return null
+                tileX to tileY
+            }
             TileScheme.CENTERED -> {
                 val half = 1 shl (zoom - 1)
                 (x - half) to (y - half).inv()
@@ -52,7 +66,7 @@ class MapTileProvider(
         return tiles.urlTemplate
             .replace(KEY_TILE_X, tileX.toString())
             .replace(KEY_TILE_Y, tileY.toString())
-            .replace(KEY_TILE_Z, zoom.toString())
+            .replace(KEY_TILE_Z, tileZoom.toString())
     }
 
     private suspend fun download(url: String, onError: (String) -> Unit = {}): ByteArray? {

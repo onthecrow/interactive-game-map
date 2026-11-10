@@ -45,9 +45,11 @@ internal fun MapSelectorView(
             active = expanded,
             onClick = { expanded = true },
         ) { tint ->
+            val current = maps.firstOrNull { it.id == currentMapId }
             MapIconView(
                 modifier = Modifier.size(28.dp),
-                iconUrl = maps.firstOrNull { it.id == currentMapId }?.iconUrl,
+                iconUrl = current?.iconUrl,
+                tinted = current?.iconTinted ?: true,
                 tint = tint,
             )
         }
@@ -63,6 +65,7 @@ internal fun MapSelectorView(
                         MapIconView(
                             modifier = Modifier.size(24.dp),
                             iconUrl = map.iconUrl,
+                            tinted = map.iconTinted,
                             tint = tint,
                         )
                     },
@@ -76,10 +79,14 @@ internal fun MapSelectorView(
     }
 }
 
-/** The icon of a map: a one-color silhouette, drawn in [tint] as the other icons of the controls. */
+/**
+ * The icon of a map: a one-color silhouette drawn in [tint] as the other icons of the controls, or, when not
+ * [tinted], a picture of its own drawn as it is. Until it loads, the controls' icon of maps in [tint].
+ */
 @Composable
 private fun MapIconView(
     iconUrl: String?,
+    tinted: Boolean,
     tint: Color,
     modifier: Modifier = Modifier,
 ) {
@@ -93,7 +100,7 @@ private fun MapIconView(
             modifier = modifier,
             painter = it.painter(),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(tint),
+            colorFilter = if (tinted) ColorFilter.tint(tint) else null,
         )
     } ?: Icon(
         modifier = modifier,

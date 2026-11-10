@@ -9,11 +9,16 @@ data class MapsConfig(
     val maps: List<GameMap>,
 )
 
+/**
+ * @param iconTinted true when the icon is a one-color silhouette, drawn in the color of the controls around it; false
+ * draws it as it is, a picture of its own like a round badge
+ */
 @Serializable
 data class GameMap(
     val id: Int,
     val name: String,
     val iconUrl: String? = null,
+    val iconTinted: Boolean = true,
     val minZoom: Int,
     val maxZoom: Int,
     val tiles: MapTiles,

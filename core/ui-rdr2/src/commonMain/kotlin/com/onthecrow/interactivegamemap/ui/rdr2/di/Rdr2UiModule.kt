@@ -13,6 +13,7 @@ import com.onthecrow.interactivegamemap.ui.components.MapButtonComponent
 import com.onthecrow.interactivegamemap.ui.components.MenuComponent
 import com.onthecrow.interactivegamemap.ui.components.MenuItemComponent
 import com.onthecrow.interactivegamemap.ui.components.PanelComponent
+import com.onthecrow.interactivegamemap.ui.components.ProgressIndicatorComponent
 import com.onthecrow.interactivegamemap.ui.components.ScreenScaffoldComponent
 import com.onthecrow.interactivegamemap.ui.components.SearchFieldComponent
 import com.onthecrow.interactivegamemap.ui.components.SectionHeaderComponent
@@ -44,6 +45,7 @@ import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2SettingsGroup
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2SettingsRow
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2Sheet
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2Style
+import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2ProgressIndicator
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2Switch
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2TextButton
 import com.onthecrow.interactivegamemap.ui.rdr2.Rdr2VisibilityActions
@@ -76,6 +78,7 @@ val rdr2UiModule = module {
     single<SectionHeaderComponent> { Rdr2SectionHeader }
     single<SettingsGroupComponent> { Rdr2SettingsGroup }
     single<SettingsRowComponent> { Rdr2SettingsRow }
+    single<ProgressIndicatorComponent> { Rdr2ProgressIndicator }
     single { gameMapComponents() }
     single<GameMapStyle> { Rdr2Style(get()) }
 }

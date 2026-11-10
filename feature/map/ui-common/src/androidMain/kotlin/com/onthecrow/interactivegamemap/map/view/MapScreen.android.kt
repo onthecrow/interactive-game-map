@@ -67,9 +67,9 @@ import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.map.trackFirstTile
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.MapFloor
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapFloor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

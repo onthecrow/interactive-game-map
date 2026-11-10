@@ -80,7 +80,6 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core.analytics)
             implementation(projects.core.navigation.api)
-            implementation(projects.core.remoteconfig)
             implementation(projects.core.settings)
             implementation(projects.core.ui)
             implementation(projects.core.uiCore)

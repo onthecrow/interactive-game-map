@@ -32,10 +32,10 @@ import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.map.trackFirstTile
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.MapFloor
-import com.onthecrow.interactivegamemap.network.MapTiles
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapFloor
+import com.onthecrow.interactivegamemap.map.model.MapTiles
 import googlemaps.GMSCameraPosition
 import googlemaps.GMSCameraUpdate
 import googlemaps.GMSCoordinateBounds

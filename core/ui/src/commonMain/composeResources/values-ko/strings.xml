@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">지도를 불러오는 중…</string>
+    <string name="content_loading_failed">지도를 불러오지 못했습니다. 연결을 확인하고 다시 시도하세요.</string>
+    <string name="content_retry">다시 시도</string>
+    <string name="content_updating">지도 업데이트 중</string>
+    <string name="content_updated">지도가 업데이트되었습니다</string>
+</resources>

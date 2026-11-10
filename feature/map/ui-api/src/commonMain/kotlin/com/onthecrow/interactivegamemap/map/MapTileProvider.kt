@@ -1,8 +1,9 @@
 package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.model.MapTile
-import com.onthecrow.interactivegamemap.network.MapTiles
-import com.onthecrow.interactivegamemap.network.TileScheme
+import com.onthecrow.interactivegamemap.map.model.MapTiles
+import com.onthecrow.interactivegamemap.map.tiles.TileUrl
+import com.onthecrow.interactivegamemap.map.tiles.TileUrlResolvers
 import com.onthecrow.interactivegamemap.network.networkErrorType
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -13,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 
 class MapTileProvider(
     private val httpClient: HttpClient,
+    private val resolvers: TileUrlResolvers,
 ) {
 
     /**
@@ -45,28 +47,10 @@ class MapTileProvider(
 
     /** @return null for a tile outside the map */
     private fun getUrl(tiles: MapTiles, x: Int, y: Int, zoom: Int): String? {
-        var tileZoom = zoom
-        val (tileX, tileY) = when (tiles.scheme) {
-            TileScheme.XYZ -> {
-                // The tile grid of the map's zoom lies in the middle of the grid of the drawn zoom
-                tileZoom = zoom - tiles.zoomOffset
-                if (tileZoom < 0) return null
-                val count = 1 shl tileZoom
-                val start = ((1 shl zoom) - count) / 2
-                val tileX = x - start
-                val tileY = y - start
-                if (tileX !in 0 until count || tileY !in 0 until count) return null
-                tileX to tileY
-            }
-            TileScheme.CENTERED -> {
-                val half = 1 shl (zoom - 1)
-                (x - half) to (y - half).inv()
-            }
+        return when (val url = resolvers.resolve(tiles, x, y, zoom)) {
+            TileUrl.Outside -> null
+            is TileUrl.Url -> url.value
         }
-        return tiles.urlTemplate
-            .replace(KEY_TILE_X, tileX.toString())
-            .replace(KEY_TILE_Y, tileY.toString())
-            .replace(KEY_TILE_Z, tileZoom.toString())
     }
 
     private suspend fun download(url: String, onError: (String) -> Unit = {}): ByteArray? {
@@ -94,9 +78,6 @@ class MapTileProvider(
     }
 
     private companion object {
-        private const val KEY_TILE_X = "{{x}}"
-        private const val KEY_TILE_Y = "{{y}}"
-        private const val KEY_TILE_Z = "{{z}}"
         private const val SIZE_TILE_PX = 256
     }
 }

@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">正在加载地图…</string>
+    <string name="content_loading_failed">无法加载地图。请检查网络连接后重试。</string>
+    <string name="content_retry">重试</string>
+    <string name="content_updating">正在更新地图</string>
+    <string name="content_updated">地图已更新</string>
+</resources>

@@ -4,24 +4,27 @@ import com.onthecrow.interactivegamemap.analytics.CrashReporter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import kotlin.String
 
 internal abstract class RemoteConfigProviderImpl : KoinComponent, RemoteConfigProvider {
 
-    private val json = Json { ignoreUnknownKeys = true }
-    private val _configDataFlow = MutableStateFlow<RemoteConfig?>(null)
+    // Bumped on every activation, so every key is read again
+    private val revision = MutableStateFlow(0)
     private val crashReporter: CrashReporter by inject()
 
     init {
         startBackgroundSync()
     }
 
-    override fun getRemoteConfigFlow(): Flow<RemoteConfig> {
-        return _configDataFlow.filterNotNull()
+    override fun observe(key: String): Flow<String> {
+        return revision
+            .filter { it > 0 }
+            .map { getString(key) }
+            .filter { it.isNotEmpty() }
             .distinctUntilChanged()
     }
 
@@ -33,26 +36,7 @@ internal abstract class RemoteConfigProviderImpl : KoinComponent, RemoteConfigPr
         crashReporter.log("Remote config: $message")
     }
 
-    protected fun onConfigUpdated(configField: String? = null) {
-        when (configField) {
-            // todo
-            else -> updateWholeConfig()
-        }
-    }
-
-    private fun updateWholeConfig() {
-        val maps = getString(KEY_MAPS)
-        try {
-            _configDataFlow.value = json.decodeFromString<RemoteConfig>(maps)
-        } catch (e: IllegalArgumentException) {
-            // Nothing has been fetched yet or the value is malformed, keep the current config
-            log("can't parse, ${e.message}")
-            // A malformed one leaves every user without the maps
-            if (maps.isNotEmpty()) crashReporter.recordNonFatal(e)
-        }
-    }
-
-    companion object Companion {
-        protected const val KEY_MAPS = "maps"
+    protected fun onConfigUpdated() {
+        revision.update { it + 1 }
     }
 }

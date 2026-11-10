@@ -2,6 +2,7 @@ package com.onthecrow.interactivegamemap.settings.di
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.onthecrow.interactivegamemap.settings.LegalNotice
 import com.onthecrow.interactivegamemap.settings.PrivacyPolicyUrl
 import com.onthecrow.interactivegamemap.settings.SettingsCrashKeys
 import com.onthecrow.interactivegamemap.settings.SettingsDestination
@@ -30,6 +31,7 @@ val settingsUiModule = module {
             // Given by the app: every app has its own policy
             privacyPolicyUrl = koinInject<PrivacyPolicyUrl>().value,
             onEvent = viewModel::onEvent,
+            legalNotice = koinInject<LegalNotice>().lines,
         )
     }
 }

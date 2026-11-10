@@ -6,23 +6,23 @@ import com.onthecrow.interactivegamemap.analytics.MarkerFoundChangeEvent
 import com.onthecrow.interactivegamemap.analytics.SearchEvent
 import com.onthecrow.interactivegamemap.analytics.SearchType
 import com.onthecrow.interactivegamemap.map.model.MapLocation
-import com.onthecrow.interactivegamemap.network.RemoteConfigProvider
 import com.onthecrow.interactivegamemap.settings.AppLanguageProvider
 import com.onthecrow.interactivegamemap.settings.SettingsDestination
 import com.onthecrow.interactivegamemap.settings.SettingsRepository
 import com.onthecrow.nomadrates.navigation.Navigator
 import com.onthecrow.nomadrates.uicore.BaseViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -37,15 +37,16 @@ private const val MIN_SEARCH_TERM_LENGTH = 2
 
 private data class SearchInput(val type: SearchType, val term: String)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class MapViewModel(
     private val getLocationsUseCase: GetLocationsUseCase,
     private val getLocationsByIdsUseCase: GetLocationsByIdsUseCase,
     private val getMarkerGroupsUseCase: GetMarkerGroupsUseCase,
-    private val getMapNamesUseCase: GetMapNamesUseCase,
+    getMapsUseCase: GetMapsUseCase,
+    observeContentUpdatesUseCase: ObserveContentUpdatesUseCase,
     private val setLocationFoundUseCase: SetLocationFoundUseCase,
     getFoundLocationIdsUseCase: GetFoundLocationIdsUseCase,
     preferences: MapPreferences,
-    configProvider: RemoteConfigProvider,
     settingsRepository: SettingsRepository,
     languageProvider: AppLanguageProvider,
     navigator: Navigator,
@@ -62,14 +63,16 @@ internal class MapViewModel(
         // Read before the config comes, so the map of the last launch opens instead of the default one
         val savedMapView = preferences.getMapViewSettings()
         // The names of the maps are translated with the markers
-        combine(configProvider.getRemoteConfigFlow(), languageProvider.language) { config, language ->
-            val names = getMapNamesUseCase(language)
-            config.copy(maps = config.maps.map { map -> names[map.id]?.let { map.copy(name = it) } ?: map })
-        }
+        languageProvider.language
+            .flatMapLatest { language -> getMapsUseCase(language) }
             .onEach { onEvent(MapEvent.OnConfigLoaded(it, savedMapView)) }
             .launchIn(viewModelScope)
         languageProvider.language
             .onEach { onEvent(MapEvent.OnLanguageChange(it)) }
+            .launchIn(viewModelScope)
+        // New data in the background: the same view shows it
+        observeContentUpdatesUseCase()
+            .onEach { reloadContent() }
             .launchIn(viewModelScope)
         settingsRepository.settings
             .onEach { onEvent(MapEvent.OnSettingsChange(it.hideMarkersWhileMoving, it.clusterMarkers)) }
@@ -197,6 +200,12 @@ internal class MapViewModel(
             val entrances = getLocationsByIdsUseCase(entranceIds, language)
             onEvent(MapEvent.OnEntrancesLoaded(entrances))
         }
+    }
+
+    private fun reloadContent() {
+        val state = state.value
+        state.locationsRequest?.let(::getLocations)
+        state.currentMap?.let { getMarkerGroups(it.id, state.language) }
     }
 
     private fun getMarkerGroups(mapId: Int, language: String) {

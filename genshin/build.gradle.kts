@@ -14,6 +14,8 @@ kotlin {
         implementation(libs.compose.uiToolingPreview)
         implementation(libs.androidx.activity.compose)
         implementation(libs.androidx.core.splashscreen)
+        implementation(project.dependencies.platform(libs.koin.bom))
+        implementation(libs.koin.android)
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
         implementation(libs.firebase.crashlytics)

@@ -2,6 +2,10 @@ package com.onthecrow.interactivegamemap.ui.genshin
 
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.painter.Painter
+import com.onthecrow.interactivegamemap.ui.genshin.resources.Res
+import com.onthecrow.interactivegamemap.ui.genshin.resources.app_icon
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
@@ -50,6 +54,9 @@ class GenshinStyle(override val components: GameMapComponents) : GameMapStyle {
         markers = GenshinIcons.List,
         settings = GenshinIcons.Settings,
     )
+
+    @Composable
+    override fun appIcon(): Painter = painterResource(Res.drawable.app_icon)
 
     @Composable
     override fun Provide(colors: GameMapColors, content: @Composable () -> Unit) {

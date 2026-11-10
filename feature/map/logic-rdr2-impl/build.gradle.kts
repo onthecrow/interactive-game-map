@@ -21,6 +21,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.map.logicCommon)
+            implementation(projects.core.sync)
             implementation(libs.compose.runtime)
             implementation(libs.compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)

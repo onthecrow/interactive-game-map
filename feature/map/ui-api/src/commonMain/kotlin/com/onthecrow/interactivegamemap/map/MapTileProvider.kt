@@ -1,8 +1,9 @@
 package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.model.MapTile
-import com.onthecrow.interactivegamemap.network.MapTiles
-import com.onthecrow.interactivegamemap.network.TileScheme
+import com.onthecrow.interactivegamemap.map.model.MapTiles
+import com.onthecrow.interactivegamemap.map.tiles.TileUrl
+import com.onthecrow.interactivegamemap.map.tiles.TileUrlResolvers
 import com.onthecrow.interactivegamemap.network.networkErrorType
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -13,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 
 class MapTileProvider(
     private val httpClient: HttpClient,
+    private val resolvers: TileUrlResolvers,
 ) {
 
     /**
@@ -28,11 +30,13 @@ class MapTileProvider(
         zoom: Int,
         onError: (String) -> Unit = {},
     ): MapTile? {
+        // Outside the map there is nothing to ask the server for
+        val url = getUrl(tiles, x, y, zoom) ?: return MapTile(width = SIZE_TILE_PX, height = SIZE_TILE_PX, data = null)
         return nullOnFailure(onError) {
             MapTile(
                 width = SIZE_TILE_PX,
                 height = SIZE_TILE_PX,
-                data = download(getUrl(tiles, x, y, zoom), onError),
+                data = download(url, onError),
             )
         }
     }
@@ -41,18 +45,12 @@ class MapTileProvider(
         return nullOnFailure { download(url) }
     }
 
-    private fun getUrl(tiles: MapTiles, x: Int, y: Int, zoom: Int): String {
-        val (tileX, tileY) = when (tiles.scheme) {
-            TileScheme.XYZ -> x to y
-            TileScheme.CENTERED -> {
-                val half = 1 shl (zoom - 1)
-                (x - half) to (y - half).inv()
-            }
+    /** @return null for a tile outside the map */
+    private fun getUrl(tiles: MapTiles, x: Int, y: Int, zoom: Int): String? {
+        return when (val url = resolvers.resolve(tiles, x, y, zoom)) {
+            TileUrl.Outside -> null
+            is TileUrl.Url -> url.value
         }
-        return tiles.urlTemplate
-            .replace(KEY_TILE_X, tileX.toString())
-            .replace(KEY_TILE_Y, tileY.toString())
-            .replace(KEY_TILE_Z, zoom.toString())
     }
 
     private suspend fun download(url: String, onError: (String) -> Unit = {}): ByteArray? {
@@ -80,9 +78,6 @@ class MapTileProvider(
     }
 
     private companion object {
-        private const val KEY_TILE_X = "{{x}}"
-        private const val KEY_TILE_Y = "{{y}}"
-        private const val KEY_TILE_Z = "{{z}}"
         private const val SIZE_TILE_PX = 256
     }
 }

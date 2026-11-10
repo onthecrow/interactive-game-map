@@ -28,8 +28,16 @@ kotlin {
             implementation(libs.koin.compose)
         }
         androidMain.dependencies {
-            implementation(libs.compose.uiTooling)
             implementation(libs.androidx.activity.compose)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "com.onthecrow.interactivegamemap.ui.resources"
+}
+
+// Compose previews of this module in Android Studio, kept out of the apps that use it
+dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
 }

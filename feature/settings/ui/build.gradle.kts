@@ -18,9 +18,6 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.compose.uiTooling)
-        }
         commonMain.dependencies {
             implementation(projects.core.analytics)
             implementation(projects.core.navigation.api)
@@ -44,4 +41,9 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+}
+
+// Compose previews of this module in Android Studio, kept out of the apps that use it
+dependencies {
+    androidRuntimeClasspath(libs.compose.uiTooling)
 }

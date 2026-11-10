@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.MarkerIconLoader
 import com.onthecrow.interactivegamemap.map.MarkerImage
 import com.onthecrow.interactivegamemap.map.painter
-import com.onthecrow.interactivegamemap.network.GameMap
+import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.ui.components.GameDropdownMenu
 import com.onthecrow.interactivegamemap.ui.components.GameMapButton
 import com.onthecrow.interactivegamemap.ui.components.GameMenuItem

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +86,7 @@ internal fun SettingsScreen(
     privacyPolicyUrl: String,
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
+    legalNotice: List<String> = emptyList(),
 ) {
     GameScreenScaffold(
         modifier = modifier,
@@ -111,8 +114,16 @@ internal fun SettingsScreen(
                 AppVersion(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 16.dp),
+                        .padding(top = 8.dp, bottom = if (legalNotice.isEmpty()) 16.dp else 0.dp),
                 )
+                if (legalNotice.isNotEmpty()) {
+                    LegalNoticeText(
+                        lines = legalNotice,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 16.dp),
+                    )
+                }
             }
         }
     }
@@ -252,3 +263,14 @@ private val ThemeMode.labelRes: StringResource
         ThemeMode.LIGHT -> Res.string.settings_theme_light
         ThemeMode.DARK -> Res.string.settings_theme_dark
     }
+
+@Composable
+private fun LegalNoticeText(lines: List<String>, modifier: Modifier = Modifier) {
+    Text(
+        text = lines.joinToString("\n"),
+        style = GameMapTheme.typography.caption,
+        color = GameMapTheme.colors.contentSecondary,
+        textAlign = TextAlign.Center,
+        modifier = modifier,
+    )
+}

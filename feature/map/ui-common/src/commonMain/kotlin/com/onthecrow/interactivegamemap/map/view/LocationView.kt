@@ -13,7 +13,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.onthecrow.interactivegamemap.network.MapFloor
+import com.onthecrow.interactivegamemap.map.model.MapFloor
 import com.onthecrow.interactivegamemap.ui.components.ButtonKind
 import com.onthecrow.interactivegamemap.ui.components.ButtonSize
 import com.onthecrow.interactivegamemap.ui.components.GameButton

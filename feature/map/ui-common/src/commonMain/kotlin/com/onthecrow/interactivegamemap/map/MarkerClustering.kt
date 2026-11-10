@@ -1,7 +1,7 @@
 package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.model.MapLocation
-import com.onthecrow.interactivegamemap.network.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapBounds
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor

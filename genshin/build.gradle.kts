@@ -14,6 +14,8 @@ kotlin {
         implementation(libs.compose.uiToolingPreview)
         implementation(libs.androidx.activity.compose)
         implementation(libs.androidx.core.splashscreen)
+        implementation(project.dependencies.platform(libs.koin.bom))
+        implementation(libs.koin.android)
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
         implementation(libs.firebase.crashlytics)
@@ -67,7 +69,9 @@ android {
             manifestPlaceholders["firebaseCollectionEnabled"] = false
         }
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
             manifestPlaceholders["firebaseCollectionEnabled"] = true
         }
@@ -75,4 +79,9 @@ android {
     buildFeatures {
         resValues = true
     }
+}
+
+// Compose tooling (previews on a device, the layout inspector) only in debug builds
+dependencies {
+    debugImplementation(libs.compose.uiTooling)
 }

@@ -2,9 +2,9 @@ package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.RemoteConfig
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapsConfig
 import com.onthecrow.nomadrates.uicore.Event
 
 internal sealed interface MapEvent : Event {
@@ -16,7 +16,7 @@ internal sealed interface MapEvent : Event {
     data object OnSettingsClick : MapEvent
     /** [savedMapView] is opened when no map is open yet. */
     data class OnConfigLoaded(
-        val config: RemoteConfig,
+        val config: MapsConfig,
         val savedMapView: MapViewSettings = MapViewSettings(),
     ) : MapEvent
     data class OnMapSelect(val map: GameMap) : MapEvent

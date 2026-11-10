@@ -1,24 +1,19 @@
 package com.onthecrow.interactivegamemap.map.di
 
-import com.onthecrow.interactivegamemap.map.GetLocationsByIdsUseCase
-import com.onthecrow.interactivegamemap.map.GetLocationsByIdsUseCaseImpl
-import com.onthecrow.interactivegamemap.map.GetLocationsUseCase
-import com.onthecrow.interactivegamemap.map.GetLocationsUseCaseImpl
-import com.onthecrow.interactivegamemap.map.GetMarkerGroupsUseCase
-import com.onthecrow.interactivegamemap.map.GetMarkerGroupsUseCaseImpl
-import com.onthecrow.interactivegamemap.map.GetMapNamesUseCase
-import com.onthecrow.interactivegamemap.map.GetMapNamesUseCaseImpl
 import com.onthecrow.interactivegamemap.map.LocationsRepository
-import com.onthecrow.interactivegamemap.map.LocationsRepositoryImpl
+import com.onthecrow.interactivegamemap.map.MapsRepository
+import com.onthecrow.interactivegamemap.map.common.RemoteConfigMapsRepository
 import com.onthecrow.interactivegamemap.map.data.LocalDataSource
+import com.onthecrow.interactivegamemap.map.LocationsRepositoryImpl
+import com.onthecrow.interactivegamemap.sync.NoopSyncTask
+import com.onthecrow.interactivegamemap.sync.SyncTask
 import org.koin.dsl.module
 
+/** The data of the game, all in the build, for the logic of the map, see mapDomainModule. */
 val mapLogicModule = module {
-    includes(foundLocationsModule)
-    single<GetLocationsUseCase> { GetLocationsUseCaseImpl(get()) }
-    single<GetLocationsByIdsUseCase> { GetLocationsByIdsUseCaseImpl(get()) }
-    single<GetMarkerGroupsUseCase> { GetMarkerGroupsUseCaseImpl(get()) }
-    single<GetMapNamesUseCase> { GetMapNamesUseCaseImpl(get()) }
     single<LocationsRepository> { LocationsRepositoryImpl(get()) }
+    single<MapsRepository> { RemoteConfigMapsRepository(get(), get()) }
     single { LocalDataSource() }
+    // Everything is in the build
+    single<SyncTask> { NoopSyncTask }
 }

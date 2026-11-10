@@ -21,6 +21,10 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.feature.map.logicApi)
+            implementation(projects.feature.map.logicCommon)
+            implementation(projects.core.settings)
+            implementation(projects.core.sync)
+            implementation(libs.ktor.client.core)
             implementation(libs.compose.runtime)
             implementation(libs.compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)
@@ -31,6 +35,7 @@ kotlin {
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }

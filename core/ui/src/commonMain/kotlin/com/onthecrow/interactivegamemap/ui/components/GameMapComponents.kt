@@ -29,6 +29,7 @@ class GameMapComponents(
     val sectionHeader: SectionHeaderComponent,
     val settingsGroup: SettingsGroupComponent,
     val settingsRow: SettingsRowComponent,
+    val progressIndicator: ProgressIndicatorComponent,
 )
 
 /** The components a game registered in Koin one by one, together. */
@@ -56,4 +57,5 @@ fun Scope.gameMapComponents(): GameMapComponents = GameMapComponents(
     sectionHeader = get(),
     settingsGroup = get(),
     settingsRow = get(),
+    progressIndicator = get(),
 )

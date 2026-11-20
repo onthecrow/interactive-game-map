@@ -2,11 +2,13 @@ package com.onthecrow.interactivegamemap.map.di
 
 import com.onthecrow.interactivegamemap.map.LocationsRepository
 import com.onthecrow.interactivegamemap.map.MapsRepository
+import com.onthecrow.interactivegamemap.map.TravelNetworkRepository
 import com.onthecrow.interactivegamemap.map.common.RemoteConfigMapsRepository
 import com.onthecrow.interactivegamemap.map.common.di.contentStoreModule
 import com.onthecrow.interactivegamemap.map.data.GenshinContent
 import com.onthecrow.interactivegamemap.map.data.GenshinLocationsRepository
 import com.onthecrow.interactivegamemap.map.data.GenshinMapsRepository
+import com.onthecrow.interactivegamemap.map.data.GenshinTravelNetworkRepository
 import com.onthecrow.interactivegamemap.map.data.HoyolabSyncTask
 import com.onthecrow.interactivegamemap.map.hoyolab.HoyolabApi
 import com.onthecrow.interactivegamemap.map.hoyolab.HoyolabConfigProvider
@@ -24,6 +26,7 @@ val mapLogicModule = module {
     single { HoyolabApi(get(), get()) }
     single<LocationsRepository> { GenshinLocationsRepository(get()) }
     single<MapsRepository> { GenshinMapsRepository(RemoteConfigMapsRepository(get(), get()), get()) }
+    single<TravelNetworkRepository> { GenshinTravelNetworkRepository() }
     single<SyncTask> { HoyolabSyncTask(get(), get(), get(), get()) }
     single { HoyolabTileUrlResolver() } bind TileUrlResolver::class
 }

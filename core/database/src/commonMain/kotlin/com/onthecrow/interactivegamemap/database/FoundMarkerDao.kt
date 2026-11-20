@@ -14,6 +14,10 @@ interface FoundMarkerDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(marker: FoundMarkerEntity)
 
+    /** The row ids of the markers added, -1 for the ones found already. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertAll(markers: List<FoundMarkerEntity>): List<Long>
+
     @Query("DELETE FROM found_markers WHERE markerId = :markerId")
     suspend fun delete(markerId: Int)
 }

@@ -11,11 +11,17 @@ import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 
 /**
  * A round button over the map. [content] draws the icon in the tint it's given, [active] is the pressed
- * state of a toggle, like the layers of the dungeons shown.
+ * state of a toggle, like the layers of the dungeons shown; a button that isn't [enabled] is dimmed.
  */
 interface MapButtonComponent {
     @Composable
-    fun Content(onClick: () -> Unit, active: Boolean, modifier: Modifier, content: @Composable (tint: Color) -> Unit)
+    fun Content(
+        onClick: () -> Unit,
+        active: Boolean,
+        enabled: Boolean,
+        modifier: Modifier,
+        content: @Composable (tint: Color) -> Unit,
+    )
 }
 
 /** The zoom buttons over the map, a button is dimmed at the end of the zoom range. */
@@ -39,11 +45,13 @@ fun GameMapButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     active: Boolean = false,
+    enabled: Boolean = true,
 ) {
     GameMapButton(
         onClick = onClick,
         modifier = modifier.semantics { this.contentDescription = contentDescription },
         active = active,
+        enabled = enabled,
     ) { tint ->
         Icon(imageVector = icon, contentDescription = null, tint = tint)
     }
@@ -54,9 +62,10 @@ fun GameMapButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     active: Boolean = false,
+    enabled: Boolean = true,
     content: @Composable (tint: Color) -> Unit,
 ) {
-    GameMapTheme.components.mapButton.Content(onClick, active, modifier, content)
+    GameMapTheme.components.mapButton.Content(onClick, active, enabled, modifier, content)
 }
 
 @Composable

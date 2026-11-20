@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.onthecrow.interactivegamemap.App
+import com.onthecrow.interactivegamemap.analytics.crashOnTestRequest
 import com.onthecrow.interactivegamemap.sync.Synchronizer
 import org.koin.android.ext.android.inject
 
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
         installSplashScreen().setKeepOnScreenCondition { synchronizer.state.value.hasLocalData == null }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        crashOnTestRequest()
 
         setContent {
             App()

@@ -119,6 +119,86 @@ data class MarkerFoundChangeEvent(
         )
 }
 
+enum class RouteBuildResult { BUILT, CANCELLED, UNAVAILABLE, FAILED }
+
+/** A route through the markers on the map is built, or its build ends without one. */
+data class RouteBuildEvent(
+    val result: RouteBuildResult,
+    /** The markers the route was to go through. */
+    val locationsCount: Int,
+    /** The jumps of the built route, the first fast travel point included. */
+    val fastTravels: Int?,
+    /** From the press of the route button to the end of the build. */
+    val buildTime: Duration,
+) : AnalyticsEvent {
+    override val name get() = "route_build"
+    override val params
+        get() = mapOf(
+            "route_result" to result,
+            "locations_count" to locationsCount,
+            "fast_travels" to fastTravels,
+            "build_ms" to buildTime.inWholeMilliseconds,
+        )
+}
+
+enum class RouteEndReason {
+    /** The user ended it. */
+    ENDED,
+
+    /** The user hid markers of the route in the marker list. */
+    MARKERS_HIDDEN,
+}
+
+/** The route is dropped. */
+data class RouteExitEvent(
+    val reason: RouteEndReason,
+    val locationsCount: Int,
+    /** The markers of the route found by then, in the route or before. */
+    val foundCount: Int,
+    /** The page of the route the user had come to, from 0. */
+    val page: Int,
+) : AnalyticsEvent {
+    override val name get() = "route_exit"
+    override val params
+        get() = mapOf(
+            "end_reason" to reason,
+            "locations_count" to locationsCount,
+            "found_count" to foundCount,
+            "route_page" to page,
+        )
+}
+
+enum class TransferType { EXPORT, IMPORT }
+
+enum class TransferResult {
+    DONE,
+
+    /** The file couldn't be written. */
+    FAILED,
+
+    /** The file picked isn't a file of found markers. */
+    NOT_A_FILE,
+
+    /** The file is of another game. */
+    OTHER_GAME,
+}
+
+/** The found markers are saved to a file, or a file of them is added to them, in the settings. */
+data class FoundMarkersTransferEvent(
+    val type: TransferType,
+    val result: TransferResult,
+    /** Export: the markers in the file. Import: the ones it added. */
+    val markersCount: Int,
+) : AnalyticsEvent {
+    override val name get() = "found_markers_transfer"
+    override val params
+        get() = mapOf(
+            "transfer_type" to type,
+            "transfer_result" to result,
+            "markers_count" to markersCount,
+        )
+}
+
 enum class AnalyticsSetting { HIDE_MARKERS_WHILE_MOVING, CLUSTER_MARKERS, THEME, DYNAMIC_COLOR, LANGUAGE }
 
 /** The user changes a setting. */

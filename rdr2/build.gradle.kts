@@ -20,6 +20,7 @@ kotlin {
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
         implementation(libs.firebase.crashlytics)
+        implementation(projects.core.analytics)
     }
 }
 
@@ -45,8 +46,8 @@ android {
         applicationId = "com.onthecrow.mapslinger"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         resValue("string", "google_maps_key", mapsKey)
     }
@@ -67,7 +68,12 @@ android {
     }
     buildTypes {
         getByName("debug") {
+            // A crash report of a debug build sent with -PcrashlyticsInDebug tells it apart from the release
+            versionNameSuffix = "-debug"
             manifestPlaceholders["firebaseCollectionEnabled"] = false
+            // -PcrashlyticsInDebug: the crash reports of a debug build go to Crashlytics too, to check it with a test
+            // crash, see docs/analytics-events.md
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = providers.gradleProperty("crashlyticsInDebug").isPresent
         }
         getByName("release") {
             isMinifyEnabled = true
@@ -75,6 +81,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
             manifestPlaceholders["firebaseCollectionEnabled"] = true
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = true
         }
     }
     buildFeatures {

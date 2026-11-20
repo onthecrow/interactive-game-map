@@ -13,4 +13,26 @@
     <string name="map_screen_layers">Layers</string>
     <string name="map_screen_zoom_in">Zoom in</string>
     <string name="map_screen_zoom_out">Zoom out</string>
+    <string name="map_screen_recenter">Recenter</string>
+    <string name="map_screen_route">Route</string>
+    <string name="route_build_title">Building the route</string>
+    <string name="route_build_preparing">Preparing the roads</string>
+    <string name="route_build_ordering">Finding the order</string>
+    <string name="route_build_improving">Shortening the route</string>
+    <string name="route_build_drawing">Laying out the route</string>
+    <string name="route_build_count">Markers: %1$d</string>
+    <string name="route_build_cancel">Cancel</string>
+    <string name="route_exit_title">End the route?</string>
+    <string name="route_exit_text">The route will be removed from the map. Found markers stay marked.</string>
+    <string name="route_exit_confirm">End</string>
+    <string name="route_exit_dismiss">Keep going</string>
+    <string name="route_previous">Previous marker</string>
+    <string name="route_next">Next marker</string>
+    <string name="route_position">%1$d / %2$d</string>
+    <string name="route_fast_travel_point">Fast travel point</string>
+    <string name="route_hint_title">Routes</string>
+    <string name="route_hint_text">Build the best route through the markers on the map</string>
+    <string name="recenter_hint_title">Recenter</string>
+    <string name="recenter_hint_text">Brings the camera back to the selected marker or the ones shown</string>
+    <string name="route_finished">Route complete</string>
 </resources>

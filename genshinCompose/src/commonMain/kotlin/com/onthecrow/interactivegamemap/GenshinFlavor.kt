@@ -7,6 +7,7 @@ import com.onthecrow.interactivegamemap.ui.genshin.di.genshinUiModule
 
 /** The Genshin Impact map: the data of HoYoLAB's map, the game's look. */
 val genshinFlavor = FlavorConfig(
+    gameId = "genshin",
     privacyPolicyUrl = "https://onthecrow.github.io/interactive-game-map/genshin/privacy-policy/",
     mapStyle = MapStyle(backgroundColor = Color(0xFF000000)),
     uiModule = genshinUiModule,

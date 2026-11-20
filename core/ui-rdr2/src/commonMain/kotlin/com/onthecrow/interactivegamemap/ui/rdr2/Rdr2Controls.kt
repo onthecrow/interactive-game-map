@@ -81,13 +81,14 @@ private val MapDiscSize = 40.dp
 
 /**
  * A button over the map as the game's prompts: a worn white disc with a dark glyph and a dark shadow around it,
- * the grey ring while active, a greyer disc while pressed.
+ * ringed with the red brush stroke of an active search field while active, a greyer disc while pressed.
  */
 object Rdr2MapButton : MapButtonComponent {
     @Composable
     override fun Content(
         onClick: () -> Unit,
         active: Boolean,
+        enabled: Boolean,
         modifier: Modifier,
         content: @Composable (tint: Color) -> Unit,
     ) {
@@ -95,13 +96,29 @@ object Rdr2MapButton : MapButtonComponent {
         val pressed by interactionSource.collectIsPressedAsState()
         // Each button on the screen wears its own way
         val salt = currentCompositeKeyHash
+        val selection = Rdr2.colors.selection
         Box(
             modifier = modifier
                 .size(ControlSize)
-                .clickable(interactionSource = interactionSource, indication = null, role = Role.Button, onClick = onClick),
+                // Faded as the zoom button at the end of its range
+                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                .drawWithCache {
+                    val ring = if (active) brushRing(this.size.minDimension / density.toDouble(), seed = salt, scale = density) else null
+                    onDrawWithContent {
+                        drawContent()
+                        ring?.let { drawPath(it, selection) }
+                    }
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.Button,
+                    onClick = onClick,
+                ),
             contentAlignment = Alignment.Center,
         ) {
-            PromptDisc(size = MapDiscSize, ring = active, pressed = pressed, salt = salt) {
+            PromptDisc(size = MapDiscSize, pressed = pressed, salt = salt) {
                 content(Rdr2.colors.promptGlyph)
             }
         }

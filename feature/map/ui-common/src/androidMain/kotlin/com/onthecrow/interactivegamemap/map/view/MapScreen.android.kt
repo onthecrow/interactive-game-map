@@ -3,6 +3,7 @@ package com.onthecrow.interactivegamemap.map.view
 import android.graphics.BitmapFactory
 import android.graphics.Point
 import android.os.Bundle
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,12 +35,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.GroundOverlay
 import com.google.android.gms.maps.model.GroundOverlayOptions
 import com.google.android.gms.maps.model.LatLng
@@ -49,10 +53,16 @@ import com.google.android.gms.maps.model.Polygon
 import com.google.android.gms.maps.model.PolygonOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.maps.model.RoundCap
+import com.google.android.gms.maps.model.StrokeStyle
+import com.google.android.gms.maps.model.StyleSpan
+import com.google.android.gms.maps.model.TextureStyle
 import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
 import com.onthecrow.interactivegamemap.map.CameraCommand
 import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.cameraTargetAbove
+import com.onthecrow.interactivegamemap.map.focusZoom
 import com.onthecrow.interactivegamemap.map.MapAnalytics
 import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
@@ -62,7 +72,16 @@ import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
+import com.onthecrow.interactivegamemap.map.model.Route
+import com.onthecrow.interactivegamemap.map.model.RouteFastTravel
+import com.onthecrow.interactivegamemap.map.model.RoutePathKind
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.map.RouteStopBubbleLift
+import com.onthecrow.interactivegamemap.map.rememberRouteStopBubble
+import com.onthecrow.interactivegamemap.map.rememberRouteStopImages
+import com.onthecrow.interactivegamemap.map.RouteLineWidths
+import com.onthecrow.interactivegamemap.map.rememberCrayonDashTexture
+import com.onthecrow.interactivegamemap.map.rememberCrayonTexture
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
@@ -84,7 +103,8 @@ internal actual fun MapView(
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
     foundLocationIds: Set<Int>,
-    focusedLocation: MapLocation?,
+    route: Route?,
+    selectedRouteStop: Int?,
     camera: CameraPosition?,
     cameraController: MapCameraController,
     hideMarkersWhileMoving: Boolean,
@@ -268,21 +288,34 @@ internal actual fun MapView(
         clusterMarkers.values.forEach { it.alpha = if (areMarkersHidden) HIDDEN_MARKER_ALPHA else 1f }
     }
 
+    val currentMap by rememberUpdatedState(map)
+    val currentSelected by rememberUpdatedState(selectedLocation)
+
     LaunchedEffect(googleMap, cameraController) {
         val googleMap = googleMap ?: return@LaunchedEffect
         cameraController.commands.collect { command ->
             googleMap.animateCamera(
                 when (command) {
-                    CameraCommand.ZOOM_IN -> CameraUpdateFactory.zoomIn()
-                    CameraCommand.ZOOM_OUT -> CameraUpdateFactory.zoomOut()
+                    CameraCommand.ZoomIn -> zoomBy(googleMap, currentSelected, 1f)
+                    CameraCommand.ZoomOut -> zoomBy(googleMap, currentSelected, -1f)
+                    is CameraCommand.Focus -> {
+                        val position = googleMap.cameraPosition
+                        val zoom = currentMap?.takeIf { !command.keepZoom }
+                            ?.focusZoom(position.zoom, command.points, command.areaWidth, command.areaHeight)
+                            ?: position.zoom
+                        // The target is in the middle of the map's padding, the points go above it
+                        val center = googleMap.projection.toScreenLocation(position.target)
+                        val above = center.y / density.density - command.focusY.value
+                        val (lat, lng) = cameraTargetAbove(command.points, zoom, above.toDouble())
+                        CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), zoom)
+                    }
+                    is CameraCommand.Fit -> CameraUpdateFactory.newLatLngBounds(
+                        command.bounds.toLatLngBounds(),
+                        with(density) { FitBoundsPadding.roundToPx() },
+                    )
                 }
             )
         }
-    }
-
-    LaunchedEffect(googleMap, focusedLocation) {
-        val location = focusedLocation ?: return@LaunchedEffect
-        googleMap?.animateCamera(CameraUpdateFactory.newLatLng(LatLng(location.lat, location.lng)))
     }
 
     val hasFloors = floors.isNotEmpty()
@@ -360,6 +393,93 @@ internal actual fun MapView(
         }
     }
 
+    // The lines along the roads and across country follow the zoom, see RouteLines.follow
+    val routeLines = remember { RouteLines() }
+    val crayon = rememberCrayonTexture(mapStyle.routeColor)
+    val crayonDash = rememberCrayonDashTexture(mapStyle.routeColor)
+    val crayonStrokes = remember(crayon, crayonDash) {
+        // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
+        fun stroke(image: ImageBitmap) = StrokeStyle.transparentColorBuilder()
+            .stamp(TextureStyle.newBuilder(BitmapDescriptorFactory.fromBitmap(image.asAndroidBitmap())).build())
+            .build()
+        stroke(crayon) to stroke(crayonDash)
+    }
+
+    LaunchedEffect(googleMap, route, crayonStrokes) {
+        routeLines.clear()
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val route = route ?: return@LaunchedEffect
+        val (stroke, dashes) = crayonStrokes
+
+        val widths = RouteLineWidths(mapStyle, route.paths)
+        val zoom = googleMap.cameraPosition.zoom
+        routeLines.widths = widths
+        route.paths.forEachIndexed { index, path ->
+            val segments = (path.points.size - 1).coerceAtLeast(1).toDouble()
+            val options = PolylineOptions()
+                .addAll(path.points.map { LatLng(it.lat, it.lng) })
+                .jointType(JointType.ROUND)
+                .zIndex(Z_INDEX_ROUTE.toFloat())
+            when (path.kind) {
+                RoutePathKind.RIDE -> options
+                    .startCap(RoundCap())
+                    .endCap(RoundCap())
+                    .addSpan(StyleSpan(stroke, segments))
+                // Crayon dashes across country and to the fast travel points, from the texture: one span for the line
+                RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> options.addSpan(StyleSpan(dashes, segments))
+            }
+            routeLines.polylines += googleMap.addPolyline(options.width(widths.initial(index, zoom) * density.density))
+        }
+    }
+
+    val routeStopImages = rememberRouteStopImages(route?.fastTravels?.map { it.number }.orEmpty())
+    val routeStops = remember { mutableListOf<Marker>() }
+
+    LaunchedEffect(googleMap, route, routeStopImages) {
+        routeStops.forEach { it.remove() }
+        routeStops.clear()
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+
+        route?.fastTravels.orEmpty().forEach { stop ->
+            val image = routeStopImages[stop.number] ?: return@forEach
+            googleMap.addMarker(
+                MarkerOptions()
+                    .position(LatLng(stop.point.lat, stop.point.lng))
+                    .anchor(0.5f, 0.5f)
+                    .zIndex(Z_INDEX_ROUTE_STOP.toFloat())
+                    .icon(BitmapDescriptorFactory.fromBitmap(image.asAndroidBitmap()))
+            )?.let {
+                // A tap on it shows its bubble, see the click listener
+                it.tag = stop
+                routeStops += it
+            }
+        }
+    }
+
+    val bubbleStop = route?.fastTravels?.firstOrNull { it.number == selectedRouteStop }
+    val bubbleImage = rememberRouteStopBubble(bubbleStop)
+    var bubble by remember { mutableStateOf<Marker?>(null) }
+
+    LaunchedEffect(googleMap, bubbleStop, bubbleImage) {
+        bubble?.remove()
+        bubble = null
+
+        val googleMap = googleMap ?: return@LaunchedEffect
+        val stop = bubbleStop ?: return@LaunchedEffect
+        val image = bubbleImage ?: return@LaunchedEffect
+        // Its bottom is the tip of the pointer, a bit above the middle of the point
+        val lift = with(density) { RouteStopBubbleLift.toPx() } / image.height
+        bubble = googleMap.addMarker(
+            MarkerOptions()
+                .position(LatLng(stop.point.lat, stop.point.lng))
+                .anchor(0.5f, 1f + lift)
+                .zIndex(Z_INDEX_ROUTE_BUBBLE.toFloat())
+                .icon(BitmapDescriptorFactory.fromBitmap(image.asAndroidBitmap()))
+        )
+    }
+
     LaunchedEffect(googleMap, selectedLocation) {
         areaPolygons.forEach { it.remove() }
         areaPolygons.clear()
@@ -386,15 +506,28 @@ internal actual fun MapView(
                     mapView.setOnMarkerClickListener {
                         when (val tag = it.tag) {
                             is MapLocation -> onEvent(MapEvent.OnLocationClick(tag))
+                            is RouteFastTravel -> onEvent(MapEvent.OnRouteStopClick(tag.number))
                             // Close enough for the locations of the cluster to be apart
-                            is MarkerCluster -> mapView.animateCamera(
-                                CameraUpdateFactory.newLatLngBounds(
-                                    tag.bounds.toLatLngBounds(),
-                                    with(density) { ClusterBoundsPadding.roundToPx() },
+                            is MarkerCluster -> {
+                                mapView.animateCamera(
+                                    CameraUpdateFactory.newLatLngBounds(
+                                        tag.bounds.toLatLngBounds(),
+                                        with(density) { ClusterBoundsPadding.roundToPx() },
+                                    )
                                 )
-                            )
+                                onEvent(MapEvent.OnClusterClick)
+                            }
                         }
                         true
+                    }
+                    mapView.setOnCameraMoveListener {
+                        routeLines.follow(mapView, this, density.density)
+                    }
+                    // Turned, the view shows more of the map or less without the camera moving
+                    addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+                        if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                            routeLines.follow(mapView, this, density.density)
+                        }
                     }
                     mapView.setOnCameraMoveStartedListener {
                         isCameraMoving = true
@@ -404,6 +537,7 @@ internal actual fun MapView(
                     }
                     mapView.setOnCameraIdleListener {
                         isCameraMoving = false
+                        routeLines.follow(mapView, this, density.density)
                         if (!isCameraPlaced) return@setOnCameraIdleListener
                         val position = mapView.cameraPosition
                         // The visible region of the projection doesn't include the padding
@@ -441,6 +575,48 @@ internal actual fun MapView(
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+}
+
+/** The lines of the route on the map, by the indices of its paths, and their widths. */
+private class RouteLines {
+    val polylines = mutableListOf<Polyline>()
+    var widths: RouteLineWidths? = null
+
+    fun clear() {
+        polylines.forEach { it.remove() }
+        polylines.clear()
+        widths = null
+    }
+
+    /**
+     * The widths of the lines in [view], the map, or near it, for the camera now: the route grows and shrinks with the
+     * map while it zooms, not only once it stops.
+     */
+    fun follow(map: GoogleMap, view: View, density: Float) {
+        val widths = widths ?: return
+        if (view.width == 0 || view.height == 0) return
+        // All of the view: the visible region of the projection doesn't include the padding
+        val southWest = map.projection.fromScreenLocation(Point(0, view.height))
+        val northEast = map.projection.fromScreenLocation(Point(view.width, 0))
+        val bounds = MapBounds(
+            west = southWest.longitude,
+            south = southWest.latitude,
+            east = northEast.longitude,
+            north = northEast.latitude,
+        )
+        widths.update(map.cameraPosition.zoom, bounds) { index, width -> polylines[index].width = width * density }
+    }
+}
+
+/**
+ * A zoom step around [location] when it's on the screen, so it stays where it is; around the middle otherwise, as when
+ * the map was moved away from it.
+ */
+private fun zoomBy(googleMap: GoogleMap, location: MapLocation?, amount: Float): CameraUpdate {
+    val point = location?.let { LatLng(it.lat, it.lng) }
+        ?.takeIf { googleMap.projection.visibleRegion.latLngBounds.contains(it) }
+        ?: return CameraUpdateFactory.zoomBy(amount)
+    return CameraUpdateFactory.zoomBy(amount, googleMap.projection.toScreenLocation(point))
 }
 
 private fun MapBounds.toLatLngBounds(): LatLngBounds {

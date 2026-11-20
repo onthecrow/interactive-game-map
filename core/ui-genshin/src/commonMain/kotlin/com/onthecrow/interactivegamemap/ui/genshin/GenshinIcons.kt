@@ -46,6 +46,8 @@ internal object GenshinIcons {
 
     val ChevronRight = icon("ChevronRight") { line("M9.5 5.5L16 12L9.5 18.5") }
 
+    val ChevronLeft = icon("ChevronLeft") { line("M14.5 5.5L8 12L14.5 18.5") }
+
     // A sheet over another one
     val Copy = icon("Copy") {
         line("M9 4.5H17.5A2 2 0 0 1 19.5 6.5V15")
@@ -111,4 +113,18 @@ internal object GenshinIcons {
     }
 
     val DiamondFilled = icon("DiamondFilled") { shape("M12 3L21 12L12 21L3 12Z") }
+
+    /** A road winding from one point to another, the drawing the route button was given. */
+    val Route = icon("Route") {
+        line("M6 8.5V17A3 3 0 0 0 12 17V7A3 3 0 0 1 18 7V15.5")
+        shape(circle(6f, 6f, 3f))
+        shape(circle(18f, 18f, 3f))
+    }
+
+    /** Four arrows from the edges to a point in the middle, the drawing the recenter button was given. */
+    val Recenter = icon("Recenter") {
+        line("M12 1.8V7.4M12 22.2V16.6M1.8 12H7.4M22.2 12H16.6", width = 2.4f)
+        line("M9.4 4.8L12 7.4L14.6 4.8M9.4 19.2L12 16.6L14.6 19.2M4.8 9.4L7.4 12L4.8 14.6M19.2 9.4L16.6 12L19.2 14.6", width = 2.4f)
+        shape(circle(12f, 12f, 1.8f))
+    }
 }

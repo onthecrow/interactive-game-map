@@ -13,4 +13,25 @@
     <string name="map_screen_layers">Camadas</string>
     <string name="map_screen_zoom_in">Aumentar zoom</string>
     <string name="map_screen_zoom_out">Diminuir zoom</string>
+    <string name="map_screen_recenter">Recentralizar</string>
+    <string name="map_screen_route">Rota</string>
+    <string name="route_build_title">Criando a rota</string>
+    <string name="route_build_preparing">Preparando as estradas</string>
+    <string name="route_build_ordering">Buscando a ordem</string>
+    <string name="route_build_improving">Encurtando a rota</string>
+    <string name="route_build_drawing">Traçando a rota</string>
+    <string name="route_build_count">Marcadores: %1$d</string>
+    <string name="route_build_cancel">Cancelar</string>
+    <string name="route_exit_title">Encerrar a rota?</string>
+    <string name="route_exit_text">A rota será removida do mapa. Os marcadores encontrados continuam marcados.</string>
+    <string name="route_exit_confirm">Encerrar</string>
+    <string name="route_exit_dismiss">Continuar</string>
+    <string name="route_previous">Marcador anterior</string>
+    <string name="route_next">Próximo marcador</string>
+    <string name="route_fast_travel_point">Ponto de viagem rápida</string>
+    <string name="route_hint_title">Rotas</string>
+    <string name="route_hint_text">Crie a melhor rota pelos marcadores do mapa</string>
+    <string name="recenter_hint_title">Recentralizar</string>
+    <string name="recenter_hint_text">Leva a câmera de volta ao marcador escolhido ou aos exibidos</string>
+    <string name="route_finished">Rota concluída</string>
 </resources>

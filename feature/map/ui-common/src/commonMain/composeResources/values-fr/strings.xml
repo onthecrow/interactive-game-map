@@ -13,4 +13,25 @@
     <string name="map_screen_layers">Calques</string>
     <string name="map_screen_zoom_in">Zoom avant</string>
     <string name="map_screen_zoom_out">Zoom arrière</string>
+    <string name="map_screen_recenter">Recentrer</string>
+    <string name="map_screen_route">Itinéraire</string>
+    <string name="route_build_title">Création de l’itinéraire</string>
+    <string name="route_build_preparing">Préparation des routes</string>
+    <string name="route_build_ordering">Recherche de l’ordre</string>
+    <string name="route_build_improving">Raccourcissement de l’itinéraire</string>
+    <string name="route_build_drawing">Tracé de l’itinéraire</string>
+    <string name="route_build_count">Marqueurs : %1$d</string>
+    <string name="route_build_cancel">Annuler</string>
+    <string name="route_exit_title">Terminer l’itinéraire ?</string>
+    <string name="route_exit_text">L’itinéraire sera retiré de la carte. Les marqueurs trouvés restent cochés.</string>
+    <string name="route_exit_confirm">Terminer</string>
+    <string name="route_exit_dismiss">Continuer</string>
+    <string name="route_previous">Marqueur précédent</string>
+    <string name="route_next">Marqueur suivant</string>
+    <string name="route_fast_travel_point">Point de voyage rapide</string>
+    <string name="route_hint_title">Itinéraires</string>
+    <string name="route_hint_text">Créez le meilleur itinéraire entre les marqueurs de la carte</string>
+    <string name="recenter_hint_title">Recentrer</string>
+    <string name="recenter_hint_text">Ramène la vue sur le marqueur choisi ou sur ceux affichés</string>
+    <string name="route_finished">Itinéraire terminé</string>
 </resources>

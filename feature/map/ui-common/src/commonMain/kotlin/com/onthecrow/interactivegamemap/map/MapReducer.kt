@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.map
 
+import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.nomadrates.uicore.Reducer
 
@@ -8,6 +9,22 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         state: MapScreenState,
         event: MapEvent
     ): MapScreenState {
+        return reduceEvent(state.withoutHintOn(event), event)
+    }
+
+    // A hint at a button goes away for good at a tap on a button, the map, a marker, the list or settings
+    private fun MapScreenState.withoutHintOn(event: MapEvent): MapScreenState = when (event) {
+        MapEvent.OnRouteClick,
+        MapEvent.OnRecenterClick,
+        MapEvent.OnLocationDismiss,
+        MapEvent.OnClusterClick,
+        is MapEvent.OnLocationClick,
+        MapEvent.OnMarkerListClick,
+        MapEvent.OnSettingsClick -> if (hint != null) copy(hint = null) else this
+        else -> this
+    }
+
+    private fun reduceEvent(state: MapScreenState, event: MapEvent): MapScreenState {
         return when (event) {
             is MapEvent.OnClearSearchClick -> state.copy(searchValue = "")
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
@@ -28,7 +45,8 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
                 if (event.map.id == state.currentMap?.id) {
                     state
                 } else {
-                    state.copy(
+                    // A route is of its map
+                    state.withoutRoute().copy(
                         currentMap = event.map,
                         locations = emptyList(),
                         clusters = emptyList(),
@@ -44,10 +62,19 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnMarkerGroupsLoaded -> state.copy(markerGroups = event.groups)
             is MapEvent.OnLocationClick -> state.withSelection(event.location)
             is MapEvent.OnLocationLinkLoaded -> state.withSelection(event.location)
-                .copy(focusedLocation = event.location)
             is MapEvent.OnFoundLocationsLoaded -> state.copy(foundLocationIds = event.locationIds)
+            // Found on the page of the route goes on to the next location not found in the order of the route, past
+            // its end back to the first one skipped; the last one found finishes it. The view model marks the location
+            is MapEvent.OnFoundClick -> {
+                val isCurrent = state.isRoutePagerVisible && state.selectedLocation?.id == event.locationId
+                when {
+                    state.finishesRoute(event.locationId) -> state.withRouteFinished()
+                    isCurrent && event.locationId !in state.foundLocationIds ->
+                        state.atRoutePage(state.nextRoutePage(event.locationId))
+                    else -> state
+                }
+            }
             // The view model handles these, the state changes when the data comes back
-            is MapEvent.OnFoundClick,
             is MapEvent.OnLocationLinkClick,
             is MapEvent.OnSettingsClick -> state
             // The names of the selected location are in the previous language
@@ -67,6 +94,7 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnMarkerListDismiss -> state.copy(isMarkerListVisible = false, markerListQuery = "")
             is MapEvent.OnMarkerListQueryChange -> state.copy(markerListQuery = event.value)
             is MapEvent.OnMarkerListSettingsLoaded -> state.copy(
+                isMarkerListSettingsLoaded = true,
                 collapsedGroupIds = event.settings.collapsedGroupIds,
                 categoryVisibility = event.settings.categoryVisibility,
                 cycles = event.settings.cycles,
@@ -94,19 +122,113 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
                     .associate { it.category.id to event.visible },
             )
             is MapEvent.OnCycleClick -> state.copy(cycles = state.cycles + (event.categoryId to event.cycle))
+            is MapEvent.OnHintShow -> state.copy(hint = event.hint)
+            is MapEvent.OnFitBounds -> state.fitting(event.bounds)
+            is MapEvent.OnRouteClick -> if (state.route != null) state.copy(isRouteExitConfirmVisible = true) else state
+            is MapEvent.OnRouteExitConfirm -> state.withoutRoute().withoutSelection()
+            is MapEvent.OnRouteExitDismiss -> state.copy(isRouteExitConfirmVisible = false)
+            // With everything found there is nowhere to go, the dialog only closes
+            is MapEvent.OnRouteContinue -> state.copy(isRouteExitConfirmVisible = false)
+                .atRoutePage(state.routeLocations.indexOfFirst { it.id !in state.foundLocationIds })
+            is MapEvent.OnRouteAvailabilityChange -> state.copy(isRouteAvailable = event.isAvailable)
+            is MapEvent.OnRouteCandidatesCounted -> state.copy(routeCandidateCount = event.count)
+            is MapEvent.OnRouteBuildProgress -> state.copy(routeBuild = event.progress)
+            is MapEvent.OnRouteBuildCancel,
+            is MapEvent.OnRouteBuildFailed -> state.copy(routeBuild = null)
+            is MapEvent.OnRouteLoaded -> {
+                if (event.locations.isEmpty()) {
+                    state.withoutRoute()
+                } else {
+                    state.copy(route = event.route, routeLocations = event.locations, routeBuild = null)
+                        .atRoutePage(event.page.coerceIn(event.locations.indices))
+                }
+            }
+            is MapEvent.OnRouteLocationsLoaded -> {
+                val selected = state.selectedLocation?.let { selected -> event.locations.firstOrNull { it.id == selected.id } }
+                state.copy(
+                    routeLocations = event.locations,
+                    routePage = state.routePage.coerceIn(0, (event.locations.size - 1).coerceAtLeast(0)),
+                    selectedLocation = selected ?: state.selectedLocation,
+                )
+            }
+            is MapEvent.OnRoutePageChange -> state.atRoutePage(event.page)
+            // The page shown is of a hidden location, the popup goes with the route
+            is MapEvent.OnRouteHidden -> (if (state.isRoutePagerVisible) state.withoutSelection() else state).withoutRoute()
+            is MapEvent.OnRouteStopClick -> state.copy(selectedRouteStop = event.number)
+            // The map view moves the camera
+            is MapEvent.OnClusterClick -> state
+            is MapEvent.OnRecenterClick -> when {
+                state.selectedLocation != null -> state.refocused()
+                state.markersBounds != null -> state.fitting(state.markersBounds)
+                else -> state
+            }
+            is MapEvent.OnPopupClick -> if (state.selectedLocation != null) state.refocused() else state
+            is MapEvent.OnMarkersBoundsChange -> state.copy(markersBounds = event.bounds)
         }
     }
 
+    // A location of the route opens its page, any other one its own popup; the camera goes to it either way
     private fun MapScreenState.withSelection(location: MapLocation): MapScreenState {
+        val page = if (route != null) routeLocations.indexOfFirst { it.id == location.id } else -1
         return copy(
             selectedLocation = location,
             selectedFloorId = location.dungeon?.floorId,
             entrances = emptyList(),
-            focusedLocation = null,
+            focusedLocation = location,
+            routePage = if (page >= 0) page else routePage,
+            selectedRouteStop = null,
+        )
+    }
+
+    /** The camera taken back to the selected location, as when it was selected. */
+    private fun MapScreenState.refocused(): MapScreenState =
+        copy(focusedLocation = selectedLocation, focusCount = focusCount + 1)
+
+    /** The camera moved to show all of [bounds]. */
+    private fun MapScreenState.fitting(bounds: MapBounds): MapScreenState =
+        copy(cameraFit = CameraFit(bounds, (cameraFit?.id ?: 0) + 1))
+
+    /**
+     * The page of the route after [foundId] is found on the current one: the next location not found, or past the end
+     * of the route the first one, so the ones skipped are gone through in the order of the route too.
+     */
+    private fun MapScreenState.nextRoutePage(foundId: Int): Int {
+        fun isLeft(page: Int) = routeLocations[page].id.let { it != foundId && it !in foundLocationIds }
+        return (routePage + 1..routeLocations.lastIndex).firstOrNull(::isLeft)
+            ?: routeLocations.indices.firstOrNull(::isLeft)
+            ?: routePage
+    }
+
+    /** All of the route found: nothing selected, all of it in view; the view model tells that it's finished. */
+    private fun MapScreenState.withRouteFinished(): MapScreenState {
+        val finished = withoutSelection()
+        val bounds = route?.let { routeBounds(it, routeLocations, currentMap?.bounds) } ?: return finished
+        return finished.fitting(bounds)
+    }
+
+    /** The location of [page] of the route selected and the camera taken to it; past the ends nothing changes. */
+    private fun MapScreenState.atRoutePage(page: Int): MapScreenState {
+        val location = routeLocations.getOrNull(page) ?: return this
+        return withSelection(location).copy(routePage = page)
+    }
+
+    private fun MapScreenState.withoutRoute(): MapScreenState {
+        return copy(
+            route = null,
+            routeLocations = emptyList(),
+            routePage = 0,
+            isRouteExitConfirmVisible = false,
+            selectedRouteStop = null,
         )
     }
 
     private fun MapScreenState.withoutSelection(): MapScreenState {
-        return copy(selectedLocation = null, selectedFloorId = null, entrances = emptyList(), focusedLocation = null)
+        return copy(
+            selectedLocation = null,
+            selectedFloorId = null,
+            entrances = emptyList(),
+            focusedLocation = null,
+            selectedRouteStop = null,
+        )
     }
 }

@@ -5,6 +5,7 @@ import com.onthecrow.interactivegamemap.map.model.AnimalCompendium
 import com.onthecrow.interactivegamemap.map.model.Location
 import com.onthecrow.interactivegamemap.map.model.MarkerCatalog
 import com.onthecrow.interactivegamemap.map.model.MarkerIcon
+import com.onthecrow.interactivegamemap.map.model.Roads
 import interactivegamemap.feature.map.logic_rdr2_impl.generated.resources.Res
 import kotlinx.serialization.json.Json
 import kotlin.io.encoding.Base64
@@ -30,6 +31,10 @@ internal class LocalDataSource {
 
     suspend fun getAnimals(): List<Animal> {
         return json.decodeFromString<AnimalCompendium>(Res.readBytes("files/animals.json").decodeToString()).animals
+    }
+
+    suspend fun getRoads(): Roads {
+        return json.decodeFromString(Res.readBytes("files/roads.json").decodeToString())
     }
 
     /** The url of an icon, a data: URL of the image for a file of the app, a files/ one, which can't be downloaded. */

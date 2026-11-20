@@ -53,6 +53,10 @@ class GenshinStyle(override val components: GameMapComponents) : GameMapStyle {
         layers = GenshinIcons.Layers,
         markers = GenshinIcons.List,
         settings = GenshinIcons.Settings,
+        route = GenshinIcons.Route,
+        previous = GenshinIcons.ChevronLeft,
+        next = GenshinIcons.ChevronRight,
+        recenter = GenshinIcons.Recenter,
     )
 
     @Composable

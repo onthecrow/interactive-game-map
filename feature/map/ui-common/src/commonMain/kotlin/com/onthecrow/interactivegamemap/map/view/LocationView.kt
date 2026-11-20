@@ -36,6 +36,8 @@ internal fun LocationView(
     selectedFloorId: Int? = null,
     locationFloorId: Int? = null,
     isFound: Boolean = false,
+    /** Where the location is in the route, like 3 / 20, null outside a route. */
+    position: String? = null,
     modifier: Modifier = Modifier,
     onFloorClick: (Int) -> Unit = {},
     onExitClick: () -> Unit = {},
@@ -43,11 +45,25 @@ internal fun LocationView(
     onLinkClick: (String) -> Unit = {},
 ) {
     GamePanel(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = GameMapTheme.typography.title,
-            color = GameMapTheme.colors.content,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                modifier = Modifier.weight(1f),
+                text = title,
+                style = GameMapTheme.typography.title,
+                color = GameMapTheme.colors.content,
+            )
+            position?.let {
+                Text(
+                    text = it,
+                    style = GameMapTheme.typography.label,
+                    color = GameMapTheme.colors.content,
+                )
+            }
+        }
         GameDivider()
         if (description.isNotBlank()) {
             // The scroll position is not kept between the descriptions

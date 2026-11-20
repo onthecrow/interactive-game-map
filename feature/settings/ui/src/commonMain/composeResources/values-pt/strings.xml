@@ -25,4 +25,14 @@
     <string name="settings_footer_signature">Desenvolvido com ❤️ por</string>
     <string name="settings_footer_contact">Se tiver alguma dúvida, fale comigo</string>
     <string name="settings_version">Versão %1$s</string>
+    <string name="settings_section_found_markers">Marcadores encontrados</string>
+    <string name="settings_export_found">Exportar para um arquivo</string>
+    <string name="settings_export_found_summary">Encontrados: %1$d. Salva-os em um arquivo para guardar ou levar a outro aparelho</string>
+    <string name="settings_import_found">Importar de um arquivo</string>
+    <string name="settings_import_found_summary">Adiciona aos seus os marcadores encontrados de um arquivo</string>
+    <string name="settings_exported">Salvos: %1$d marcadores</string>
+    <string name="settings_export_failed">Não foi possível salvar o arquivo</string>
+    <string name="settings_imported">Adicionados %1$d novos de %2$d marcadores</string>
+    <string name="settings_import_not_a_file">Este não é um arquivo de marcadores encontrados</string>
+    <string name="settings_import_other_game">São marcadores de outro jogo</string>
 </resources>

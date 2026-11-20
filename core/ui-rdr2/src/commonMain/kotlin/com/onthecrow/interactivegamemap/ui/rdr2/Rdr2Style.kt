@@ -54,6 +54,9 @@ class Rdr2Style(override val components: GameMapComponents) : GameMapStyle {
         layers = Rdr2Icons.Layers,
         markers = Rdr2Icons.Index,
         settings = Rdr2Icons.Settings,
+        route = Rdr2Icons.Route,
+        previous = Rdr2Icons.ArrowLeft,
+        next = Rdr2Icons.ArrowRight,
     )
 
     @Composable

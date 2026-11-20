@@ -25,6 +25,8 @@ kotlin {
             implementation(projects.core.ui)
             implementation(projects.core.uiCore)
             implementation(projects.feature.settings.uiApi)
+            // The found markers, to export and import them
+            implementation(projects.feature.map.logicApi)
 
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -36,6 +38,9 @@ kotlin {
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.kotlin.test)

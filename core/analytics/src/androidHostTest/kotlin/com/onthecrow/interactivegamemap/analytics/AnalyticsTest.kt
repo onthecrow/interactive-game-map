@@ -129,6 +129,9 @@ class AnalyticsTest {
             SearchEvent(SearchType.LINK, "dreamcatcher", 4),
             MarkerFoundChangeEvent(1, "o3", isFound = true, foundTotal = 5),
             SettingChangeEvent(AnalyticsSetting.HIDE_MARKERS_WHILE_MOVING, true),
+            RouteBuildEvent(RouteBuildResult.BUILT, 144, fastTravels = 9, buildTime = 700.milliseconds),
+            RouteExitEvent(RouteEndReason.MARKERS_HIDDEN, locationsCount = 144, foundCount = 12, page = 11),
+            FoundMarkersTransferEvent(TransferType.IMPORT, TransferResult.OTHER_GAME, markersCount = 0),
         )
         val snakeCase = Regex("[a-z][a-z0-9_]*")
 

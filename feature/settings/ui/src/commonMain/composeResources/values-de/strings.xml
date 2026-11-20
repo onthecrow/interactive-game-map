@@ -25,4 +25,14 @@
     <string name="settings_footer_signature">Mit ❤️ entwickelt von</string>
     <string name="settings_footer_contact">Bei Fragen kannst du mich gern kontaktieren</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_section_found_markers">Gefundene Markierungen</string>
+    <string name="settings_export_found">In Datei exportieren</string>
+    <string name="settings_export_found_summary">Gefunden: %1$d. Speichert sie in einer Datei, zum Aufbewahren oder für ein anderes Gerät</string>
+    <string name="settings_import_found">Aus Datei importieren</string>
+    <string name="settings_import_found_summary">Fügt die gefundenen Markierungen einer Datei zu deinen hinzu</string>
+    <string name="settings_exported">Gespeichert: %1$d Markierungen</string>
+    <string name="settings_export_failed">Datei konnte nicht gespeichert werden</string>
+    <string name="settings_imported">%1$d neue von %2$d Markierungen hinzugefügt</string>
+    <string name="settings_import_not_a_file">Das ist keine Datei mit gefundenen Markierungen</string>
+    <string name="settings_import_other_game">Das sind Markierungen eines anderen Spiels</string>
 </resources>

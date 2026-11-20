@@ -6,6 +6,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -17,6 +18,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.UIKitView
 import com.onthecrow.interactivegamemap.map.CameraCommand
 import com.onthecrow.interactivegamemap.map.CameraPosition
+import com.onthecrow.interactivegamemap.map.cameraTargetAbove
+import com.onthecrow.interactivegamemap.map.focusZoom
 import com.onthecrow.interactivegamemap.map.MapAnalytics
 import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MapEvent
@@ -27,7 +30,18 @@ import com.onthecrow.interactivegamemap.map.MapStyle
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.MarkerPinImage
 import com.onthecrow.interactivegamemap.map.model.MapLocation
+import com.onthecrow.interactivegamemap.map.model.Route
+import com.onthecrow.interactivegamemap.map.model.RouteFastTravel
+import com.onthecrow.interactivegamemap.map.model.RoutePathKind
 import com.onthecrow.interactivegamemap.map.pinImage
+import com.onthecrow.interactivegamemap.map.RouteStopBubbleLift
+import com.onthecrow.interactivegamemap.map.rememberRouteStopBubble
+import com.onthecrow.interactivegamemap.map.rememberRouteStopImages
+import com.onthecrow.interactivegamemap.map.rememberCrayonTexture
+import com.onthecrow.interactivegamemap.map.routeLineWidth
+import com.onthecrow.interactivegamemap.map.OFF_ROAD_DASH
+import com.onthecrow.interactivegamemap.map.OFF_ROAD_GAP
+import com.onthecrow.interactivegamemap.map.offRoadLineWidth
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
@@ -47,20 +61,30 @@ import googlemaps.GMSMarker
 import googlemaps.GMSMutablePath
 import googlemaps.GMSPolygon
 import googlemaps.GMSPolyline
+import googlemaps.GMSStrokeStyle
+import googlemaps.GMSStyleSpan
+import googlemaps.GMSStyleSpans
+import googlemaps.GMSTextureStyle
 import googlemaps.GMSTileLayer
 import googlemaps.GMSTileReceiverProtocol
-import googlemaps.animateToLocation
 import googlemaps.animateWithCameraUpdate
+import googlemaps.GMSLengthKind
 import googlemaps.kGMSTileLayerNoTile
 import googlemaps.kGMSTypeNone
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.koin.compose.koinInject
@@ -74,6 +98,7 @@ import platform.CoreGraphics.CGSizeMake
 import platform.CoreLocation.CLLocationCoordinate2D
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
+import platform.Foundation.NSNumber
 import platform.Foundation.dataWithBytes
 import platform.UIKit.UIColor
 import platform.UIKit.UIEdgeInsetsMake
@@ -115,7 +140,8 @@ internal actual fun MapView(
     entrances: List<MapLocation>,
     floors: List<MapFloor>,
     foundLocationIds: Set<Int>,
-    focusedLocation: MapLocation?,
+    route: Route?,
+    selectedRouteStop: Int?,
     camera: CameraPosition?,
     cameraController: MapCameraController,
     hideMarkersWhileMoving: Boolean,
@@ -133,12 +159,19 @@ internal actual fun MapView(
     // The view starts somewhere else, that camera isn't the user's one
     var isCameraPlaced by remember { mutableStateOf(false) }
     val areMarkersHidden = hideMarkersWhileMoving && isCameraMoving
+    // In halves of a zoom level: the dashes of a route are measured on the ground, so they're laid again on a zoom
+    var zoomStep by remember { mutableStateOf(((camera?.zoom ?: map?.camera?.zoom?.toFloat() ?: 0f) * 2).roundToInt()) }
+
+    // The lines of the route: the ones along the roads and across country follow the zoom, see updateRouteWidths
+    val routeLines = remember { mutableListOf<Pair<GMSPolyline, RoutePathKind>>() }
+    var routeZoom by remember { mutableStateOf(Float.NaN) }
 
     val mapDelegate = remember(onEvent) {
         object : NSObject(), GMSMapViewDelegateProtocol {
             override fun mapView(mapView: GMSMapView, didTapMarker: GMSMarker): Boolean {
                 when (val data = didTapMarker.userData) {
                     is MapLocation -> onEvent(MapEvent.OnLocationClick(data))
+                    is RouteFastTravel -> onEvent(MapEvent.OnRouteStopClick(data.number))
                     // Close enough for the locations of the cluster to be apart
                     is MarkerCluster -> mapView.animateWithCameraUpdate(
                         GMSCameraUpdate.fitBounds(data.bounds.toCoordinateBounds(), ClusterBoundsPadding.value.toDouble())
@@ -158,8 +191,20 @@ internal actual fun MapView(
                 onEvent(MapEvent.OnLocationDismiss)
             }
 
+            // The route grows and shrinks with the map while it zooms, not only once it stops
+            @ObjCSignatureOverride
+            override fun mapView(mapView: GMSMapView, didChangeCameraPosition: GMSCameraPosition) {
+                val zoom = didChangeCameraPosition.zoom
+                if (routeZoom.isNaN() || abs(zoom - routeZoom) > ROUTE_ZOOM_STEP) {
+                    routeZoom = zoom
+                    updateRouteWidths(routeLines, mapStyle, zoom)
+                }
+            }
+
+            @ObjCSignatureOverride
             override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
                 isCameraMoving = false
+                zoomStep = (mapView.camera.zoom * 2).roundToInt()
                 if (!isCameraPlaced) return
                 val camera = mapView.camera
                 val (lat, lng) = camera.target.useContents { latitude to longitude }
@@ -306,21 +351,32 @@ internal actual fun MapView(
         clusterMarkers.values.forEach { it.opacity = if (areMarkersHidden) HIDDEN_MARKER_ALPHA else 1f }
     }
 
+    val currentMap by rememberUpdatedState(map)
+    val currentSelected by rememberUpdatedState(selectedLocation)
+
     LaunchedEffect(mapView, cameraController) {
         val view = mapView ?: return@LaunchedEffect
         cameraController.commands.collect { command ->
             view.animateWithCameraUpdate(
                 when (command) {
-                    CameraCommand.ZOOM_IN -> GMSCameraUpdate.zoomIn()
-                    CameraCommand.ZOOM_OUT -> GMSCameraUpdate.zoomOut()
+                    CameraCommand.ZoomIn -> view.zoomBy(currentSelected, 1f)
+                    CameraCommand.ZoomOut -> view.zoomBy(currentSelected, -1f)
+                    is CameraCommand.Focus -> {
+                        val camera = view.camera
+                        val zoom = currentMap?.takeIf { !command.keepZoom }?.focusZoom(camera.zoom) ?: camera.zoom
+                        // The target is in the middle of the padding and the safe area, the location goes above it
+                        val centerY = view.projection.pointForCoordinate(camera.target).useContents { y }
+                        val above = centerY - command.focusY.value
+                        val (lat, lng) = cameraTargetAbove(command.lat, command.lng, zoom, above)
+                        GMSCameraUpdate.setTarget(CLLocationCoordinate2DMake(lat, lng), zoom = zoom)
+                    }
+                    is CameraCommand.Fit -> GMSCameraUpdate.fitBounds(
+                        command.bounds.toCoordinateBounds(),
+                        FitBoundsPadding.value.toDouble(),
+                    )
                 }
             )
         }
-    }
-
-    LaunchedEffect(mapView, focusedLocation) {
-        val location = focusedLocation ?: return@LaunchedEffect
-        mapView?.animateToLocation(CLLocationCoordinate2DMake(location.lat, location.lng))
     }
 
     var dungeonDim by remember { mutableStateOf<GMSPolygon?>(null) }
@@ -399,6 +455,104 @@ internal actual fun MapView(
                 zIndex = Z_INDEX_ENTRANCE_PATH
                 this.map = view
             }
+        }
+    }
+
+    val crayon = rememberCrayonTexture(mapStyle.routeColor)
+    val crayonStroke = remember(crayon) {
+        crayon.toPinIcon(density)?.let { GMSStrokeStyle.transparentStrokeWithStampStyle(GMSTextureStyle.textureStyleWithImage(it)) }
+    }
+
+    LaunchedEffect(mapView, route, crayonStroke) {
+        routeLines.forEach { it.first.map = null }
+        routeLines.clear()
+
+        val view = mapView ?: return@LaunchedEffect
+        val route = route ?: return@LaunchedEffect
+
+        route.paths.forEach { path ->
+            val line = GMSMutablePath().apply {
+                path.points.forEach { addCoordinate(CLLocationCoordinate2DMake(it.lat, it.lng)) }
+            }
+            GMSPolyline.polylineWithPath(line).apply {
+                strokeColor = mapStyle.routeColor.toUIColor()
+                // In points, like the rest of the map
+                strokeWidth = mapStyle.offRoadLineWidth(view.camera.zoom).value.toDouble()
+                // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
+                if (path.kind == RoutePathKind.RIDE && crayonStroke != null) spans = listOf(GMSStyleSpan.spanWithStyle(crayonStroke))
+                zIndex = Z_INDEX_ROUTE
+                this.map = view
+                routeLines += this to path.kind
+            }
+        }
+        updateRouteWidths(routeLines, mapStyle, view.camera.zoom)
+    }
+
+    // The legs across country and the jumps to fast travel points are crayon dashes. Google Maps for iOS dashes a line
+    // by lengths on the ground, so they are laid again as the zoom changes, to stay as long on the screen
+    LaunchedEffect(mapView, route, zoomStep, crayonStroke) {
+        val zoom = zoomStep / 2f
+        val roadWidth = mapStyle.routeLineWidth(zoom).value
+        val dashStyle = crayonStroke ?: GMSStrokeStyle.solidColor(mapStyle.routeColor.toUIColor())
+        routeLines.forEach { (line, kind) ->
+            if (kind == RoutePathKind.RIDE) return@forEach
+            val path = line.path ?: return@forEach
+            val lat = path.coordinateAtIndex(0u).useContents { latitude }
+            val metersPerPoint = 156_543.03392 * cos(lat * PI / 180) / 2.0.pow(zoom.toDouble())
+            line.spans = GMSStyleSpans(
+                path,
+                listOf(dashStyle, GMSStrokeStyle.solidColor(UIColor.clearColor)),
+                listOf(
+                    NSNumber(double = roadWidth * OFF_ROAD_DASH * metersPerPoint),
+                    NSNumber(double = roadWidth * OFF_ROAD_GAP * metersPerPoint),
+                ),
+                GMSLengthKind.kGMSLengthRhumb,
+            )
+        }
+    }
+
+    val routeStopImages = rememberRouteStopImages(route?.fastTravels?.map { it.number }.orEmpty())
+    val routeStops = remember { mutableListOf<GMSMarker>() }
+
+    LaunchedEffect(mapView, route, routeStopImages) {
+        routeStops.forEach { it.map = null }
+        routeStops.clear()
+
+        val view = mapView ?: return@LaunchedEffect
+
+        route?.fastTravels.orEmpty().forEach { stop ->
+            val image = routeStopImages[stop.number] ?: return@forEach
+            routeStops += GMSMarker().apply {
+                position = CLLocationCoordinate2DMake(stop.point.lat, stop.point.lng)
+                icon = image.toPinIcon(density)
+                groundAnchor = CGPointMake(0.5, 0.5)
+                zIndex = Z_INDEX_ROUTE_STOP
+                // A tap on it shows its bubble, see the delegate
+                userData = stop
+                this.map = view
+            }
+        }
+    }
+
+    val bubbleStop = route?.fastTravels?.firstOrNull { it.number == selectedRouteStop }
+    val bubbleImage = rememberRouteStopBubble(bubbleStop)
+    var bubble by remember { mutableStateOf<GMSMarker?>(null) }
+
+    LaunchedEffect(mapView, bubbleStop, bubbleImage) {
+        bubble?.map = null
+        bubble = null
+
+        val view = mapView ?: return@LaunchedEffect
+        val stop = bubbleStop ?: return@LaunchedEffect
+        val image = bubbleImage ?: return@LaunchedEffect
+        // Its bottom is the tip of the pointer, a bit above the middle of the point
+        val lift = RouteStopBubbleLift.value * density / image.height
+        bubble = GMSMarker().apply {
+            position = CLLocationCoordinate2DMake(stop.point.lat, stop.point.lng)
+            icon = image.toPinIcon(density)
+            groundAnchor = CGPointMake(0.5, 1.0 + lift)
+            zIndex = Z_INDEX_ROUTE_BUBBLE
+            this.map = view
         }
     }
 
@@ -527,6 +681,30 @@ private fun ImageBitmap.toPinIcon(density: Float): UIImage? {
         scale = density.toDouble(),
         orientation = UIImageOrientation.UIImageOrientationUp,
     )
+}
+
+// The route's widths are set again after the zoom changes by this much
+private const val ROUTE_ZOOM_STEP = 0.02f
+
+/** The widths of the route's lines at [zoom], in points. */
+@OptIn(ExperimentalForeignApi::class)
+private fun updateRouteWidths(lines: List<Pair<GMSPolyline, RoutePathKind>>, style: MapStyle, zoom: Float) {
+    val width = style.routeLineWidth(zoom).value.toDouble()
+    val dashWidth = style.offRoadLineWidth(zoom).value.toDouble()
+    lines.forEach { (line, kind) ->
+        when (kind) {
+            RoutePathKind.RIDE -> line.strokeWidth = width
+            RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> line.strokeWidth = dashWidth
+        }
+    }
+}
+
+/** A zoom step around [location] when there is one, so it stays where it is on the screen; around the middle otherwise. */
+@OptIn(ExperimentalForeignApi::class)
+private fun GMSMapView.zoomBy(location: MapLocation?, amount: Float): GMSCameraUpdate {
+    location ?: return GMSCameraUpdate.zoomBy(amount)
+    val point = projection.pointForCoordinate(CLLocationCoordinate2DMake(location.lat, location.lng))
+    return GMSCameraUpdate.zoomBy(amount, atPoint = point)
 }
 
 @OptIn(ExperimentalForeignApi::class)

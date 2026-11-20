@@ -10,6 +10,8 @@ import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapDungeon
 import com.onthecrow.interactivegamemap.map.model.MapFloor
+import com.onthecrow.interactivegamemap.map.model.Route
+import com.onthecrow.interactivegamemap.map.model.RouteBuildStage
 import com.onthecrow.nomadrates.uicore.State
 
 // The floor images are big, so only the ones closest to the center of the screen are displayed
@@ -43,17 +45,66 @@ data class MapScreenState(
     val cycles: Map<String, Int> = emptyMap(),
     val markerListQuery: String = "",
     val collapsedGroupIds: Set<String> = emptySet(),
+    /** The categories the user shows or hides are read: before that every category looks as by default. */
+    val isMarkerListSettingsLoaded: Boolean = false,
     val foundLocationIds: Set<Int> = emptySet(),
+    /** The selected location the camera is taken to, the popup leaves it in view. */
     val focusedLocation: MapLocation? = null,
+    /** The camera is moved to show all of its bounds, a new [CameraFit] each time. */
+    val cameraFit: CameraFit? = null,
     val language: String = LocationsFilter.DEFAULT_LANGUAGE,
     val hideMarkersWhileMoving: Boolean = false,
     val clusterMarkers: Boolean = true,
+    /** Whether the route button is there: the app has routes and the map has roads. */
+    val isRouteAvailable: Boolean = false,
+    /** The markers a route would go through: the ones the filters show on the whole map, not found yet. */
+    val routeCandidateCount: Int = 0,
+    val route: Route? = null,
+    /** The locations of [route] in its order, the pages of its popup. */
+    val routeLocations: List<MapLocation> = emptyList(),
+    /** The page of the popup of the route, the location the route has come to. */
+    val routePage: Int = 0,
+    /** The progress of the route being built, null when none is. */
+    val routeBuild: RouteBuildProgress? = null,
+    val isRouteExitConfirmVisible: Boolean = false,
+    /** The number of the fast travel point of the route whose bubble is shown over it. */
+    val selectedRouteStop: Int? = null,
 ): State {
     internal val markerListSettings: MarkerListSettings
         get() = MarkerListSettings(collapsedGroupIds, categoryVisibility, cycles)
 
     internal val mapViewSettings: MapViewSettings?
         get() = currentMap?.let { MapViewSettings(mapId = it.id, camera = camera) }
+
+    /** A route needs two markers at least. */
+    val canBuildRoute: Boolean
+        get() = routeCandidateCount > 1 && searchValue.isBlank()
+
+    /** The route on the map: a search shows other markers, the route waits until it's cleared. */
+    val displayedRoute: Route?
+        get() = route?.takeIf { searchValue.isBlank() }
+
+    /** The route button: with roads, without a search, and with a route to end or one to build. */
+    val isRouteButtonVisible: Boolean
+        get() = isRouteAvailable && searchValue.isBlank() && (route != null || canBuildRoute)
+
+    /**
+     * A location of the route is hidden by the filters now: its category is turned off, or another cycle of it is
+     * picked. Unknown before the marker groups and the user's choices of them come.
+     */
+    val hasHiddenRouteLocations: Boolean
+        get() {
+            if (route == null || markerGroups.isEmpty() || !isMarkerListSettingsLoaded) return false
+            val categories = markerGroups.flatMap { it.categories }.associate { it.category.id to it.category }
+            return routeLocations.any { location ->
+                val category = categories[location.categoryId] ?: return@any false
+                !isCategoryVisible(category) || (location.cycle != null && location.cycle != selectedCycle(category.id))
+            }
+        }
+
+    /** The selected location is the one the route has come to: its popup is one of the pages of the route. */
+    val isRoutePagerVisible: Boolean
+        get() = displayedRoute != null && selectedLocation != null && routeLocations.getOrNull(routePage)?.id == selectedLocation.id
 
     val isMarkerListSearching: Boolean
         get() = markerListQuery.isNotBlank()
@@ -130,6 +181,16 @@ data class MapScreenState(
 }
 
 internal data class LocationsRequest(val filter: LocationsFilter, val clusterZoom: Float?)
+
+/** [id] tells a fit from the one before, to the same bounds too. */
+data class CameraFit(val bounds: MapBounds, val id: Int)
+
+/** @param count the markers the route goes through */
+data class RouteBuildProgress(
+    val stage: RouteBuildStage,
+    val progress: Float,
+    val count: Int,
+)
 
 internal fun GameMap?.findDungeon(location: MapLocation?): MapDungeon? {
     val dungeonId = location?.dungeon?.dungeonId ?: return null

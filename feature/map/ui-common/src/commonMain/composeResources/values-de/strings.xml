@@ -13,4 +13,19 @@
     <string name="map_screen_layers">Ebenen</string>
     <string name="map_screen_zoom_in">Vergrößern</string>
     <string name="map_screen_zoom_out">Verkleinern</string>
+    <string name="map_screen_route">Route</string>
+    <string name="route_build_title">Route wird erstellt</string>
+    <string name="route_build_preparing">Straßen werden vorbereitet</string>
+    <string name="route_build_ordering">Reihenfolge wird gesucht</string>
+    <string name="route_build_improving">Route wird verkürzt</string>
+    <string name="route_build_drawing">Route wird eingezeichnet</string>
+    <string name="route_build_count">Markierungen: %1$d</string>
+    <string name="route_build_cancel">Abbrechen</string>
+    <string name="route_exit_title">Route beenden?</string>
+    <string name="route_exit_text">Die Route wird von der Karte entfernt. Gefundene Markierungen bleiben markiert.</string>
+    <string name="route_exit_confirm">Beenden</string>
+    <string name="route_exit_dismiss">Weitermachen</string>
+    <string name="route_previous">Vorherige Markierung</string>
+    <string name="route_next">Nächste Markierung</string>
+    <string name="route_fast_travel_point">Schnellreisepunkt</string>
 </resources>

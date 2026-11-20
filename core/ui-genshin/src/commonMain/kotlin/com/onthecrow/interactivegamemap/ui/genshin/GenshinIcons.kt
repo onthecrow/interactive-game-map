@@ -46,6 +46,8 @@ internal object GenshinIcons {
 
     val ChevronRight = icon("ChevronRight") { line("M9.5 5.5L16 12L9.5 18.5") }
 
+    val ChevronLeft = icon("ChevronLeft") { line("M14.5 5.5L8 12L14.5 18.5") }
+
     // A sheet over another one
     val Copy = icon("Copy") {
         line("M9 4.5H17.5A2 2 0 0 1 19.5 6.5V15")
@@ -111,4 +113,11 @@ internal object GenshinIcons {
     }
 
     val DiamondFilled = icon("DiamondFilled") { shape("M12 3L21 12L12 21L3 12Z") }
+
+    /** A road winding from one point to another, the drawing the route button was given. */
+    val Route = icon("Route") {
+        line("M6 8.5V17A3 3 0 0 0 12 17V7A3 3 0 0 1 18 7V15.5")
+        shape(circle(6f, 6f, 3f))
+        shape(circle(18f, 18f, 3f))
+    }
 }

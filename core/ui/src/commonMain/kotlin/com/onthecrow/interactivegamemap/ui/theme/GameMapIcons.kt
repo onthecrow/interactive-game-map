@@ -9,4 +9,8 @@ data class GameMapIcons(
     val layers: ImageVector,
     val markers: ImageVector,
     val settings: ImageVector,
+    /** The mode of the route through the markers on the map. */
+    val route: ImageVector,
+    val previous: ImageVector,
+    val next: ImageVector,
 )

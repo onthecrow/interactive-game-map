@@ -13,4 +13,19 @@
     <string name="map_screen_layers">图层</string>
     <string name="map_screen_zoom_in">放大</string>
     <string name="map_screen_zoom_out">缩小</string>
+    <string name="map_screen_route">路线</string>
+    <string name="route_build_title">正在规划路线</string>
+    <string name="route_build_preparing">正在准备道路</string>
+    <string name="route_build_ordering">正在寻找顺序</string>
+    <string name="route_build_improving">正在缩短路线</string>
+    <string name="route_build_drawing">正在绘制路线</string>
+    <string name="route_build_count">标记：%1$d</string>
+    <string name="route_build_cancel">取消</string>
+    <string name="route_exit_title">结束路线？</string>
+    <string name="route_exit_text">路线将从地图上移除，已找到的标记仍会保留。</string>
+    <string name="route_exit_confirm">结束</string>
+    <string name="route_exit_dismiss">继续</string>
+    <string name="route_previous">上一个标记</string>
+    <string name="route_next">下一个标记</string>
+    <string name="route_fast_travel_point">快速旅行点</string>
 </resources>

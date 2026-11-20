@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap
 
+import com.onthecrow.interactivegamemap.map.MapFeatures
 import com.onthecrow.interactivegamemap.map.MapStyle
 import org.koin.core.module.Module
 
@@ -9,11 +10,15 @@ import org.koin.core.module.Module
  * @param uiModule the look of the game for GameMapTheme, its core:ui-<game> module
  * @param logicModule the data of the game: its repositories and its sync task, its logic-<game>-impl module
  * @param legalNotice the lines the settings show under the links, like the copyright of the game's owner
+ * @param mapFeatures the features of the map the game has the data for
+ * @param gameId names the game in the files of found markers, the same in every app of it: rdr2, genshin
  */
 class FlavorConfig(
+    val gameId: String,
     val privacyPolicyUrl: String,
     val mapStyle: MapStyle,
     val uiModule: Module,
     val logicModule: Module,
     val legalNotice: List<String> = emptyList(),
+    val mapFeatures: MapFeatures = MapFeatures(),
 )

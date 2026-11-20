@@ -25,4 +25,14 @@
     <string name="settings_footer_signature">Developed with ❤️ by</string>
     <string name="settings_footer_contact">Feel free to reach me if you have any questions</string>
     <string name="settings_version">Version %1$s</string>
+    <string name="settings_section_found_markers">Found markers</string>
+    <string name="settings_export_found">Export to a file</string>
+    <string name="settings_export_found_summary">Found: %1$d. Saves them to a file to keep or to move to another device</string>
+    <string name="settings_import_found">Import from a file</string>
+    <string name="settings_import_found_summary">Adds the found markers of a file to yours</string>
+    <string name="settings_exported">Saved: %1$d markers</string>
+    <string name="settings_export_failed">Couldn't save the file</string>
+    <string name="settings_imported">Added %1$d new of %2$d markers</string>
+    <string name="settings_import_not_a_file">This isn't a file of found markers</string>
+    <string name="settings_import_other_game">These are markers of another game</string>
 </resources>

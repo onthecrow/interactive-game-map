@@ -25,4 +25,14 @@
     <string name="settings_footer_signature">С ❤️ от</string>
     <string name="settings_footer_contact">Пишите, если есть вопросы</string>
     <string name="settings_version">Версия %1$s</string>
+    <string name="settings_section_found_markers">Найденные маркеры</string>
+    <string name="settings_export_found">Экспорт в файл</string>
+    <string name="settings_export_found_summary">Найдено: %1$d. Сохраняет их в файл, чтобы не потерять или перенести на другое устройство</string>
+    <string name="settings_import_found">Импорт из файла</string>
+    <string name="settings_import_found_summary">Добавляет найденные маркеры из файла к вашим</string>
+    <string name="settings_exported">Сохранено маркеров: %1$d</string>
+    <string name="settings_export_failed">Не удалось сохранить файл</string>
+    <string name="settings_imported">Добавлено новых: %1$d из %2$d</string>
+    <string name="settings_import_not_a_file">Это не файл найденных маркеров</string>
+    <string name="settings_import_other_game">Это маркеры другой игры</string>
 </resources>

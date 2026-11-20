@@ -178,17 +178,27 @@ class MapReducerTest {
     }
 
     @Test
-    fun `a link opens a marker and moves the camera, a tap only opens it`() {
+    fun `a link and a tap both open a marker and take the camera to it`() {
         val linked = state.after(MapEvent.OnLocationLinkLoaded(location))
         assertEquals(location, linked.selectedLocation)
         assertEquals(location, linked.focusedLocation)
         assertEquals(7, linked.selectedFloorId)
 
-        val tapped = linked.after(MapEvent.OnLocationClick(location))
-        assertEquals(location, tapped.selectedLocation)
-        assertEquals(null, tapped.focusedLocation)
+        val other = location.copy(id = 8)
+        val tapped = linked.after(MapEvent.OnLocationClick(other))
+        assertEquals(other, tapped.selectedLocation)
+        assertEquals(other, tapped.focusedLocation)
 
         assertEquals(null, linked.after(MapEvent.OnLocationDismiss).focusedLocation)
+    }
+
+    @Test
+    fun `every fit is a new one, to the same bounds too`() {
+        val bounds = MapBounds(west = 0.0, south = 0.0, east = 1.0, north = 1.0)
+        val first = state.after(MapEvent.OnFitBounds(bounds))
+        val second = first.after(MapEvent.OnFitBounds(bounds))
+        assertEquals(bounds, second.cameraFit?.bounds)
+        assertTrue(first.cameraFit != second.cameraFit)
     }
 
     @Test

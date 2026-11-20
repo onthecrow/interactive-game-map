@@ -55,6 +55,7 @@ object GenshinMapButton : MapButtonComponent {
     override fun Content(
         onClick: () -> Unit,
         active: Boolean,
+        enabled: Boolean,
         modifier: Modifier,
         content: @Composable (tint: Color) -> Unit,
     ) {
@@ -66,10 +67,12 @@ object GenshinMapButton : MapButtonComponent {
                 .clip(CircleShape)
                 .background(if (active) colors.mapControlActiveBg else colors.mapControlBg)
                 .then(if (active) Modifier.border(1.5.dp, colors.borderOrnament, CircleShape) else Modifier)
-                .clickable(role = Role.Button, onClick = onClick),
+                .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            content(if (active) colors.mapControlActiveIcon else colors.mapControlIcon)
+            val tint = if (active) colors.mapControlActiveIcon else colors.mapControlIcon
+            // Dimmed as the zoom button at the end of its range
+            content(if (enabled) tint else tint.copy(alpha = DISABLED_ALPHA))
         }
     }
 }

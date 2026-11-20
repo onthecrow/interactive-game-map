@@ -2,6 +2,7 @@ package com.onthecrow.interactivegamemap.di
 
 import com.onthecrow.interactivegamemap.FlavorConfig
 import com.onthecrow.interactivegamemap.analytics.di.analyticsModule
+import com.onthecrow.interactivegamemap.map.GameId
 import com.onthecrow.interactivegamemap.map.MapDestination
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.di.mapDomainModule
@@ -29,6 +30,8 @@ fun applicationModule(flavor: FlavorConfig): Module = module {
     single { PrivacyPolicyUrl(flavor.privacyPolicyUrl) }
     single { LegalNotice(flavor.legalNotice) }
     single { flavor.mapStyle }
+    single { flavor.mapFeatures }
+    single { GameId(flavor.gameId) }
     single { MapTileProvider(get(), get()) }
     includes(
         analyticsModule,

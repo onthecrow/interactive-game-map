@@ -5,6 +5,8 @@ import com.onthecrow.interactivegamemap.map.MapsRepository
 import com.onthecrow.interactivegamemap.map.common.RemoteConfigMapsRepository
 import com.onthecrow.interactivegamemap.map.data.LocalDataSource
 import com.onthecrow.interactivegamemap.map.LocationsRepositoryImpl
+import com.onthecrow.interactivegamemap.map.TravelNetworkRepository
+import com.onthecrow.interactivegamemap.map.TravelNetworkRepositoryImpl
 import com.onthecrow.interactivegamemap.sync.NoopSyncTask
 import com.onthecrow.interactivegamemap.sync.SyncTask
 import org.koin.dsl.module
@@ -13,6 +15,8 @@ import org.koin.dsl.module
 val mapLogicModule = module {
     single<LocationsRepository> { LocationsRepositoryImpl(get()) }
     single<MapsRepository> { RemoteConfigMapsRepository(get(), get()) }
+    // The roads of the world map, for routes
+    single<TravelNetworkRepository> { TravelNetworkRepositoryImpl(get(), get()) }
     single { LocalDataSource() }
     // Everything is in the build
     single<SyncTask> { NoopSyncTask }

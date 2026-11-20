@@ -13,4 +13,19 @@
     <string name="map_screen_layers">レイヤー</string>
     <string name="map_screen_zoom_in">ズームイン</string>
     <string name="map_screen_zoom_out">ズームアウト</string>
+    <string name="map_screen_route">ルート</string>
+    <string name="route_build_title">ルートを作成中</string>
+    <string name="route_build_preparing">道路を準備中</string>
+    <string name="route_build_ordering">順番を検索中</string>
+    <string name="route_build_improving">ルートを短縮中</string>
+    <string name="route_build_drawing">ルートを描画中</string>
+    <string name="route_build_count">マーカー: %1$d</string>
+    <string name="route_build_cancel">キャンセル</string>
+    <string name="route_exit_title">ルートを終了しますか？</string>
+    <string name="route_exit_text">ルートは地図から消えます。発見済みのマーカーはそのまま残ります。</string>
+    <string name="route_exit_confirm">終了</string>
+    <string name="route_exit_dismiss">続ける</string>
+    <string name="route_previous">前のマーカー</string>
+    <string name="route_next">次のマーカー</string>
+    <string name="route_fast_travel_point">ファストトラベル地点</string>
 </resources>

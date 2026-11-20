@@ -13,4 +13,19 @@
     <string name="map_screen_layers">Capas</string>
     <string name="map_screen_zoom_in">Acercar</string>
     <string name="map_screen_zoom_out">Alejar</string>
+    <string name="map_screen_route">Ruta</string>
+    <string name="route_build_title">Creando la ruta</string>
+    <string name="route_build_preparing">Preparando los caminos</string>
+    <string name="route_build_ordering">Buscando el orden</string>
+    <string name="route_build_improving">Acortando la ruta</string>
+    <string name="route_build_drawing">Trazando la ruta</string>
+    <string name="route_build_count">Marcadores: %1$d</string>
+    <string name="route_build_cancel">Cancelar</string>
+    <string name="route_exit_title">¿Terminar la ruta?</string>
+    <string name="route_exit_text">La ruta se quitará del mapa. Los marcadores encontrados seguirán marcados.</string>
+    <string name="route_exit_confirm">Terminar</string>
+    <string name="route_exit_dismiss">Continuar</string>
+    <string name="route_previous">Marcador anterior</string>
+    <string name="route_next">Marcador siguiente</string>
+    <string name="route_fast_travel_point">Punto de viaje rápido</string>
 </resources>

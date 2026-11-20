@@ -13,4 +13,19 @@
     <string name="map_screen_layers">Слои</string>
     <string name="map_screen_zoom_in">Приблизить</string>
     <string name="map_screen_zoom_out">Отдалить</string>
+    <string name="map_screen_route">Маршрут</string>
+    <string name="route_build_title">Строим маршрут</string>
+    <string name="route_build_preparing">Готовим дороги</string>
+    <string name="route_build_ordering">Ищем порядок обхода</string>
+    <string name="route_build_improving">Сокращаем путь</string>
+    <string name="route_build_drawing">Прокладываем линию</string>
+    <string name="route_build_count">Маркеров: %1$d</string>
+    <string name="route_build_cancel">Отмена</string>
+    <string name="route_exit_title">Завершить маршрут?</string>
+    <string name="route_exit_text">Маршрут исчезнет с карты. Отметки найденных маркеров останутся.</string>
+    <string name="route_exit_confirm">Завершить</string>
+    <string name="route_exit_dismiss">Продолжить</string>
+    <string name="route_previous">Предыдущий маркер</string>
+    <string name="route_next">Следующий маркер</string>
+    <string name="route_fast_travel_point">Точка быстрого перемещения</string>
 </resources>

@@ -5,6 +5,7 @@ import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
 import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapsConfig
+import com.onthecrow.interactivegamemap.map.model.Route
 import com.onthecrow.nomadrates.uicore.Event
 
 internal sealed interface MapEvent : Event {
@@ -41,4 +42,30 @@ internal sealed interface MapEvent : Event {
     data class OnLocationLinkLoaded(val location: MapLocation) : MapEvent
     data class OnLanguageChange(val language: String) : MapEvent
     data class OnSettingsChange(val hideMarkersWhileMoving: Boolean, val clusterMarkers: Boolean) : MapEvent
+
+    /** All of [bounds] are to be shown: the markers the list has just turned on with the ones shown before. */
+    data class OnFitBounds(val bounds: MapBounds) : MapEvent
+
+    /** The route button: builds a route, or offers to end the one there is. */
+    data object OnRouteClick : MapEvent
+    data object OnRouteBuildCancel : MapEvent
+    data object OnRouteExitConfirm : MapEvent
+    data object OnRouteExitDismiss : MapEvent
+    /** Keep going: the route goes on at its first location not found yet. */
+    data object OnRouteContinue : MapEvent
+    data class OnRouteAvailabilityChange(val isAvailable: Boolean) : MapEvent
+    data class OnRouteCandidatesCounted(val count: Int) : MapEvent
+    data class OnRouteBuildProgress(val progress: RouteBuildProgress) : MapEvent
+    /** The build stopped without a route. */
+    data object OnRouteBuildFailed : MapEvent
+    /** [locations] are the ones of [route] in its order; [page] is where the route has come to, and is selected. */
+    data class OnRouteLoaded(val route: Route, val locations: List<MapLocation>, val page: Int = 0) : MapEvent
+    /** The locations of the route again, in another language. */
+    data class OnRouteLocationsLoaded(val locations: List<MapLocation>) : MapEvent
+    /** Markers of the route were hidden in the marker list: the route is dropped. */
+    data object OnRouteHidden : MapEvent
+    /** A tap on the fast travel point of the route numbered [number]. */
+    data class OnRouteStopClick(val number: Int) : MapEvent
+    /** A swipe or an arrow of the popup of the route. */
+    data class OnRoutePageChange(val page: Int) : MapEvent
 }

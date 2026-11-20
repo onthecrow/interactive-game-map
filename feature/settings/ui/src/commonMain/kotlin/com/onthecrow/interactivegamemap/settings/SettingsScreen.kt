@@ -25,6 +25,7 @@ import com.onthecrow.interactivegamemap.settings.view.AppVersion
 import com.onthecrow.interactivegamemap.settings.view.ChoiceDialog
 import com.onthecrow.interactivegamemap.settings.view.SignatureFooter
 import com.onthecrow.interactivegamemap.settings.view.plainTextClipEntry
+import com.onthecrow.interactivegamemap.settings.view.rememberFileTransfer
 import com.onthecrow.interactivegamemap.ui.components.GameScreenScaffold
 import com.onthecrow.interactivegamemap.ui.components.GameSectionHeader
 import com.onthecrow.interactivegamemap.ui.components.GameSettingsGroup
@@ -38,13 +39,23 @@ import interactivegamemap.feature.settings.ui.generated.resources.settings_analy
 import interactivegamemap.feature.settings.ui.generated.resources.settings_back
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers
 import interactivegamemap.feature.settings.ui.generated.resources.settings_cluster_markers_summary
+import interactivegamemap.feature.settings.ui.generated.resources.settings_export_failed
+import interactivegamemap.feature.settings.ui.generated.resources.settings_export_found
+import interactivegamemap.feature.settings.ui.generated.resources.settings_export_found_summary
+import interactivegamemap.feature.settings.ui.generated.resources.settings_exported
 import interactivegamemap.feature.settings.ui.generated.resources.settings_hide_markers
 import interactivegamemap.feature.settings.ui.generated.resources.settings_hide_markers_summary
+import interactivegamemap.feature.settings.ui.generated.resources.settings_import_found
+import interactivegamemap.feature.settings.ui.generated.resources.settings_import_found_summary
+import interactivegamemap.feature.settings.ui.generated.resources.settings_import_not_a_file
+import interactivegamemap.feature.settings.ui.generated.resources.settings_import_other_game
+import interactivegamemap.feature.settings.ui.generated.resources.settings_imported
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language_system
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language_system_summary
 import interactivegamemap.feature.settings.ui.generated.resources.settings_privacy_policy
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_appearance
+import interactivegamemap.feature.settings.ui.generated.resources.settings_section_found_markers
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_language
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_map
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_privacy
@@ -104,6 +115,7 @@ internal fun SettingsScreen(
                 MapSection(state.settings, onEvent)
                 AppearanceSection(state.settings, onEvent)
                 LanguageSection(state, onEvent)
+                FoundMarkersSection(state, onEvent)
                 PrivacySection(state.analyticsId, privacyPolicyUrl)
                 Spacer(modifier = Modifier.weight(1f))
                 SignatureFooter(
@@ -222,6 +234,56 @@ private fun LanguageSection(state: SettingsState, onEvent: (SettingsEvent) -> Un
         }
     }
 }
+
+@Composable
+private fun FoundMarkersSection(state: SettingsState, onEvent: (SettingsEvent) -> Unit) {
+    val files = rememberFileTransfer(
+        onSaved = { onEvent(SettingsEvent.OnExportSaved(it)) },
+        onOpened = { onEvent(SettingsEvent.OnImportFileRead(it)) },
+    )
+    // The file is made by the view model, then saved where the user picks
+    LaunchedEffect(state.pendingExport) {
+        val export = state.pendingExport ?: return@LaunchedEffect
+        files.save(export.fileName, export.content)
+        onEvent(SettingsEvent.OnExportHandedOver)
+    }
+    val message = state.transferMessage?.let { stringResource(it.textRes, *it.args) }
+    GameSectionHeader(text = stringResource(Res.string.settings_section_found_markers))
+    GameSettingsGroup {
+        item {
+            GameSettingsRow(
+                title = stringResource(Res.string.settings_export_found),
+                summary = message?.takeIf { state.transferMessage?.isExport == true }
+                    ?: stringResource(Res.string.settings_export_found_summary, state.foundCount),
+                action = SettingAction.Link { onEvent(SettingsEvent.OnExportClick) },
+            )
+        }
+        item {
+            GameSettingsRow(
+                title = stringResource(Res.string.settings_import_found),
+                summary = message?.takeIf { state.transferMessage?.isExport == false }
+                    ?: stringResource(Res.string.settings_import_found_summary),
+                action = SettingAction.Link { files.open() },
+            )
+        }
+    }
+}
+
+private val TransferMessage.textRes: StringResource
+    get() = when (this) {
+        is TransferMessage.Exported -> Res.string.settings_exported
+        TransferMessage.ExportFailed -> Res.string.settings_export_failed
+        is TransferMessage.Imported -> Res.string.settings_imported
+        TransferMessage.NotAFile -> Res.string.settings_import_not_a_file
+        TransferMessage.OtherGame -> Res.string.settings_import_other_game
+    }
+
+private val TransferMessage.args: Array<Any>
+    get() = when (this) {
+        is TransferMessage.Exported -> arrayOf(count)
+        is TransferMessage.Imported -> arrayOf(added, total)
+        else -> emptyArray()
+    }
 
 @Composable
 private fun PrivacySection(analyticsId: String, privacyPolicyUrl: String) {

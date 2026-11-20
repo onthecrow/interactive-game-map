@@ -25,4 +25,14 @@
     <string name="settings_footer_signature">用 ❤️ 开发：</string>
     <string name="settings_footer_contact">如有任何问题，欢迎联系我</string>
     <string name="settings_version">版本 %1$s</string>
+    <string name="settings_section_found_markers">已找到的标记</string>
+    <string name="settings_export_found">导出到文件</string>
+    <string name="settings_export_found_summary">已找到：%1$d。保存到文件，以便保留或转移到其他设备</string>
+    <string name="settings_import_found">从文件导入</string>
+    <string name="settings_import_found_summary">将文件中的已找到标记添加到你的标记中</string>
+    <string name="settings_exported">已保存 %1$d 个标记</string>
+    <string name="settings_export_failed">无法保存文件</string>
+    <string name="settings_imported">已添加 %2$d 个中的 %1$d 个新标记</string>
+    <string name="settings_import_not_a_file">这不是已找到标记的文件</string>
+    <string name="settings_import_other_game">这是另一款游戏的标记</string>
 </resources>

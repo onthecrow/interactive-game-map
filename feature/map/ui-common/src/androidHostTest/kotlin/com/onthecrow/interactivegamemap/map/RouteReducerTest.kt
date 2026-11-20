@@ -139,6 +139,21 @@ class RouteReducerTest {
     }
 
     @Test
+    fun `the zoom and recenter buttons stay at the right over any popup`() {
+        val dismissed = built.after(MapEvent.OnLocationDismiss)
+        assertFalse(dismissed.areZoomButtonsAtRight)
+
+        // A marker off the route opens its own popup, not a page of the route
+        val marker = dismissed.after(MapEvent.OnLocationClick(MapLocation.EMPTY.copy(id = 99)))
+        assertFalse(marker.isRoutePagerVisible)
+        assertTrue(marker.areZoomButtonsAtRight)
+        assertTrue(marker.isRecenterVisible)
+
+        assertTrue(dismissed.after(MapEvent.OnLocationClick(locations[3])).areZoomButtonsAtRight)
+        assertFalse(marker.after(MapEvent.OnLocationDismiss).areZoomButtonsAtRight)
+    }
+
+    @Test
     fun `the route button offers to end the route, confirming drops it`() {
         val asked = built.after(MapEvent.OnRouteClick)
         assertTrue(asked.isRouteExitConfirmVisible)

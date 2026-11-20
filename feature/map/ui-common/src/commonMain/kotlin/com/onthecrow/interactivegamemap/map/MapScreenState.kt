@@ -202,6 +202,13 @@ data class MapScreenState(
                 .take(MAX_DISPLAYED_FLOORS)
         }
 
+    /**
+     * A popup takes the place of the controls, a marker's or the pages of a route, and the zoom and recenter buttons
+     * stay at the right side over the map without them.
+     */
+    val areZoomButtonsAtRight: Boolean
+        get() = selectedLocation != null
+
     /** The recenter button is there with a marker to go back to: the selected one, or all of them. */
     val isRecenterVisible: Boolean
         get() = selectedLocation != null || markersBounds != null

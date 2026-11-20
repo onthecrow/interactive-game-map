@@ -343,14 +343,14 @@ internal fun MapScreen(
             }
         }
 
-        // The popups of a route take the place of the controls too, but the zoom stays where it is without them, over
-        // the popups when they're tall
+        // The zoom and recenter buttons stay where they are without the controls the popup of a marker or the pages of
+        // a route took the place of, over the popup when it's tall
         AnimatedVisibility(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
                 .padding(end = ControlsMargin),
-            visible = state.isRoutePagerVisible,
+            visible = state.areZoomButtonsAtRight,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 220)),
         ) {
@@ -519,8 +519,8 @@ internal fun zoomPlacement(
 }
 
 /**
- * The zoom buttons in the middle of the right side, over the popups of a route, the recenter button under them. The
- * rest of it takes no touches, they go to the map and the popups.
+ * The zoom buttons in the middle of the right side, over the popup of a marker or of a route, the recenter button
+ * under them. The rest of it takes no touches, they go to the map and the popups.
  */
 @Composable
 private fun ZoomAtRightLayout(

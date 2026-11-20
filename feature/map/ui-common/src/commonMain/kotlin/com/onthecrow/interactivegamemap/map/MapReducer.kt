@@ -8,6 +8,20 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         state: MapScreenState,
         event: MapEvent
     ): MapScreenState {
+        return reduceEvent(state.withoutRouteHintOn(event), event)
+    }
+
+    // The hint at the route button goes away for good at a tap on the button, the map, a marker, the list or settings
+    private fun MapScreenState.withoutRouteHintOn(event: MapEvent): MapScreenState = when (event) {
+        MapEvent.OnRouteClick,
+        MapEvent.OnLocationDismiss,
+        is MapEvent.OnLocationClick,
+        MapEvent.OnMarkerListClick,
+        MapEvent.OnSettingsClick -> if (isRouteHintShown) copy(isRouteHintShown = false) else this
+        else -> this
+    }
+
+    private fun reduceEvent(state: MapScreenState, event: MapEvent): MapScreenState {
         return when (event) {
             is MapEvent.OnClearSearchClick -> state.copy(searchValue = "")
             is MapEvent.OnSearchValueChange -> state.copy(searchValue = event.value)
@@ -99,6 +113,7 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
                     .associate { it.category.id to event.visible },
             )
             is MapEvent.OnCycleClick -> state.copy(cycles = state.cycles + (event.categoryId to event.cycle))
+            is MapEvent.OnRouteHintShow -> state.copy(isRouteHintShown = true)
             is MapEvent.OnFitBounds -> state.copy(cameraFit = CameraFit(event.bounds, (state.cameraFit?.id ?: 0) + 1))
             is MapEvent.OnRouteClick -> if (state.route != null) state.copy(isRouteExitConfirmVisible = true) else state
             is MapEvent.OnRouteExitConfirm -> state.withoutRoute().withoutSelection()

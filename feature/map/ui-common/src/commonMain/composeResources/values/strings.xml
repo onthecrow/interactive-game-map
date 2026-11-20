@@ -29,4 +29,6 @@
     <string name="route_next">Next marker</string>
     <string name="route_position">%1$d / %2$d</string>
     <string name="route_fast_travel_point">Fast travel point</string>
+    <string name="route_hint_title">New: routes</string>
+    <string name="route_hint_text">Build the best route through the markers on the map</string>
 </resources>

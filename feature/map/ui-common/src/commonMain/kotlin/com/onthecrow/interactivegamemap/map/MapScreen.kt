@@ -47,6 +47,7 @@ import com.onthecrow.interactivegamemap.map.view.MapView
 import com.onthecrow.interactivegamemap.map.view.MarkerListView
 import com.onthecrow.interactivegamemap.map.view.RouteBuildDialog
 import com.onthecrow.interactivegamemap.map.view.RouteExitDialog
+import com.onthecrow.interactivegamemap.map.view.RouteHintView
 import com.onthecrow.interactivegamemap.map.view.RoutePagerView
 import com.onthecrow.interactivegamemap.map.view.SystemBackHandler
 import com.onthecrow.interactivegamemap.map.view.parseDescriptionLink
@@ -183,12 +184,14 @@ internal fun MapScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(ControlsGap)) {
                         // Only while there is a route to build or to end; pressed with a route on, it offers to end it
                         if (state.isRouteButtonVisible) {
-                            GameMapButton(
-                                icon = GameMapTheme.icons.route,
-                                contentDescription = stringResource(Res.string.map_screen_route),
-                                active = state.route != null,
-                                onClick = { onEvent(MapEvent.OnRouteClick) },
-                            )
+                            WithHintAtLeft(hint = { RouteHintView(visible = state.isRouteHintVisible) }) {
+                                GameMapButton(
+                                    icon = GameMapTheme.icons.route,
+                                    contentDescription = stringResource(Res.string.map_screen_route),
+                                    active = state.route != null,
+                                    onClick = { onEvent(MapEvent.OnRouteClick) },
+                                )
+                            }
                         }
                         if (state.hasDungeonFloors) {
                             GameMapButton(
@@ -440,5 +443,29 @@ internal fun zoomPosition(
         right - width to min(centered, sideTop - gap - height)
     } else {
         right - sideWidth - gap - width to min(centered, barTop - gap - height).coerceAtLeast(top)
+    }
+}
+
+// Between the tip of a hint's pointer and the button it points at
+private val HintGap = 2.dp
+
+/**
+ * [content] with [hint] at its left, in the middle of its height and outside its bounds, so the layout around it
+ * doesn't move. The hint takes no touches there: a tap on it goes to the map.
+ */
+@Composable
+private fun WithHintAtLeft(hint: @Composable () -> Unit, content: @Composable () -> Unit) {
+    Layout(contents = listOf(content, hint)) { (contentMeasurables, hintMeasurables), constraints ->
+        val placeable = contentMeasurables.map { it.measure(constraints) }
+        val width = placeable.maxOfOrNull { it.width } ?: 0
+        val height = placeable.maxOfOrNull { it.height } ?: 0
+        val gap = HintGap.roundToPx()
+        val hints = hintMeasurables.map {
+            it.measure(Constraints(maxWidth = (constraints.maxWidth - width - gap).coerceAtLeast(0)))
+        }
+        layout(width, height) {
+            placeable.forEach { it.place(0, 0) }
+            hints.forEach { it.place(-it.width - gap, (height - it.height) / 2) }
+        }
     }
 }

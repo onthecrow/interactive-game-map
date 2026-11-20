@@ -28,4 +28,6 @@
     <string name="route_previous">上一个标记</string>
     <string name="route_next">下一个标记</string>
     <string name="route_fast_travel_point">快速旅行点</string>
+    <string name="route_hint_title">新功能：路线</string>
+    <string name="route_hint_text">规划经过地图上各标记的最佳路线</string>
 </resources>

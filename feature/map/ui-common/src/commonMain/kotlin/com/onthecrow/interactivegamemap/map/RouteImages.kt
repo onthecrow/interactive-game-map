@@ -37,11 +37,11 @@ private val RouteStopBorder = 1.5.dp
 private val RouteStopTextPadding = 4.dp
 
 // The bubble over a fast travel point of a route: its name and what it is, a pointer down to the point
-private val BubblePadding = 10.dp
-private val BubbleLineGap = 2.dp
-private val BubbleCorner = 6.dp
-private val BubbleBorder = 1.dp
-private val BubblePointer = 7.dp
+internal val BubblePadding = 10.dp
+internal val BubbleLineGap = 2.dp
+internal val BubbleCorner = 6.dp
+internal val BubbleBorder = 1.dp
+internal val BubblePointer = 7.dp
 // The bubble's pointer ends this far above the middle of the point, clear of its disc
 internal val RouteStopBubbleLift = RouteStopSize / 2 + 2.dp
 

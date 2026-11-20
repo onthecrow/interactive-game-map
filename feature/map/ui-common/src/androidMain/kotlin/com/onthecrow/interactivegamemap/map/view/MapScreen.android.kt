@@ -620,10 +620,15 @@ private fun updateRouteDashes(lines: List<RouteLine>, style: MapStyle, zoom: Flo
     }
 }
 
-/** A zoom step around [location] when there is one, so it stays where it is on the screen; around the middle otherwise. */
+/**
+ * A zoom step around [location] when it's on the screen, so it stays where it is; around the middle otherwise, as when
+ * the map was moved away from it.
+ */
 private fun zoomBy(googleMap: GoogleMap, location: MapLocation?, amount: Float): CameraUpdate {
-    location ?: return CameraUpdateFactory.zoomBy(amount)
-    return CameraUpdateFactory.zoomBy(amount, googleMap.projection.toScreenLocation(LatLng(location.lat, location.lng)))
+    val point = location?.let { LatLng(it.lat, it.lng) }
+        ?.takeIf { googleMap.projection.visibleRegion.latLngBounds.contains(it) }
+        ?: return CameraUpdateFactory.zoomBy(amount)
+    return CameraUpdateFactory.zoomBy(amount, googleMap.projection.toScreenLocation(point))
 }
 
 private fun MapBounds.toLatLngBounds(): LatLngBounds {

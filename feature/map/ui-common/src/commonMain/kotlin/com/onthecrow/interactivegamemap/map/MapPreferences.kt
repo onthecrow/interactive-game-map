@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 private const val KEY_MARKER_LIST_SETTINGS = "marker_list_settings"
 private const val KEY_MAP_VIEW_SETTINGS = "map_view_settings"
 private const val KEY_ROUTE = "route"
+private const val KEY_ROUTE_HINT_SHOWN = "route_hint_shown"
 
 internal interface PreferencesStorage {
     fun getString(key: String): String?
@@ -109,6 +110,13 @@ internal class MapPreferences(
         } catch (_: IllegalArgumentException) {
             null
         }
+    }
+
+    /** Whether the hint at the route button has been shown: it's shown once. */
+    fun isRouteHintShown(): Boolean = storage.getString(KEY_ROUTE_HINT_SHOWN) == true.toString()
+
+    fun setRouteHintShown() {
+        storage.putString(KEY_ROUTE_HINT_SHOWN, true.toString())
     }
 
     /** Null forgets the route. */

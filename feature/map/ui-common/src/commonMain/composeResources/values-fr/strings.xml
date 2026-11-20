@@ -28,4 +28,6 @@
     <string name="route_previous">Marqueur précédent</string>
     <string name="route_next">Marqueur suivant</string>
     <string name="route_fast_travel_point">Point de voyage rapide</string>
+    <string name="route_hint_title">Nouveau : itinéraires</string>
+    <string name="route_hint_text">Créez le meilleur itinéraire entre les marqueurs de la carte</string>
 </resources>

@@ -39,10 +39,14 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
+
+// The hint at the route button comes this long after the button is there
+private val ROUTE_HINT_DELAY = 1500.milliseconds
 
 // A search is logged once the user stops typing
 private val SEARCH_LOG_DELAY = 1500.milliseconds
@@ -235,6 +239,7 @@ internal class MapViewModel(
             .drop(1)
             .onEach { language -> state.value.route?.let { reloadRouteLocations(it, language) } }
             .launchIn(viewModelScope)
+        showRouteHintOnce()
         viewModelScope.launch {
             restoreRoute()
             // Kept from here on, so the route read back isn't forgotten before it is restored
@@ -243,6 +248,28 @@ internal class MapViewModel(
                 .distinctUntilChanged()
                 .onEach { (route, page) -> preferences.setSavedRoute(route?.let { SavedRoute.of(it.plan, page) }) }
                 .launchIn(viewModelScope)
+        }
+    }
+
+    /**
+     * The hint at the route button, once ever: when the button is there with nothing over the map for a moment. Someone
+     * who has a route kept from before knows the button already.
+     */
+    private fun showRouteHintOnce() {
+        if (preferences.isRouteHintShown()) return
+        if (preferences.getSavedRoute() != null) {
+            preferences.setRouteHintShown()
+            return
+        }
+        viewModelScope.launch {
+            while (true) {
+                state.first { it.canShowRouteHint }
+                // The map settles first, then the hint is noticed coming
+                delay(ROUTE_HINT_DELAY)
+                if (state.value.canShowRouteHint) break
+            }
+            preferences.setRouteHintShown()
+            onEvent(MapEvent.OnRouteHintShow)
         }
     }
 

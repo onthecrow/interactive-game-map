@@ -161,6 +161,43 @@ class RouteReducerTest {
     }
 
     @Test
+    fun `the route hint goes away at a tap on the button, the map, a marker, the list or settings`() {
+        val ready = MapScreenState(isRouteAvailable = true, routeCandidateCount = 10)
+        assertTrue(ready.canShowRouteHint)
+        val shown = ready.after(MapEvent.OnRouteHintShow)
+        assertTrue(shown.isRouteHintVisible)
+        listOf(
+            MapEvent.OnRouteClick,
+            MapEvent.OnLocationDismiss,
+            MapEvent.OnLocationClick(locations[0]),
+            MapEvent.OnMarkerListClick,
+            MapEvent.OnSettingsClick,
+        ).forEach { assertFalse(shown.after(it).isRouteHintShown, "$it") }
+        // Other things don't take it away: a search only hides it with the button
+        val searching = shown.after(MapEvent.OnSearchValueChange("bone"))
+        assertTrue(searching.isRouteHintShown)
+        assertFalse(searching.isRouteHintVisible)
+        assertTrue(searching.after(MapEvent.OnClearSearchClick).isRouteHintVisible)
+        // Not over a popup or the list
+        assertFalse(ready.after(MapEvent.OnLocationClick(locations[0])).canShowRouteHint)
+        assertFalse(ready.after(MapEvent.OnMarkerListClick).canShowRouteHint)
+    }
+
+    @Test
+    fun `the route hint is remembered as shown`() {
+        val values = mutableMapOf<String, String>()
+        val preferences = MapPreferences(object : PreferencesStorage {
+            override fun getString(key: String) = values[key]
+            override fun putString(key: String, value: String) {
+                values[key] = value
+            }
+        })
+        assertFalse(preferences.isRouteHintShown())
+        preferences.setRouteHintShown()
+        assertTrue(preferences.isRouteHintShown())
+    }
+
+    @Test
     fun `a restored route opens at its page`() {
         val state = MapScreenState().after(MapEvent.OnRouteLoaded(route, locations, page = 2))
         assertEquals(2, state.routePage)

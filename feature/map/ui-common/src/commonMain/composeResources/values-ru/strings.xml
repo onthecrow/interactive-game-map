@@ -28,4 +28,6 @@
     <string name="route_previous">Предыдущий маркер</string>
     <string name="route_next">Следующий маркер</string>
     <string name="route_fast_travel_point">Точка быстрого перемещения</string>
+    <string name="route_hint_title">Новое: маршруты</string>
+    <string name="route_hint_text">Постройте оптимальный маршрут обхода маркеров на карте</string>
 </resources>

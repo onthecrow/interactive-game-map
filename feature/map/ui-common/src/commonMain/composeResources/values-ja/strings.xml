@@ -28,4 +28,6 @@
     <string name="route_previous">前のマーカー</string>
     <string name="route_next">次のマーカー</string>
     <string name="route_fast_travel_point">ファストトラベル地点</string>
+    <string name="route_hint_title">新機能：ルート</string>
+    <string name="route_hint_text">地図上のマーカーを巡る最適なルートを作成できます</string>
 </resources>

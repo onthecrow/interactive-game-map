@@ -701,12 +701,16 @@ private fun updateRouteWidths(lines: List<Pair<GMSPolyline, RoutePathKind>>, sty
     }
 }
 
-/** A zoom step around [location] when there is one, so it stays where it is on the screen; around the middle otherwise. */
+/**
+ * A zoom step around [location] when it's on the screen, so it stays where it is; around the middle otherwise, as when
+ * the map was moved away from it.
+ */
 @OptIn(ExperimentalForeignApi::class)
 private fun GMSMapView.zoomBy(location: MapLocation?, amount: Float): GMSCameraUpdate {
-    location ?: return GMSCameraUpdate.zoomBy(amount)
-    val point = projection.pointForCoordinate(CLLocationCoordinate2DMake(location.lat, location.lng))
-    return GMSCameraUpdate.zoomBy(amount, atPoint = point)
+    val coordinate = location?.let { CLLocationCoordinate2DMake(it.lat, it.lng) }
+        ?.takeIf { projection.containsCoordinate(it) }
+        ?: return GMSCameraUpdate.zoomBy(amount)
+    return GMSCameraUpdate.zoomBy(amount, atPoint = projection.pointForCoordinate(coordinate))
 }
 
 @OptIn(ExperimentalForeignApi::class)

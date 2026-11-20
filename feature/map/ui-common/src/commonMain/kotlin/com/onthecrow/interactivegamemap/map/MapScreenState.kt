@@ -69,6 +69,8 @@ data class MapScreenState(
     /** The progress of the route being built, null when none is. */
     val routeBuild: RouteBuildProgress? = null,
     val isRouteExitConfirmVisible: Boolean = false,
+    /** The hint at the route button is up: shown once, until the button, the map, the list or the settings is tapped. */
+    val isRouteHintShown: Boolean = false,
     /** The number of the fast travel point of the route whose bubble is shown over it. */
     val selectedRouteStop: Int? = null,
 ): State {
@@ -85,6 +87,14 @@ data class MapScreenState(
     /** The route on the map: a search shows other markers, the route waits until it's cleared. */
     val displayedRoute: Route?
         get() = route?.takeIf { searchValue.isBlank() }
+
+    /** The hint at the route button would make sense now: the button is there, with no route and nothing over the map. */
+    val canShowRouteHint: Boolean
+        get() = isRouteButtonVisible && route == null && routeBuild == null && selectedLocation == null &&
+            !isMarkerListVisible
+
+    val isRouteHintVisible: Boolean
+        get() = isRouteHintShown && isRouteButtonVisible && route == null
 
     /** The route button: with roads, without a search, and with a route to end or one to build. */
     val isRouteButtonVisible: Boolean

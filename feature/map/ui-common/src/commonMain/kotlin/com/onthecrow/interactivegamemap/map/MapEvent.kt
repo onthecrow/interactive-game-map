@@ -46,6 +46,9 @@ internal sealed interface MapEvent : Event {
     /** All of [bounds] are to be shown: the markers the list has just turned on with the ones shown before. */
     data class OnFitBounds(val bounds: MapBounds) : MapEvent
 
+    /** The hint at the route button comes up, once for good. */
+    data object OnRouteHintShow : MapEvent
+
     /** The route button: builds a route, or offers to end the one there is. */
     data object OnRouteClick : MapEvent
     data object OnRouteBuildCancel : MapEvent

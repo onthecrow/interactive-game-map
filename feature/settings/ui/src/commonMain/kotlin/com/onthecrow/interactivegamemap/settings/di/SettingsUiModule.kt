@@ -6,6 +6,7 @@ import com.onthecrow.interactivegamemap.settings.LegalNotice
 import com.onthecrow.interactivegamemap.settings.PrivacyPolicyUrl
 import com.onthecrow.interactivegamemap.settings.SettingsCrashKeys
 import com.onthecrow.interactivegamemap.settings.SettingsDestination
+import com.onthecrow.interactivegamemap.settings.SettingsOptions
 import com.onthecrow.interactivegamemap.settings.SettingsReducer
 import com.onthecrow.interactivegamemap.settings.SettingsScreen
 import com.onthecrow.interactivegamemap.settings.SettingsViewModel
@@ -32,6 +33,7 @@ val settingsUiModule = module {
             privacyPolicyUrl = koinInject<PrivacyPolicyUrl>().value,
             onEvent = viewModel::onEvent,
             legalNotice = koinInject<LegalNotice>().lines,
+            options = koinInject<SettingsOptions>(),
         )
     }
 }

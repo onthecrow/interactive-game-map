@@ -11,6 +11,7 @@ import com.onthecrow.interactivegamemap.network.di.networkModule
 import com.onthecrow.interactivegamemap.network.di.remoteConfigModule
 import com.onthecrow.interactivegamemap.settings.LegalNotice
 import com.onthecrow.interactivegamemap.settings.PrivacyPolicyUrl
+import com.onthecrow.interactivegamemap.settings.SettingsOptions
 import com.onthecrow.interactivegamemap.settings.di.settingsModule
 import com.onthecrow.interactivegamemap.settings.di.settingsUiModule
 import com.onthecrow.interactivegamemap.sync.di.syncModule
@@ -30,6 +31,7 @@ fun applicationModule(flavor: FlavorConfig): Module = module {
     single(StartDestination) { MapDestination } bind Destination::class
     single { PrivacyPolicyUrl(flavor.privacyPolicyUrl) }
     single { LegalNotice(flavor.legalNotice) }
+    single { SettingsOptions(hasMapStyle = flavor.mapStyle.hasDarkMap) }
     single { flavor.mapStyle }
     single { flavor.mapFeatures }
     single { GameId(flavor.gameId) }

@@ -11,6 +11,8 @@ data class AppSettings(
     val language: String? = null,
     val hideMarkersWhileMoving: Boolean = false,
     val clusterMarkers: Boolean = true,
+    /** The look of the map, in an app whose game has a dark map. */
+    val mapStyle: MapStyleMode = MapStyleMode.THEME,
 )
 
 @Serializable
@@ -24,4 +26,18 @@ enum class ThemeMode {
             LIGHT -> false
             DARK -> true
         }
+}
+
+@Serializable
+enum class MapStyleMode {
+    /** The dark map in the dark theme, the usual one in the light theme. */
+    THEME,
+    STANDARD,
+    DARK;
+
+    fun isDark(isDarkTheme: Boolean): Boolean = when (this) {
+        THEME -> isDarkTheme
+        STANDARD -> false
+        DARK -> true
+    }
 }

@@ -48,6 +48,7 @@ internal val FitBoundsPadding = 64.dp
 internal const val HIDDEN_MARKER_ALPHA = 0f
 
 /**
+ * @param isDarkMap whether the tiles and the floors are recoloured by [com.onthecrow.interactivegamemap.map.MapStyle.darkTiles]
  * @param camera where the camera was left, it is placed there again when the view is created, otherwise at
  * the camera of [map]
  * @param hideMarkersWhileMoving whether the markers are hidden while the camera moves, except the selected one
@@ -61,6 +62,7 @@ internal const val HIDDEN_MARKER_ALPHA = 0f
 @Composable
 internal expect fun MapView(
     map: GameMap?,
+    isDarkMap: Boolean,
     locations: List<MapLocation>,
     clusters: List<MarkerCluster>,
     selectedLocation: MapLocation?,

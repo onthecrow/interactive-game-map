@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -97,6 +98,49 @@ import org.koin.compose.koinInject
 @Composable
 internal actual fun MapView(
     map: GameMap?,
+    isDarkMap: Boolean,
+    locations: List<MapLocation>,
+    clusters: List<MarkerCluster>,
+    selectedLocation: MapLocation?,
+    entrances: List<MapLocation>,
+    floors: List<MapFloor>,
+    foundLocationIds: Set<Int>,
+    route: Route?,
+    selectedRouteStop: Int?,
+    camera: CameraPosition?,
+    cameraController: MapCameraController,
+    hideMarkersWhileMoving: Boolean,
+    bottomPadding: Dp,
+    modifier: Modifier,
+    onEvent: (MapEvent) -> Unit,
+) {
+    // A map view takes its background once, so the other style of the map comes in a new one
+    key(isDarkMap) {
+        GoogleMapView(
+            map = map,
+            isDarkMap = isDarkMap,
+            locations = locations,
+            clusters = clusters,
+            selectedLocation = selectedLocation,
+            entrances = entrances,
+            floors = floors,
+            foundLocationIds = foundLocationIds,
+            route = route,
+            selectedRouteStop = selectedRouteStop,
+            camera = camera,
+            cameraController = cameraController,
+            hideMarkersWhileMoving = hideMarkersWhileMoving,
+            bottomPadding = bottomPadding,
+            modifier = modifier,
+            onEvent = onEvent,
+        )
+    }
+}
+
+@Composable
+private fun GoogleMapView(
+    map: GameMap?,
+    isDarkMap: Boolean,
     locations: List<MapLocation>,
     clusters: List<MarkerCluster>,
     selectedLocation: MapLocation?,
@@ -124,9 +168,11 @@ internal actual fun MapView(
 
     val context = LocalContext.current
     val mapStyle: MapStyle = koinInject<MapStyle>()
+    // The tiles, the floors and the markers alike
+    val tileColors = mapStyle.tileColors(isDarkMap)
 
     val mapView = remember {
-        MapView(context, GoogleMapOptions().backgroundColor(mapStyle.backgroundColor.toArgb())).apply {
+        MapView(context, GoogleMapOptions().backgroundColor(mapStyle.backgroundColor(isDarkMap).toArgb())).apply {
             onCreate(Bundle())
         }
     }
@@ -141,11 +187,11 @@ internal actual fun MapView(
     // The pin with the popup over it
     val selectedId = selectedLocation?.id
     val highlight = GameMapTheme.colors.accent
-    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight)
+    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight, tileColors)
     val pinIcons = remember { mutableMapOf<MarkerPinImage, BitmapDescriptor>() }
     val markers = remember { mutableMapOf<String, Marker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
-    val clusterImages = rememberClusterImages(clusters)
+    val clusterImages = rememberClusterImages(clusters, tileColors)
     val clusterIcons = remember { mutableMapOf<ImageBitmap, BitmapDescriptor>() }
     val clusterMarkers = remember { mutableMapOf<Int, Marker>() }
     var isCameraMoving by remember { mutableStateOf(false) }
@@ -193,7 +239,7 @@ internal actual fun MapView(
         isCameraPlaced = true
         val load = mapAnalytics.startLoad(map.id)
         tileOverlay = googleMap.addTileOverlay(
-            TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom, load))
+            TileOverlayOptions().tileProvider(MergedTileProvider(mapTileProvider, map.tiles, map.maxZoom, load, tileColors))
         )
         mapAnalytics.trackFirstTile(load)
     }
@@ -223,7 +269,7 @@ internal actual fun MapView(
                     tag = location
                 }
             }
-            val pinImage = location.pinImage(selectedId, highlight)
+            val pinImage = location.pinImage(selectedId, highlight, tileColors)
             if (pinImage != null && pinImage !in pinImages) return@forEach
 
             val image = pinImage?.let { pinImages[it] }
@@ -360,7 +406,9 @@ internal actual fun MapView(
         floors.filter { it.id !in floorOverlays }.forEach { floor ->
             launch {
                 val bitmap = withContext(Dispatchers.IO) {
-                    mapTileProvider.getImage(floor.imageUrl)?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                    mapTileProvider.getImage(floor.imageUrl)
+                        ?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                        ?.let { image -> tileColors?.let { image.recoloured(it) } ?: image }
                 } ?: return@launch
 
                 googleMap.addGroundOverlay(
@@ -561,6 +609,7 @@ internal actual fun MapView(
     )
 
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val mapViewLifecycle = remember(mapView) { MapViewLifecycle() }
     DisposableEffect(lifecycle, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -569,13 +618,35 @@ internal actual fun MapView(
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
                 Lifecycle.Event.ON_STOP -> mapView.onStop()
                 Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-                else -> Unit
+                else -> return@LifecycleEventObserver
             }
+            mapViewLifecycle.lastEvent = event
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+    // The view is left for good, as when the other style of the map takes a new one: it stops and lets go of the map
+    DisposableEffect(mapView) {
+        onDispose {
+            when (mapViewLifecycle.lastEvent) {
+                Lifecycle.Event.ON_RESUME -> {
+                    mapView.onPause()
+                    mapView.onStop()
+                    mapView.onDestroy()
+                }
+                Lifecycle.Event.ON_START, Lifecycle.Event.ON_PAUSE -> {
+                    mapView.onStop()
+                    mapView.onDestroy()
+                }
+                Lifecycle.Event.ON_DESTROY -> Unit
+                else -> mapView.onDestroy()
+            }
+        }
+    }
 }
+
+/** The last event of the lifecycle a map view got, so it can be taken down when it's left. */
+private class MapViewLifecycle(var lastEvent: Lifecycle.Event? = null)
 
 /** The lines of the route on the map, by the indices of its paths, and their widths. */
 private class RouteLines {

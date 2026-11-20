@@ -11,6 +11,10 @@
     <string name="settings_theme_system">System default</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
+    <string name="settings_map_style">Map style</string>
+    <string name="settings_map_style_theme">Same as theme</string>
+    <string name="settings_map_style_standard">Standard</string>
+    <string name="settings_map_style_dark">Dark</string>
     <string name="settings_system_colors">System colors</string>
     <string name="settings_system_colors_summary">Use the colors of your phone's theme</string>
     <string name="settings_section_language">Language</string>

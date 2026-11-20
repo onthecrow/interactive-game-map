@@ -46,6 +46,7 @@ internal class SettingsViewModel(
                 is SettingsEvent.OnHideMarkersWhileMovingChange -> update { it.copy(hideMarkersWhileMoving = event.enabled) }
                 is SettingsEvent.OnClusterMarkersChange -> update { it.copy(clusterMarkers = event.enabled) }
                 is SettingsEvent.OnThemeSelect -> update { it.copy(theme = event.theme) }
+                is SettingsEvent.OnMapStyleSelect -> update { it.copy(mapStyle = event.mapStyle) }
                 is SettingsEvent.OnDynamicColorChange -> update { it.copy(dynamicColor = event.enabled) }
                 is SettingsEvent.OnLanguageSelect -> update { it.copy(language = event.language) }
                 SettingsEvent.OnExportClick -> viewModelScope.launch {

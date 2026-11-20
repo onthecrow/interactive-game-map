@@ -9,6 +9,8 @@ internal sealed interface SettingsEvent : Event {
     data class OnClusterMarkersChange(val enabled: Boolean) : SettingsEvent
     data object OnThemeClick : SettingsEvent
     data class OnThemeSelect(val theme: ThemeMode) : SettingsEvent
+    data object OnMapStyleClick : SettingsEvent
+    data class OnMapStyleSelect(val mapStyle: MapStyleMode) : SettingsEvent
     data class OnDynamicColorChange(val enabled: Boolean) : SettingsEvent
     data object OnLanguageClick : SettingsEvent
     /** @param language null to follow the system */

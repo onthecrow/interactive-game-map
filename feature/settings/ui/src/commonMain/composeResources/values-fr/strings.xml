@@ -11,6 +11,10 @@
     <string name="settings_theme_system">Paramètre par défaut du système</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_map_style">Style de la carte</string>
+    <string name="settings_map_style_theme">Comme le thème</string>
+    <string name="settings_map_style_standard">Standard</string>
+    <string name="settings_map_style_dark">Sombre</string>
     <string name="settings_system_colors">Couleurs du système</string>
     <string name="settings_system_colors_summary">Utiliser les couleurs du thème de votre téléphone</string>
     <string name="settings_section_language">Langue</string>

@@ -11,6 +11,10 @@
     <string name="settings_theme_system">跟随系统</string>
     <string name="settings_theme_light">浅色</string>
     <string name="settings_theme_dark">深色</string>
+    <string name="settings_map_style">地图样式</string>
+    <string name="settings_map_style_theme">跟随主题</string>
+    <string name="settings_map_style_standard">标准</string>
+    <string name="settings_map_style_dark">深色</string>
     <string name="settings_system_colors">系统颜色</string>
     <string name="settings_system_colors_summary">使用手机主题的颜色</string>
     <string name="settings_section_language">语言</string>

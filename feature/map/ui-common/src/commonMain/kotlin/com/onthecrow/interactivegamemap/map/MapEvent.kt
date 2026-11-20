@@ -6,6 +6,7 @@ import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapsConfig
 import com.onthecrow.interactivegamemap.map.model.Route
+import com.onthecrow.interactivegamemap.settings.MapStyleMode
 import com.onthecrow.nomadrates.uicore.Event
 
 internal sealed interface MapEvent : Event {
@@ -48,7 +49,11 @@ internal sealed interface MapEvent : Event {
     data class OnLocationLinkClick(val locationId: Int) : MapEvent
     data class OnLocationLinkLoaded(val location: MapLocation) : MapEvent
     data class OnLanguageChange(val language: String) : MapEvent
-    data class OnSettingsChange(val hideMarkersWhileMoving: Boolean, val clusterMarkers: Boolean) : MapEvent
+    data class OnSettingsChange(
+        val hideMarkersWhileMoving: Boolean,
+        val clusterMarkers: Boolean,
+        val mapStyle: MapStyleMode,
+    ) : MapEvent
 
     /** All of [bounds] are to be shown: the markers the list has just turned on with the ones shown before. */
     data class OnFitBounds(val bounds: MapBounds) : MapEvent

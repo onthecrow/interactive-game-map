@@ -33,20 +33,25 @@ internal val MarkerCluster.label: String
         else -> "${count / 1000 * 1000}+"
     }
 
-/** The images of the clusters by their labels, a round badge in the cluster colors of the theme. */
+/**
+ * The images of the clusters by their labels, a round badge in the cluster colors of the theme, recoloured by [colors]
+ * like the pins.
+ */
 @Composable
-internal fun rememberClusterImages(clusters: List<MarkerCluster>): Map<String, ImageBitmap> {
+internal fun rememberClusterImages(clusters: List<MarkerCluster>, colors: TileColorMatrix?): Map<String, ImageBitmap> {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val colors = GameMapTheme.colors
-    val background = colors.cluster
-    val border = colors.clusterBorder
-    val style = GameMapTheme.typography.label.copy(color = colors.onCluster)
-    val images = remember(textMeasurer, density, background, border, style) { mutableMapOf<String, ImageBitmap>() }
+    val themeColors = GameMapTheme.colors
+    val background = themeColors.cluster
+    val border = themeColors.clusterBorder
+    val style = GameMapTheme.typography.label.copy(color = themeColors.onCluster)
+    val images = remember(textMeasurer, density, background, border, style, colors) {
+        mutableMapOf<String, ImageBitmap>()
+    }
 
     return remember(clusters, images) {
         clusters.map { it.label }.distinct().associateWith { label ->
-            images.getOrPut(label) { drawCluster(label, textMeasurer, style, density, background, border) }
+            images.getOrPut(label) { drawCluster(label, textMeasurer, style, density, background, border, colors) }
         }
     }
 }
@@ -58,6 +63,7 @@ private fun drawCluster(
     density: Density,
     background: Color,
     border: Color,
+    colors: TileColorMatrix?,
 ): ImageBitmap {
     val text = textMeasurer.measure(label, style)
     val height = with(density) { ClusterHeight.toPx() }
@@ -66,17 +72,19 @@ private fun drawCluster(
     val width = max(height, text.size.width + 2 * with(density) { ClusterTextPadding.toPx() })
     val image = ImageBitmap(width.roundToInt(), height.roundToInt())
     CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(image), Size(image.width.toFloat(), image.height.toFloat())) {
-        drawRoundRect(color = border, cornerRadius = CornerRadius(size.height / 2))
-        drawRoundRect(
-            color = background,
-            topLeft = Offset(borderWidth, borderWidth),
-            size = Size(size.width - 2 * borderWidth, size.height - 2 * borderWidth),
-            cornerRadius = CornerRadius(size.height / 2 - borderWidth),
-        )
-        drawText(
-            textLayoutResult = text,
-            topLeft = Offset((size.width - text.size.width) / 2, (size.height - text.size.height) / 2),
-        )
+        withColors(colors) {
+            drawRoundRect(color = border, cornerRadius = CornerRadius(size.height / 2))
+            drawRoundRect(
+                color = background,
+                topLeft = Offset(borderWidth, borderWidth),
+                size = Size(size.width - 2 * borderWidth, size.height - 2 * borderWidth),
+                cornerRadius = CornerRadius(size.height / 2 - borderWidth),
+            )
+            drawText(
+                textLayoutResult = text,
+                topLeft = Offset((size.width - text.size.width) / 2, (size.height - text.size.height) / 2),
+            )
+        }
     }
     return image
 }

@@ -82,6 +82,7 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnSettingsChange -> state.copy(
                 hideMarkersWhileMoving = event.hideMarkersWhileMoving,
                 clusterMarkers = event.clusterMarkers,
+                mapStyle = event.mapStyle,
             )
             is MapEvent.OnEntrancesLoaded -> state.copy(entrances = event.entrances)
             is MapEvent.OnFloorClick -> state.copy(selectedFloorId = event.floorId)

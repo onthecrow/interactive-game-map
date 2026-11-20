@@ -11,6 +11,10 @@
     <string name="settings_theme_system">Predeterminado del sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_map_style">Estilo del mapa</string>
+    <string name="settings_map_style_theme">Igual que el tema</string>
+    <string name="settings_map_style_standard">Estándar</string>
+    <string name="settings_map_style_dark">Oscuro</string>
     <string name="settings_system_colors">Colores del sistema</string>
     <string name="settings_system_colors_summary">Usar los colores del tema del teléfono</string>
     <string name="settings_section_language">Idioma</string>

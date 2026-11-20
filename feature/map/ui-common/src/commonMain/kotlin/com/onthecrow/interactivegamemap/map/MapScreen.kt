@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.onthecrow.interactivegamemap.map.model.GeoPoint
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.view.DescriptionLink
 import com.onthecrow.interactivegamemap.map.view.LocationView
@@ -80,9 +82,15 @@ internal fun MapScreen(
 ) {
     // The height of the screen and of the popup, to put a location looked at in the middle of what's left above it
     var screenHeight by remember { mutableStateOf(0) }
+    var screenWidth by remember { mutableStateOf(0) }
     var popupHeight by remember { mutableStateOf(0) }
 
-    Box(modifier = modifier.onSizeChanged { screenHeight = it.height }) {
+    Box(
+        modifier = modifier.onSizeChanged {
+            screenHeight = it.height
+            screenWidth = it.width
+        },
+    ) {
         val displayedMarkers = remember(state.locations, state.entrances, state.selectedLocation) {
             (state.locations + state.entrances + listOfNotNull(state.selectedLocation))
                 .distinctBy { it.id }
@@ -91,6 +99,9 @@ internal fun MapScreen(
         val density = LocalDensity.current
         val topInset = WindowInsets.safeDrawing.getTop(density)
         val bottomInset = WindowInsets.systemBars.getBottom(density)
+        val layoutDirection = LocalLayoutDirection.current
+        val leftInset = WindowInsets.safeDrawing.getLeft(density, layoutDirection)
+        val rightInset = WindowInsets.safeDrawing.getRight(density, layoutDirection)
 
         // The middle of what the popup leaves of the map, or its upper third before the popup is measured
         fun focusY(): Dp {
@@ -102,17 +113,28 @@ internal fun MapScreen(
             return with(density) { y.toDp() }
         }
 
+        // What the popup leaves of the map: all of it but the bars, the popup and what's above the safe area
+        fun areaWidth(): Dp = with(density) { (screenWidth - leftInset - rightInset).coerceAtLeast(0).toDp() }
+        fun areaHeight(): Dp = with(density) {
+            val popup = if (state.selectedLocation != null) popupHeight else 0
+            (screenHeight - topInset - bottomInset - popup).coerceAtLeast(0).toDp()
+        }
+
         LaunchedEffect(state.focusedLocation) {
             val location = state.focusedLocation ?: return@LaunchedEffect
             // The popup of a new selection is measured on its first frames
             repeat(2) { withFrameNanos {} }
-            cameraController.focus(location.lat, location.lng, focusY())
+            // On a route, a jump to a fast travel point before the location shows where to go from: both are in view
+            val jump = state.routeFastTravelBefore(location.id)
+            val points = listOfNotNull(jump?.let { GeoPoint(it.lat, it.lng) }, GeoPoint(location.lat, location.lng))
+            cameraController.focus(points, focusY(), areaWidth(), areaHeight())
         }
 
         // The bubble of a fast travel point goes over it, the camera brings it in view at the zoom there is
         LaunchedEffect(state.selectedRouteStop) {
             val stop = state.displayedRoute?.fastTravels?.firstOrNull { it.number == state.selectedRouteStop } ?: return@LaunchedEffect
-            cameraController.focus(stop.point.lat, stop.point.lng, focusY(), keepZoom = true)
+            val point = listOf(GeoPoint(stop.point.lat, stop.point.lng))
+            cameraController.focus(point, focusY(), areaWidth(), areaHeight(), keepZoom = true)
         }
 
         LaunchedEffect(state.cameraFit) {

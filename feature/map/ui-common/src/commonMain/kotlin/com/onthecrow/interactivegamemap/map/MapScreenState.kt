@@ -10,7 +10,9 @@ import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapDungeon
 import com.onthecrow.interactivegamemap.map.model.MapFloor
+import com.onthecrow.interactivegamemap.map.model.FastTravelPoint
 import com.onthecrow.interactivegamemap.map.model.Route
+import com.onthecrow.interactivegamemap.map.model.RouteStop
 import com.onthecrow.interactivegamemap.map.model.RouteBuildStage
 import com.onthecrow.nomadrates.uicore.State
 
@@ -101,6 +103,26 @@ data class MapScreenState(
                 !isCategoryVisible(category) || (location.cycle != null && location.cycle != selectedCycle(category.id))
             }
         }
+
+    /**
+     * The fast travel point the route jumps to right before [locationId], null when it rides there from the location
+     * before or the location isn't on the route.
+     */
+    fun routeFastTravelBefore(locationId: Int): FastTravelPoint? {
+        val route = displayedRoute ?: return null
+        var fastTravels = 0
+        var jumpedTo: Int? = null
+        for (stop in route.plan.stops) {
+            when (stop) {
+                is RouteStop.FastTravel -> jumpedTo = fastTravels++
+                is RouteStop.Location -> {
+                    if (stop.locationId == locationId) return jumpedTo?.let { route.fastTravels.getOrNull(it)?.point }
+                    jumpedTo = null
+                }
+            }
+        }
+        return null
+    }
 
     /** The selected location is the one the route has come to: its popup is one of the pages of the route. */
     val isRoutePagerVisible: Boolean

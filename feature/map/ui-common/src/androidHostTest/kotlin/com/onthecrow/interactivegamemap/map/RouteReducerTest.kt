@@ -149,6 +149,18 @@ class RouteReducerTest {
     }
 
     @Test
+    fun `the fast travel point before a location is the one the route jumps to right before it`() {
+        // 100 → 1, 2, then 200 → 3, 4
+        assertEquals(100, built.routeFastTravelBefore(1)?.id)
+        assertNull(built.routeFastTravelBefore(2))
+        assertEquals(200, built.routeFastTravelBefore(3)?.id)
+        assertNull(built.routeFastTravelBefore(4))
+        assertNull(built.routeFastTravelBefore(99))
+        // A search hides the route: nothing to show
+        assertNull(built.after(MapEvent.OnSearchValueChange("x")).routeFastTravelBefore(1))
+    }
+
+    @Test
     fun `a restored route opens at its page`() {
         val state = MapScreenState().after(MapEvent.OnRouteLoaded(route, locations, page = 2))
         assertEquals(2, state.routePage)

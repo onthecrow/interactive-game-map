@@ -306,11 +306,13 @@ internal actual fun MapView(
                     CameraCommand.ZoomOut -> zoomBy(googleMap, currentSelected, -1f)
                     is CameraCommand.Focus -> {
                         val position = googleMap.cameraPosition
-                        val zoom = currentMap?.takeIf { !command.keepZoom }?.focusZoom(position.zoom) ?: position.zoom
-                        // The target is in the middle of the map's padding, the location goes above it
+                        val zoom = currentMap?.takeIf { !command.keepZoom }
+                            ?.focusZoom(position.zoom, command.points, command.areaWidth, command.areaHeight)
+                            ?: position.zoom
+                        // The target is in the middle of the map's padding, the points go above it
                         val center = googleMap.projection.toScreenLocation(position.target)
                         val above = center.y / density.density - command.focusY.value
-                        val (lat, lng) = cameraTargetAbove(command.lat, command.lng, zoom, above.toDouble())
+                        val (lat, lng) = cameraTargetAbove(command.points, zoom, above.toDouble())
                         CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), zoom)
                     }
                     is CameraCommand.Fit -> CameraUpdateFactory.newLatLngBounds(

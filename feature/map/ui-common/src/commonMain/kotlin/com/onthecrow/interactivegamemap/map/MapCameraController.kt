@@ -1,7 +1,9 @@
 package com.onthecrow.interactivegamemap.map
 
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.GeoPoint
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,6 +13,7 @@ import kotlinx.serialization.Serializable
 import kotlin.math.PI
 import kotlin.math.atan
 import kotlin.math.ln
+import kotlin.math.log2
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sinh
@@ -41,10 +44,17 @@ internal sealed interface CameraCommand {
     data object ZoomOut : CameraCommand
 
     /**
-     * The location at [focusY] from the top of the map view, the middle of what the popup leaves of it; at a zoom to
-     * look at it from, or at the zoom there is when [keepZoom].
+     * The [points] around [focusY] from the top of the map view, the middle of what the popup leaves of it, an area of
+     * [areaWidth] by [areaHeight]: a location, or a location and the fast travel point a route jumps to before it. At
+     * a zoom to look at them from, out far enough for all of them; or at the zoom there is when [keepZoom].
      */
-    data class Focus(val lat: Double, val lng: Double, val focusY: Dp, val keepZoom: Boolean = false) : CameraCommand
+    data class Focus(
+        val points: List<GeoPoint>,
+        val focusY: Dp,
+        val areaWidth: Dp,
+        val areaHeight: Dp,
+        val keepZoom: Boolean = false,
+    ) : CameraCommand
 
     /** All of [bounds] on the screen. */
     data class Fit(val bounds: MapBounds) : CameraCommand
@@ -63,8 +73,9 @@ internal class MapCameraController {
         _commands.tryEmit(CameraCommand.ZoomOut)
     }
 
-    fun focus(lat: Double, lng: Double, focusY: Dp, keepZoom: Boolean = false) {
-        _commands.tryEmit(CameraCommand.Focus(lat, lng, focusY, keepZoom))
+    fun focus(points: List<GeoPoint>, focusY: Dp, areaWidth: Dp, areaHeight: Dp, keepZoom: Boolean = false) {
+        if (points.isEmpty()) return
+        _commands.tryEmit(CameraCommand.Focus(points, focusY, areaWidth, areaHeight, keepZoom))
     }
 
     fun fit(bounds: MapBounds) {
@@ -80,15 +91,45 @@ internal fun GameMap.focusZoom(zoom: Float): Float {
 }
 
 /**
- * The camera target at [zoom] that puts the location [lat], [lng] [above] dp higher than the middle of the camera,
- * as (lat, lng).
+ * The zoom to look at [points] from [zoom]: as for one location, or farther out when that's what it takes for all of
+ * them to fit in [width] by [height] dp, the [FocusPadding] around them left out; never past the map's minimum.
  */
-internal fun cameraTargetAbove(lat: Double, lng: Double, zoom: Float, above: Double): Pair<Double, Double> {
-    val world = WORLD_SIZE * 2.0.pow(zoom.toDouble())
-    val s = sin(lat * PI / 180)
-    val y = (0.5 - ln((1 + s) / (1 - s)) / (4 * PI)) * world + above
-    val targetLat = atan(sinh(PI - 2 * PI * y / world)) * 180 / PI
-    return targetLat to lng
+internal fun GameMap.focusZoom(zoom: Float, points: List<GeoPoint>, width: Dp, height: Dp): Float {
+    val focus = focusZoom(zoom)
+    if (points.size < 2) return focus
+    val world = points.map { worldDp(it, 1.0) }
+    val spanX = world.maxOf { it.first } - world.minOf { it.first }
+    val spanY = world.maxOf { it.second } - world.minOf { it.second }
+    val fitWidth = (width - FocusPadding.horizontal * 2).value.coerceAtLeast(1f)
+    val fitHeight = (height - FocusPadding.vertical * 2).value.coerceAtLeast(1f)
+    val scale = minOf(if (spanX > 0) fitWidth / spanX else Double.MAX_VALUE, if (spanY > 0) fitHeight / spanY else Double.MAX_VALUE)
+    val fit = (log2(scale) - log2(WORLD_SIZE)).toFloat()
+    return minOf(focus, fit).coerceAtLeast(minZoom.toFloat())
+}
+
+/** The space left around the points a focus fits, clear of the pins on them and of the zoom buttons at the side. */
+internal object FocusPadding {
+    val horizontal = 72.dp
+    val vertical = 40.dp
+}
+
+/**
+ * The camera target at [zoom] that puts the middle of [points] [above] dp higher than the middle of the camera, as
+ * (lat, lng).
+ */
+internal fun cameraTargetAbove(points: List<GeoPoint>, zoom: Float, above: Double): Pair<Double, Double> {
+    val scale = WORLD_SIZE * 2.0.pow(zoom.toDouble())
+    val world = points.map { worldDp(it, scale) }
+    val x = (world.minOf { it.first } + world.maxOf { it.first }) / 2
+    val y = (world.minOf { it.second } + world.maxOf { it.second }) / 2 + above
+    val lat = atan(sinh(PI - 2 * PI * y / scale)) * 180 / PI
+    return lat to x / scale * 360 - 180
+}
+
+/** Where [point] is on the Web Mercator world [scale] dp wide. */
+private fun worldDp(point: GeoPoint, scale: Double): Pair<Double, Double> {
+    val s = sin(point.lat * PI / 180)
+    return (point.lng + 180) / 360 * scale to (0.5 - ln((1 + s) / (1 - s)) / (4 * PI)) * scale
 }
 
 /** The bounds around [locations], at least a part of [mapBounds] wide and high; null without locations. */

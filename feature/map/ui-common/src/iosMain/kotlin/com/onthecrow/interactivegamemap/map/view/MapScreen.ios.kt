@@ -363,11 +363,13 @@ internal actual fun MapView(
                     CameraCommand.ZoomOut -> view.zoomBy(currentSelected, -1f)
                     is CameraCommand.Focus -> {
                         val camera = view.camera
-                        val zoom = currentMap?.takeIf { !command.keepZoom }?.focusZoom(camera.zoom) ?: camera.zoom
-                        // The target is in the middle of the padding and the safe area, the location goes above it
+                        val zoom = currentMap?.takeIf { !command.keepZoom }
+                            ?.focusZoom(camera.zoom, command.points, command.areaWidth, command.areaHeight)
+                            ?: camera.zoom
+                        // The target is in the middle of the padding and the safe area, the points go above it
                         val centerY = view.projection.pointForCoordinate(camera.target).useContents { y }
                         val above = centerY - command.focusY.value
-                        val (lat, lng) = cameraTargetAbove(command.lat, command.lng, zoom, above)
+                        val (lat, lng) = cameraTargetAbove(command.points, zoom, above)
                         GMSCameraUpdate.setTarget(CLLocationCoordinate2DMake(lat, lng), zoom = zoom)
                     }
                     is CameraCommand.Fit -> GMSCameraUpdate.fitBounds(

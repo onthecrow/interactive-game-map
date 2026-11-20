@@ -256,7 +256,8 @@ internal actual fun MapView(
     val markers = remember { mutableMapOf<String, GMSMarker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
 
-    LaunchedEffect(mapView, locations, pinImages, selectedId, highlight) {
+    // With the colors: the images of the other style may be loaded already, and then pinImages stays the same
+    LaunchedEffect(mapView, locations, pinImages, selectedId, highlight, tileColors) {
         val view = mapView ?: return@LaunchedEffect
         val actualIds = locations.map { it.id.toString() }.toSet()
 

@@ -244,7 +244,7 @@ private fun GoogleMapView(
         mapAnalytics.trackFirstTile(load)
     }
 
-    LaunchedEffect(googleMap, locations, pinImages, selectedId, highlight) {
+    LaunchedEffect(googleMap, locations, pinImages, selectedId, highlight, tileColors) {
         val googleMap = googleMap ?: return@LaunchedEffect
         val actualIds = locations.map { it.id.toString() }.toSet()
 

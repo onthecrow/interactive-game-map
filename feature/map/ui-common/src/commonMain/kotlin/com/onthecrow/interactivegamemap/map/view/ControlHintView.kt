@@ -46,10 +46,6 @@ import com.onthecrow.interactivegamemap.map.BubbleLineGap
 import com.onthecrow.interactivegamemap.map.BubblePadding
 import com.onthecrow.interactivegamemap.map.BubblePointer
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
-import interactivegamemap.feature.map.ui_common.generated.resources.Res
-import interactivegamemap.feature.map.ui_common.generated.resources.route_hint_text
-import interactivegamemap.feature.map.ui_common.generated.resources.route_hint_title
-import org.jetbrains.compose.resources.stringResource
 
 private val HintMaxWidth = 240.dp
 // How far the hint nudges toward the button now and then, to be noticed
@@ -57,12 +53,12 @@ private val NudgeDistance = 6.dp
 private const val NUDGE_PERIOD_MILLIS = 2400
 
 /**
- * A bubble that tells about the route button, at its left with a pointer to it: the look of the bubble of a fast travel
- * point, the pointer at the right. It grows out of the pointer, nudges toward the button now and then, and shrinks
- * back into it.
+ * A bubble that tells about a button, at its left with a pointer to it: the look of the bubble of a fast travel point,
+ * the pointer at the right. It grows out of the pointer, nudges toward the button now and then, and shrinks back into
+ * it.
  */
 @Composable
-internal fun RouteHintView(visible: Boolean, modifier: Modifier = Modifier) {
+internal fun ControlHintView(visible: Boolean, title: String, text: String, modifier: Modifier = Modifier) {
     AnimatedVisibility(
         modifier = modifier,
         visible = visible,
@@ -88,12 +84,12 @@ internal fun RouteHintView(visible: Boolean, modifier: Modifier = Modifier) {
             ),
         )
         val distance = with(LocalDensity.current) { NudgeDistance.toPx() }
-        RouteHintBubble(modifier = Modifier.graphicsLayer { translationX = nudge * distance })
+        HintBubble(title = title, text = text, modifier = Modifier.graphicsLayer { translationX = nudge * distance })
     }
 }
 
 @Composable
-private fun RouteHintBubble(modifier: Modifier = Modifier) {
+private fun HintBubble(title: String, text: String, modifier: Modifier = Modifier) {
     val colors = GameMapTheme.colors
     val typography = GameMapTheme.typography
     val shape = BubbleWithPointerAtRight
@@ -107,13 +103,13 @@ private fun RouteHintBubble(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(BubbleLineGap),
     ) {
         Text(
-            text = stringResource(Res.string.route_hint_title),
+            text = title,
             style = typography.label.copy(fontWeight = FontWeight.Bold),
             color = colors.content,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(Res.string.route_hint_text),
+            text = text,
             style = typography.caption,
             color = colors.contentSecondary,
             textAlign = TextAlign.Center,

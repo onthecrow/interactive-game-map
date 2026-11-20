@@ -13,6 +13,7 @@
     <string name="map_screen_layers">Ebenen</string>
     <string name="map_screen_zoom_in">Vergrößern</string>
     <string name="map_screen_zoom_out">Verkleinern</string>
+    <string name="map_screen_recenter">Zentrieren</string>
     <string name="map_screen_route">Route</string>
     <string name="route_build_title">Route wird erstellt</string>
     <string name="route_build_preparing">Straßen werden vorbereitet</string>
@@ -28,6 +29,9 @@
     <string name="route_previous">Vorherige Markierung</string>
     <string name="route_next">Nächste Markierung</string>
     <string name="route_fast_travel_point">Schnellreisepunkt</string>
-    <string name="route_hint_title">Neu: Routen</string>
+    <string name="route_hint_title">Routen</string>
     <string name="route_hint_text">Erstelle die beste Route durch die Markierungen auf der Karte</string>
+    <string name="recenter_hint_title">Zentrieren</string>
+    <string name="recenter_hint_text">Bringt die Kamera zur gewählten Markierung oder zu den angezeigten zurück</string>
+    <string name="route_finished">Route abgeschlossen</string>
 </resources>

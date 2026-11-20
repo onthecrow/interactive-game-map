@@ -1,6 +1,8 @@
 package com.onthecrow.interactivegamemap.map
 
 import com.onthecrow.interactivegamemap.map.model.FastTravelPoint
+import com.onthecrow.interactivegamemap.map.model.GeoPoint
+import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
@@ -10,6 +12,8 @@ import com.onthecrow.interactivegamemap.map.model.MarkerPin
 import com.onthecrow.interactivegamemap.map.model.Route
 import com.onthecrow.interactivegamemap.map.model.RouteBuildStage
 import com.onthecrow.interactivegamemap.map.model.RouteFastTravel
+import com.onthecrow.interactivegamemap.map.model.RoutePath
+import com.onthecrow.interactivegamemap.map.model.RoutePathKind
 import com.onthecrow.interactivegamemap.map.model.RoutePlan
 import com.onthecrow.interactivegamemap.map.model.RouteStop
 import kotlinx.coroutines.runBlocking
@@ -69,6 +73,58 @@ class RouteReducerTest {
 
         val found = built.copy(foundLocationIds = setOf(1)).after(MapEvent.OnFoundClick(1))
         assertEquals(0, found.routePage)
+    }
+
+    // The view model marks the location found, the data comes back
+    private fun MapScreenState.found(locationId: Int) =
+        after(MapEvent.OnFoundClick(locationId)).after(MapEvent.OnFoundLocationsLoaded(foundLocationIds + locationId))
+
+    @Test
+    fun `past the end the route goes back to the ones skipped, in its order`() {
+        // The first one found, the next two skipped
+        val atEnd = built.found(1).after(MapEvent.OnRoutePageChange(3))
+        val firstSkipped = atEnd.found(4)
+        assertEquals(1, firstSkipped.routePage)
+        assertEquals(locations[1], firstSkipped.focusedLocation)
+        val secondSkipped = firstSkipped.found(2)
+        assertEquals(2, secondSkipped.routePage)
+        assertEquals(locations[2], secondSkipped.selectedLocation)
+    }
+
+    @Test
+    fun `the next location found already is passed by`() {
+        val state = built.copy(foundLocationIds = setOf(2)).after(MapEvent.OnFoundClick(1))
+        assertEquals(2, state.routePage)
+        assertEquals(locations[2], state.selectedLocation)
+    }
+
+    @Test
+    fun `the last location found finishes the route, all of it in view with nothing selected`() {
+        val ride = RoutePath(RoutePathKind.RIDE, listOf(GeoPoint(0.5, -1.0), GeoPoint(2.0, 3.0)))
+        val state = MapScreenState(isRouteAvailable = true)
+            .after(MapEvent.OnRouteLoaded(route.copy(paths = listOf(ride)), locations, page = 2))
+            .copy(foundLocationIds = setOf(1, 2, 4))
+        assertTrue(state.finishesRoute(3))
+        assertFalse(state.finishesRoute(1))
+
+        val finished = state.after(MapEvent.OnFoundClick(3))
+        assertNull(finished.selectedLocation)
+        assertNull(finished.focusedLocation)
+        assertFalse(finished.isRoutePagerVisible)
+        // The route stays until it's ended
+        assertEquals(locations, finished.routeLocations)
+        assertEquals(MapBounds(west = -1.0, south = 0.5, east = 3.0, north = 4.0), finished.cameraFit?.bounds)
+        // Read the same after the event, by the view model
+        assertTrue(finished.finishesRoute(3))
+        assertFalse(finished.after(MapEvent.OnFoundLocationsLoaded(setOf(1, 2, 3, 4))).finishesRoute(3))
+    }
+
+    @Test
+    fun `a route doesn't finish under a search or with a location not on it`() {
+        val left = built.copy(foundLocationIds = setOf(1, 2, 3))
+        assertTrue(left.finishesRoute(4))
+        assertFalse(left.copy(searchValue = "L4").finishesRoute(4))
+        assertFalse(left.finishesRoute(5))
     }
 
     @Test
@@ -161,40 +217,71 @@ class RouteReducerTest {
     }
 
     @Test
-    fun `the route hint goes away at a tap on the button, the map, a marker, the list or settings`() {
+    fun `a hint goes away at a tap on a button, the map, a marker, the list or settings`() {
         val ready = MapScreenState(isRouteAvailable = true, routeCandidateCount = 10)
-        assertTrue(ready.canShowRouteHint)
-        val shown = ready.after(MapEvent.OnRouteHintShow)
-        assertTrue(shown.isRouteHintVisible)
+        assertTrue(ready.canShowHint(MapHint.ROUTE))
+        val shown = ready.after(MapEvent.OnHintShow(MapHint.ROUTE))
+        assertTrue(shown.isHintVisible(MapHint.ROUTE))
+        assertFalse(shown.isHintVisible(MapHint.RECENTER))
         listOf(
             MapEvent.OnRouteClick,
+            MapEvent.OnRecenterClick,
             MapEvent.OnLocationDismiss,
+            MapEvent.OnClusterClick,
             MapEvent.OnLocationClick(locations[0]),
             MapEvent.OnMarkerListClick,
             MapEvent.OnSettingsClick,
-        ).forEach { assertFalse(shown.after(it).isRouteHintShown, "$it") }
+        ).forEach { assertNull(shown.after(it).hint, "$it") }
         // Other things don't take it away: a search only hides it with the button
         val searching = shown.after(MapEvent.OnSearchValueChange("bone"))
-        assertTrue(searching.isRouteHintShown)
-        assertFalse(searching.isRouteHintVisible)
-        assertTrue(searching.after(MapEvent.OnClearSearchClick).isRouteHintVisible)
+        assertEquals(MapHint.ROUTE, searching.hint)
+        assertFalse(searching.isHintVisible(MapHint.ROUTE))
+        assertTrue(searching.after(MapEvent.OnClearSearchClick).isHintVisible(MapHint.ROUTE))
         // Not over a popup or the list
-        assertFalse(ready.after(MapEvent.OnLocationClick(locations[0])).canShowRouteHint)
-        assertFalse(ready.after(MapEvent.OnMarkerListClick).canShowRouteHint)
+        assertFalse(ready.after(MapEvent.OnLocationClick(locations[0])).canShowHint(MapHint.ROUTE))
+        assertFalse(ready.after(MapEvent.OnMarkerListClick).canShowHint(MapHint.ROUTE))
     }
 
     @Test
-    fun `the route hint is remembered as shown`() {
-        val values = mutableMapOf<String, String>()
+    fun `the route button is known once a route is built or being built`() {
+        assertFalse(MapScreenState().knowsHint(MapHint.ROUTE))
+        val building = MapScreenState()
+            .after(MapEvent.OnRouteBuildProgress(RouteBuildProgress(RouteBuildStage.PREPARING, 0f, 10)))
+        assertTrue(building.knowsHint(MapHint.ROUTE))
+        assertTrue(MapScreenState().after(MapEvent.OnRouteLoaded(route, locations)).knowsHint(MapHint.ROUTE))
+        assertFalse(MapScreenState().knowsHint(MapHint.RECENTER))
+        // When both could come, the route hint goes first
+        assertTrue(MapHint.ROUTE.priority > MapHint.RECENTER.priority)
+    }
+
+    @Test
+    fun `the recenter hint makes sense with markers on the map and nothing over it`() {
+        val bounds = MapBounds(west = 0.0, south = 0.0, east = 1.0, north = 1.0)
+        assertFalse(MapScreenState().canShowHint(MapHint.RECENTER))
+        val ready = MapScreenState().after(MapEvent.OnMarkersBoundsChange(bounds))
+        assertTrue(ready.canShowHint(MapHint.RECENTER))
+        assertFalse(ready.after(MapEvent.OnMarkerListClick).canShowHint(MapHint.RECENTER))
+        val shown = ready.after(MapEvent.OnHintShow(MapHint.RECENTER))
+        assertTrue(shown.isHintVisible(MapHint.RECENTER))
+        // The popup of a marker takes the place of the button, the hint waits under it
+        val selected = shown.after(MapEvent.OnLocationLinkLoaded(locations[0]))
+        assertEquals(MapHint.RECENTER, selected.hint)
+        assertFalse(selected.isHintVisible(MapHint.RECENTER))
+    }
+
+    @Test
+    fun `a hint is remembered as shown, the route one by its key from before`() {
+        val values = mutableMapOf("route_hint_shown" to "true")
         val preferences = MapPreferences(object : PreferencesStorage {
             override fun getString(key: String) = values[key]
             override fun putString(key: String, value: String) {
                 values[key] = value
             }
         })
-        assertFalse(preferences.isRouteHintShown())
-        preferences.setRouteHintShown()
-        assertTrue(preferences.isRouteHintShown())
+        assertTrue(preferences.isHintShown(MapHint.ROUTE))
+        assertFalse(preferences.isHintShown(MapHint.RECENTER))
+        preferences.setHintShown(MapHint.RECENTER)
+        assertTrue(preferences.isHintShown(MapHint.RECENTER))
     }
 
     @Test

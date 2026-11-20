@@ -11,6 +11,13 @@ import com.onthecrow.nomadrates.uicore.Event
 internal sealed interface MapEvent : Event {
     data object OnClearSearchClick : MapEvent
     data object OnLocationDismiss : MapEvent
+    /** A cluster of markers is tapped: the map view brings the camera close enough for them to be apart. */
+    data object OnClusterClick : MapEvent
+    /** The camera goes back to the selected marker, or to all the markers when none is. */
+    data object OnRecenterClick : MapEvent
+    /** A tap on the popup of the selected marker, not on a button of it: the camera goes back to the marker. */
+    data object OnPopupClick : MapEvent
+    data class OnMarkersBoundsChange(val bounds: MapBounds?) : MapEvent
     data object OnDungeonsClick : MapEvent
     data object OnMarkerListClick : MapEvent
     data object OnMarkerListDismiss : MapEvent
@@ -47,7 +54,7 @@ internal sealed interface MapEvent : Event {
     data class OnFitBounds(val bounds: MapBounds) : MapEvent
 
     /** The hint at the route button comes up, once for good. */
-    data object OnRouteHintShow : MapEvent
+    data class OnHintShow(val hint: MapHint) : MapEvent
 
     /** The route button: builds a route, or offers to end the one there is. */
     data object OnRouteClick : MapEvent

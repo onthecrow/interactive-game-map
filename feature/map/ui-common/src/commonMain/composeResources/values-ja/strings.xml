@@ -13,6 +13,7 @@
     <string name="map_screen_layers">レイヤー</string>
     <string name="map_screen_zoom_in">ズームイン</string>
     <string name="map_screen_zoom_out">ズームアウト</string>
+    <string name="map_screen_recenter">中央に戻す</string>
     <string name="map_screen_route">ルート</string>
     <string name="route_build_title">ルートを作成中</string>
     <string name="route_build_preparing">道路を準備中</string>
@@ -28,6 +29,9 @@
     <string name="route_previous">前のマーカー</string>
     <string name="route_next">次のマーカー</string>
     <string name="route_fast_travel_point">ファストトラベル地点</string>
-    <string name="route_hint_title">新機能：ルート</string>
+    <string name="route_hint_title">ルート</string>
     <string name="route_hint_text">地図上のマーカーを巡る最適なルートを作成できます</string>
+    <string name="recenter_hint_title">中央に戻す</string>
+    <string name="recenter_hint_text">選択中のマーカー、または表示中のマーカーにカメラを戻します</string>
+    <string name="route_finished">ルート完了</string>
 </resources>

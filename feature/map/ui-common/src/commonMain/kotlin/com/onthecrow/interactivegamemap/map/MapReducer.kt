@@ -1,5 +1,6 @@
 package com.onthecrow.interactivegamemap.map
 
+import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.nomadrates.uicore.Reducer
 
@@ -8,16 +9,18 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
         state: MapScreenState,
         event: MapEvent
     ): MapScreenState {
-        return reduceEvent(state.withoutRouteHintOn(event), event)
+        return reduceEvent(state.withoutHintOn(event), event)
     }
 
-    // The hint at the route button goes away for good at a tap on the button, the map, a marker, the list or settings
-    private fun MapScreenState.withoutRouteHintOn(event: MapEvent): MapScreenState = when (event) {
+    // A hint at a button goes away for good at a tap on a button, the map, a marker, the list or settings
+    private fun MapScreenState.withoutHintOn(event: MapEvent): MapScreenState = when (event) {
         MapEvent.OnRouteClick,
+        MapEvent.OnRecenterClick,
         MapEvent.OnLocationDismiss,
+        MapEvent.OnClusterClick,
         is MapEvent.OnLocationClick,
         MapEvent.OnMarkerListClick,
-        MapEvent.OnSettingsClick -> if (isRouteHintShown) copy(isRouteHintShown = false) else this
+        MapEvent.OnSettingsClick -> if (hint != null) copy(hint = null) else this
         else -> this
     }
 
@@ -60,10 +63,16 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             is MapEvent.OnLocationClick -> state.withSelection(event.location)
             is MapEvent.OnLocationLinkLoaded -> state.withSelection(event.location)
             is MapEvent.OnFoundLocationsLoaded -> state.copy(foundLocationIds = event.locationIds)
-            // Found on the page of the route goes on to the next one, the view model marks the location
+            // Found on the page of the route goes on to the next location not found in the order of the route, past
+            // its end back to the first one skipped; the last one found finishes it. The view model marks the location
             is MapEvent.OnFoundClick -> {
                 val isCurrent = state.isRoutePagerVisible && state.selectedLocation?.id == event.locationId
-                if (isCurrent && event.locationId !in state.foundLocationIds) state.atRoutePage(state.routePage + 1) else state
+                when {
+                    state.finishesRoute(event.locationId) -> state.withRouteFinished()
+                    isCurrent && event.locationId !in state.foundLocationIds ->
+                        state.atRoutePage(state.nextRoutePage(event.locationId))
+                    else -> state
+                }
             }
             // The view model handles these, the state changes when the data comes back
             is MapEvent.OnLocationLinkClick,
@@ -113,8 +122,8 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
                     .associate { it.category.id to event.visible },
             )
             is MapEvent.OnCycleClick -> state.copy(cycles = state.cycles + (event.categoryId to event.cycle))
-            is MapEvent.OnRouteHintShow -> state.copy(isRouteHintShown = true)
-            is MapEvent.OnFitBounds -> state.copy(cameraFit = CameraFit(event.bounds, (state.cameraFit?.id ?: 0) + 1))
+            is MapEvent.OnHintShow -> state.copy(hint = event.hint)
+            is MapEvent.OnFitBounds -> state.fitting(event.bounds)
             is MapEvent.OnRouteClick -> if (state.route != null) state.copy(isRouteExitConfirmVisible = true) else state
             is MapEvent.OnRouteExitConfirm -> state.withoutRoute().withoutSelection()
             is MapEvent.OnRouteExitDismiss -> state.copy(isRouteExitConfirmVisible = false)
@@ -146,6 +155,15 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             // The page shown is of a hidden location, the popup goes with the route
             is MapEvent.OnRouteHidden -> (if (state.isRoutePagerVisible) state.withoutSelection() else state).withoutRoute()
             is MapEvent.OnRouteStopClick -> state.copy(selectedRouteStop = event.number)
+            // The map view moves the camera
+            is MapEvent.OnClusterClick -> state
+            is MapEvent.OnRecenterClick -> when {
+                state.selectedLocation != null -> state.refocused()
+                state.markersBounds != null -> state.fitting(state.markersBounds)
+                else -> state
+            }
+            is MapEvent.OnPopupClick -> if (state.selectedLocation != null) state.refocused() else state
+            is MapEvent.OnMarkersBoundsChange -> state.copy(markersBounds = event.bounds)
         }
     }
 
@@ -160,6 +178,32 @@ internal class MapReducer: Reducer<MapScreenState, MapEvent> {
             routePage = if (page >= 0) page else routePage,
             selectedRouteStop = null,
         )
+    }
+
+    /** The camera taken back to the selected location, as when it was selected. */
+    private fun MapScreenState.refocused(): MapScreenState =
+        copy(focusedLocation = selectedLocation, focusCount = focusCount + 1)
+
+    /** The camera moved to show all of [bounds]. */
+    private fun MapScreenState.fitting(bounds: MapBounds): MapScreenState =
+        copy(cameraFit = CameraFit(bounds, (cameraFit?.id ?: 0) + 1))
+
+    /**
+     * The page of the route after [foundId] is found on the current one: the next location not found, or past the end
+     * of the route the first one, so the ones skipped are gone through in the order of the route too.
+     */
+    private fun MapScreenState.nextRoutePage(foundId: Int): Int {
+        fun isLeft(page: Int) = routeLocations[page].id.let { it != foundId && it !in foundLocationIds }
+        return (routePage + 1..routeLocations.lastIndex).firstOrNull(::isLeft)
+            ?: routeLocations.indices.firstOrNull(::isLeft)
+            ?: routePage
+    }
+
+    /** All of the route found: nothing selected, all of it in view; the view model tells that it's finished. */
+    private fun MapScreenState.withRouteFinished(): MapScreenState {
+        val finished = withoutSelection()
+        val bounds = route?.let { routeBounds(it, routeLocations, currentMap?.bounds) } ?: return finished
+        return finished.fitting(bounds)
     }
 
     /** The location of [page] of the route selected and the camera taken to it; past the ends nothing changes. */

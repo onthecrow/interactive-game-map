@@ -13,6 +13,7 @@
     <string name="map_screen_layers">Capas</string>
     <string name="map_screen_zoom_in">Acercar</string>
     <string name="map_screen_zoom_out">Alejar</string>
+    <string name="map_screen_recenter">Recentrar</string>
     <string name="map_screen_route">Ruta</string>
     <string name="route_build_title">Creando la ruta</string>
     <string name="route_build_preparing">Preparando los caminos</string>
@@ -28,6 +29,9 @@
     <string name="route_previous">Marcador anterior</string>
     <string name="route_next">Marcador siguiente</string>
     <string name="route_fast_travel_point">Punto de viaje rápido</string>
-    <string name="route_hint_title">Nuevo: rutas</string>
+    <string name="route_hint_title">Rutas</string>
     <string name="route_hint_text">Crea la mejor ruta por los marcadores del mapa</string>
+    <string name="recenter_hint_title">Recentrar</string>
+    <string name="recenter_hint_text">Lleva la cámara al marcador elegido o a los que se muestran</string>
+    <string name="route_finished">Ruta completada</string>
 </resources>

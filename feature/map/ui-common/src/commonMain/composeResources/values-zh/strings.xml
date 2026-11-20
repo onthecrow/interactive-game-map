@@ -13,6 +13,7 @@
     <string name="map_screen_layers">图层</string>
     <string name="map_screen_zoom_in">放大</string>
     <string name="map_screen_zoom_out">缩小</string>
+    <string name="map_screen_recenter">重新居中</string>
     <string name="map_screen_route">路线</string>
     <string name="route_build_title">正在规划路线</string>
     <string name="route_build_preparing">正在准备道路</string>
@@ -28,6 +29,9 @@
     <string name="route_previous">上一个标记</string>
     <string name="route_next">下一个标记</string>
     <string name="route_fast_travel_point">快速旅行点</string>
-    <string name="route_hint_title">新功能：路线</string>
+    <string name="route_hint_title">路线</string>
     <string name="route_hint_text">规划经过地图上各标记的最佳路线</string>
+    <string name="recenter_hint_title">重新居中</string>
+    <string name="recenter_hint_text">将视角移回所选标记或当前显示的标记</string>
+    <string name="route_finished">路线已完成</string>
 </resources>

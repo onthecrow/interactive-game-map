@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.onthecrow.interactivegamemap.settings.AppLanguageProvider
 import com.onthecrow.interactivegamemap.settings.SettingsRepository
 import com.onthecrow.interactivegamemap.ui.AppEnvironment
+import com.onthecrow.interactivegamemap.ui.components.GameSnackbarHost
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.nomadrates.navigation.NavigationProvider
 import com.onthecrow.interactivegamemap.ui.view.ShadePosition
@@ -45,6 +46,9 @@ fun App() {
                 SyncedContent(synchronizer = koinInject()) {
                     navigationProvider.Navigation(modifier = Modifier.fillMaxSize(), contentKey = language)
                 }
+
+                // Over every screen, under the shade of the status bar: they slide in from under it
+                GameSnackbarHost(snackbars = koinInject())
 
                 SystemBarShadeView(
                     modifier = Modifier.fillMaxWidth(),

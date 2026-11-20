@@ -13,4 +13,6 @@ data class GameMapIcons(
     val route: ImageVector,
     val previous: ImageVector,
     val next: ImageVector,
+    /** The camera brought back: to the selected marker, or to all of them. */
+    val recenter: ImageVector,
 )

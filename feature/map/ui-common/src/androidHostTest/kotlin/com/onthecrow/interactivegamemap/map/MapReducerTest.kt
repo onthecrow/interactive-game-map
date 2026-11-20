@@ -193,6 +193,33 @@ class MapReducerTest {
     }
 
     @Test
+    fun `recentering takes the camera back to the selected marker, else to all of them`() {
+        val bounds = MapBounds(west = 0.0, south = 0.0, east = 1.0, north = 1.0)
+        assertFalse(state.isRecenterVisible)
+        assertEquals(state, state.after(MapEvent.OnRecenterClick))
+
+        // Nothing selected: all the markers the filters show
+        val withMarkers = state.after(MapEvent.OnMarkersBoundsChange(bounds))
+        assertTrue(withMarkers.isRecenterVisible)
+        val fitted = withMarkers.after(MapEvent.OnRecenterClick)
+        assertEquals(bounds, fitted.cameraFit?.bounds)
+        assertTrue(fitted.after(MapEvent.OnRecenterClick).cameraFit != fitted.cameraFit)
+        assertFalse(withMarkers.after(MapEvent.OnMarkersBoundsChange(null)).isRecenterVisible)
+
+        // A marker selected: back to it, as when it was selected, by the button or a tap on its popup
+        val location = MapLocation.EMPTY.copy(id = 3, lat = 0.5, lng = 0.5)
+        val selected = withMarkers.after(MapEvent.OnLocationClick(location))
+        listOf(MapEvent.OnRecenterClick, MapEvent.OnPopupClick).forEach { event ->
+            val back = selected.after(event)
+            assertEquals(location, back.focusedLocation)
+            assertEquals(selected.focusCount + 1, back.focusCount, "$event")
+            assertEquals(selected.cameraFit, back.cameraFit)
+        }
+        // A tap on a popup there isn't does nothing
+        assertEquals(withMarkers, withMarkers.after(MapEvent.OnPopupClick))
+    }
+
+    @Test
     fun `every fit is a new one, to the same bounds too`() {
         val bounds = MapBounds(west = 0.0, south = 0.0, east = 1.0, north = 1.0)
         val first = state.after(MapEvent.OnFitBounds(bounds))

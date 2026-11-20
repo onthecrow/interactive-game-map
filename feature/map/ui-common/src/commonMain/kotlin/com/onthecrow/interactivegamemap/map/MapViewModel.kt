@@ -2,6 +2,7 @@ package com.onthecrow.interactivegamemap.map
 
 import androidx.lifecycle.viewModelScope
 import com.onthecrow.interactivegamemap.analytics.Analytics
+import com.onthecrow.interactivegamemap.analytics.CrashReporter
 import com.onthecrow.interactivegamemap.analytics.MarkerFoundChangeEvent
 import com.onthecrow.interactivegamemap.analytics.RouteBuildEvent
 import com.onthecrow.interactivegamemap.analytics.RouteBuildResult
@@ -17,6 +18,10 @@ import com.onthecrow.interactivegamemap.map.model.RouteBuildState
 import com.onthecrow.interactivegamemap.settings.AppLanguageProvider
 import com.onthecrow.interactivegamemap.settings.SettingsDestination
 import com.onthecrow.interactivegamemap.settings.SettingsRepository
+import com.onthecrow.interactivegamemap.ui.components.GameSnackbar
+import com.onthecrow.interactivegamemap.ui.components.GameSnackbars
+import interactivegamemap.feature.map.ui_common.generated.resources.Res
+import interactivegamemap.feature.map.ui_common.generated.resources.route_finished
 import com.onthecrow.nomadrates.navigation.Navigator
 import com.onthecrow.nomadrates.uicore.BaseViewModel
 import kotlinx.coroutines.Dispatchers
@@ -39,20 +44,24 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
-
-// The hint at the route button comes this long after the button is there
-private val ROUTE_HINT_DELAY = 1500.milliseconds
 
 // A search is logged once the user stops typing
 private val SEARCH_LOG_DELAY = 1500.milliseconds
 private const val MIN_SEARCH_TERM_LENGTH = 2
 
 private data class SearchInput(val type: SearchType, val term: String)
+
+// The keys of the crash reports about the route
+private const val KEY_ROUTE_MARKERS = "route_markers"
+private const val KEY_ROUTE_LINES = "route_lines"
+private const val KEY_ROUTE_BUILDING = "route_building"
+
+/** How long the route on the map is, in markers and in lines on the map, and how many markers one being built has. */
+private data class RouteSize(val markers: Int, val lines: Int, val building: Int)
 
 /** What the markers of a route are found by: the filters on the whole map, without the found markers. */
 private data class RouteCandidatesRequest(val filter: LocationsFilter, val foundLocationIds: Set<Int>)
@@ -75,6 +84,8 @@ internal class MapViewModel(
     private val languageProvider: AppLanguageProvider,
     navigator: Navigator,
     private val analytics: Analytics,
+    private val crashReporter: CrashReporter,
+    private val snackbars: GameSnackbars,
     reducer: MapReducer,
 ): BaseViewModel<MapEvent, MapScreenState, MapReducer>(reducer) {
     private var getLocationJob: Job? = null
@@ -110,6 +121,15 @@ internal class MapViewModel(
             .map { it.locationsRequest }
             .distinctUntilChanged()
             .onEach { request -> request?.let(::getLocations) }
+            .launchIn(viewModelScope)
+        // Where the markers the filters show are on the whole map: the recenter button is there with them and fits them
+        state
+            .map { state -> state.locationsFilter?.copy(bounds = null, limit = Int.MAX_VALUE) to state.currentMap?.bounds }
+            .distinctUntilChanged()
+            .mapLatest { (filter, mapBounds) ->
+                filter?.let { withContext(Dispatchers.IO) { locationsBounds(getLocationsUseCase(it), mapBounds) } }
+            }
+            .onEach { onEvent(MapEvent.OnMarkersBoundsChange(it)) }
             .launchIn(viewModelScope)
         state
             .map { it.selectedLocation }
@@ -162,6 +182,7 @@ internal class MapViewModel(
             .onEach { if ((state.value.visibleCategoryIds() - visibleOnListOpen).isNotEmpty()) fitLocations() }
             .launchIn(viewModelScope)
         if (features.routes) observeRoutes()
+        showHints()
     }
 
     private fun MapScreenState.visibleCategoryIds(): Set<String> {
@@ -239,7 +260,17 @@ internal class MapViewModel(
             .drop(1)
             .onEach { language -> state.value.route?.let { reloadRouteLocations(it, language) } }
             .launchIn(viewModelScope)
-        showRouteHintOnce()
+        // A crash report tells how long a route is on the map or being built: a long one takes memory
+        state
+            .map { RouteSize(markers = it.route?.locationIds?.size ?: 0, lines = it.route?.paths?.size ?: 0, building = it.routeBuild?.count ?: 0) }
+            .distinctUntilChanged()
+            .onEach { size ->
+                crashReporter.setKeys(
+                    mapOf(KEY_ROUTE_MARKERS to size.markers, KEY_ROUTE_LINES to size.lines, KEY_ROUTE_BUILDING to size.building)
+                )
+                crashReporter.log("Route: ${size.markers} markers, ${size.lines} lines, building ${size.building}")
+            }
+            .launchIn(viewModelScope)
         viewModelScope.launch {
             restoreRoute()
             // Kept from here on, so the route read back isn't forgotten before it is restored
@@ -252,24 +283,25 @@ internal class MapViewModel(
     }
 
     /**
-     * The hint at the route button, once ever: when the button is there with nothing over the map for a moment. Someone
-     * who has a route kept from before knows the button already.
+     * The hints at the buttons, each once ever and one at a time, see [HintManager]. The route one only in an app with
+     * routes; someone who has a route kept from before knows the route button already.
      */
-    private fun showRouteHintOnce() {
-        if (preferences.isRouteHintShown()) return
-        if (preferences.getSavedRoute() != null) {
-            preferences.setRouteHintShown()
-            return
-        }
+    private fun showHints() {
+        if (preferences.getSavedRoute() != null) preferences.setHintShown(MapHint.ROUTE)
+        val hints = HintManager(
+            hints = MapHint.entries.filter { it != MapHint.ROUTE || features.routes },
+            priority = { it.priority },
+            isShown = preferences::isHintShown,
+            setShown = preferences::setHintShown,
+        )
         viewModelScope.launch {
-            while (true) {
-                state.first { it.canShowRouteHint }
-                // The map settles first, then the hint is noticed coming
-                delay(ROUTE_HINT_DELAY)
-                if (state.value.canShowRouteHint) break
-            }
-            preferences.setRouteHintShown()
-            onEvent(MapEvent.OnRouteHintShow)
+            hints.run(
+                states = state,
+                current = { it.hint },
+                canShow = { state, hint -> state.canShowHint(hint) },
+                isKnown = { state, hint -> state.knowsHint(hint) },
+                show = { onEvent(MapEvent.OnHintShow(it)) },
+            )
         }
     }
 
@@ -353,7 +385,10 @@ internal class MapViewModel(
     private suspend fun setLocationFound(locationId: Int) {
         val state = state.value
         val isFound = locationId !in state.foundLocationIds
+        // The reducer has shown all of the route already
+        val finishesRoute = state.finishesRoute(locationId)
         setLocationFoundUseCase(locationId, isFound)
+        if (finishesRoute) snackbars.show(GameSnackbar(Res.string.route_finished))
         // On a page of the route the selection may have gone on to the next location already
         val location = state.selectedLocation?.takeIf { it.id == locationId }
             ?: state.routeLocations.firstOrNull { it.id == locationId }

@@ -6,6 +6,7 @@ import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.GeoPoint
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapLocation
+import com.onthecrow.interactivegamemap.map.model.Route
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -133,12 +134,28 @@ private fun worldDp(point: GeoPoint, scale: Double): Pair<Double, Double> {
 }
 
 /** The bounds around [locations], at least a part of [mapBounds] wide and high; null without locations. */
-internal fun locationsBounds(locations: List<MapLocation>, mapBounds: MapBounds?): MapBounds? {
-    if (locations.isEmpty()) return null
-    var west = locations.minOf { it.lng }
-    var east = locations.maxOf { it.lng }
-    var south = locations.minOf { it.lat }
-    var north = locations.maxOf { it.lat }
+internal fun locationsBounds(locations: List<MapLocation>, mapBounds: MapBounds?): MapBounds? =
+    pointsBounds(locations.asSequence().map { GeoPoint(it.lat, it.lng) }, mapBounds)
+
+/** The bounds around all of [route] on the map, its lines and its [locations], as [locationsBounds]. */
+internal fun routeBounds(route: Route, locations: List<MapLocation>, mapBounds: MapBounds?): MapBounds? =
+    pointsBounds(
+        route.paths.asSequence().flatMap { it.points } + locations.asSequence().map { GeoPoint(it.lat, it.lng) },
+        mapBounds,
+    )
+
+private fun pointsBounds(points: Sequence<GeoPoint>, mapBounds: MapBounds?): MapBounds? {
+    var west = Double.POSITIVE_INFINITY
+    var east = Double.NEGATIVE_INFINITY
+    var south = Double.POSITIVE_INFINITY
+    var north = Double.NEGATIVE_INFINITY
+    for (point in points) {
+        west = minOf(west, point.lng)
+        east = maxOf(east, point.lng)
+        south = minOf(south, point.lat)
+        north = maxOf(north, point.lat)
+    }
+    if (west > east) return null
     val minWidth = mapBounds?.let { (it.east - it.west) * MIN_FIT_SPAN } ?: MIN_FIT_DEGREES
     val minHeight = mapBounds?.let { (it.north - it.south) * MIN_FIT_SPAN } ?: MIN_FIT_DEGREES
     if (east - west < minWidth) {

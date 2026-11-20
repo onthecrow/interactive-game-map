@@ -3,6 +3,7 @@ package com.onthecrow.interactivegamemap.map.view
 import android.graphics.BitmapFactory
 import android.graphics.Point
 import android.os.Bundle
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -41,8 +42,6 @@ import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.Dash
-import com.google.android.gms.maps.model.Gap
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.GroundOverlay
 import com.google.android.gms.maps.model.GroundOverlayOptions
@@ -80,13 +79,9 @@ import com.onthecrow.interactivegamemap.map.pinImage
 import com.onthecrow.interactivegamemap.map.RouteStopBubbleLift
 import com.onthecrow.interactivegamemap.map.rememberRouteStopBubble
 import com.onthecrow.interactivegamemap.map.rememberRouteStopImages
+import com.onthecrow.interactivegamemap.map.RouteLineWidths
+import com.onthecrow.interactivegamemap.map.rememberCrayonDashTexture
 import com.onthecrow.interactivegamemap.map.rememberCrayonTexture
-import com.onthecrow.interactivegamemap.map.routeLineWidth
-import com.onthecrow.interactivegamemap.map.OFF_ROAD_DASH
-import com.onthecrow.interactivegamemap.map.OFF_ROAD_GAP
-import com.onthecrow.interactivegamemap.map.dashes
-import com.onthecrow.interactivegamemap.map.offRoadLineWidth
-import com.onthecrow.interactivegamemap.map.model.GeoPoint
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
@@ -94,7 +89,6 @@ import com.onthecrow.interactivegamemap.map.trackFirstTile
 import com.onthecrow.interactivegamemap.map.model.GameMap
 import com.onthecrow.interactivegamemap.map.model.MapBounds
 import com.onthecrow.interactivegamemap.map.model.MapFloor
-import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -399,37 +393,44 @@ internal actual fun MapView(
         }
     }
 
-    // The lines along the roads and across country follow the zoom, see updateRouteWidths and updateRouteDashes
-    val routeLines = remember { mutableListOf<RouteLine>() }
+    // The lines along the roads and across country follow the zoom, see RouteLines.follow
+    val routeLines = remember { RouteLines() }
     val crayon = rememberCrayonTexture(mapStyle.routeColor)
-    val crayonStamp = remember(crayon) { TextureStyle.newBuilder(BitmapDescriptorFactory.fromBitmap(crayon.asAndroidBitmap())).build() }
+    val crayonDash = rememberCrayonDashTexture(mapStyle.routeColor)
+    val crayonStrokes = remember(crayon, crayonDash) {
+        // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
+        fun stroke(image: ImageBitmap) = StrokeStyle.transparentColorBuilder()
+            .stamp(TextureStyle.newBuilder(BitmapDescriptorFactory.fromBitmap(image.asAndroidBitmap())).build())
+            .build()
+        stroke(crayon) to stroke(crayonDash)
+    }
 
-    LaunchedEffect(googleMap, route, crayonStamp) {
-        routeLines.forEach { it.polyline.remove() }
+    LaunchedEffect(googleMap, route, crayonStrokes) {
         routeLines.clear()
 
         val googleMap = googleMap ?: return@LaunchedEffect
         val route = route ?: return@LaunchedEffect
+        val (stroke, dashes) = crayonStrokes
 
-        route.paths.forEach { path ->
+        val widths = RouteLineWidths(mapStyle, route.paths)
+        val zoom = googleMap.cameraPosition.zoom
+        routeLines.widths = widths
+        route.paths.forEachIndexed { index, path ->
+            val segments = (path.points.size - 1).coerceAtLeast(1).toDouble()
             val options = PolylineOptions()
                 .addAll(path.points.map { LatLng(it.lat, it.lng) })
                 .jointType(JointType.ROUND)
                 .zIndex(Z_INDEX_ROUTE.toFloat())
             when (path.kind) {
-                // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
                 RoutePathKind.RIDE -> options
                     .startCap(RoundCap())
                     .endCap(RoundCap())
-                    .addSpan(StyleSpan(StrokeStyle.transparentColorBuilder().stamp(crayonStamp).build()))
-                // Crayon dashes across country and to the fast travel points, laid by updateRouteDashes
-                RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> options.color(android.graphics.Color.TRANSPARENT)
+                    .addSpan(StyleSpan(stroke, segments))
+                // Crayon dashes across country and to the fast travel points, from the texture: one span for the line
+                RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> options.addSpan(StyleSpan(dashes, segments))
             }
-            routeLines += RouteLine(googleMap.addPolyline(options), path.kind, path.points)
+            routeLines.polylines += googleMap.addPolyline(options.width(widths.initial(index, zoom) * density.density))
         }
-        val zoom = googleMap.cameraPosition.zoom
-        updateRouteWidths(routeLines, mapStyle, zoom, density.density)
-        updateRouteDashes(routeLines, mapStyle, zoom, crayonStamp)
     }
 
     val routeStopImages = rememberRouteStopImages(route?.fastTravels?.map { it.number }.orEmpty())
@@ -507,28 +508,25 @@ internal actual fun MapView(
                             is MapLocation -> onEvent(MapEvent.OnLocationClick(tag))
                             is RouteFastTravel -> onEvent(MapEvent.OnRouteStopClick(tag.number))
                             // Close enough for the locations of the cluster to be apart
-                            is MarkerCluster -> mapView.animateCamera(
-                                CameraUpdateFactory.newLatLngBounds(
-                                    tag.bounds.toLatLngBounds(),
-                                    with(density) { ClusterBoundsPadding.roundToPx() },
+                            is MarkerCluster -> {
+                                mapView.animateCamera(
+                                    CameraUpdateFactory.newLatLngBounds(
+                                        tag.bounds.toLatLngBounds(),
+                                        with(density) { ClusterBoundsPadding.roundToPx() },
+                                    )
                                 )
-                            )
+                                onEvent(MapEvent.OnClusterClick)
+                            }
                         }
                         true
                     }
-                    var routeZoom = Float.NaN
-                    var dashZoom = Float.NaN
                     mapView.setOnCameraMoveListener {
-                        // The route grows and shrinks with the map while it zooms, not only once it stops
-                        val zoom = mapView.cameraPosition.zoom
-                        if (routeZoom.isNaN() || abs(zoom - routeZoom) > ROUTE_ZOOM_STEP) {
-                            routeZoom = zoom
-                            updateRouteWidths(routeLines, mapStyle, zoom, density.density)
-                        }
-                        // The dashes are cut again now and then, in between they grow and shrink with the map
-                        if (dashZoom.isNaN() || abs(zoom - dashZoom) > DASH_ZOOM_STEP) {
-                            dashZoom = zoom
-                            updateRouteDashes(routeLines, mapStyle, zoom, crayonStamp)
+                        routeLines.follow(mapView, this, density.density)
+                    }
+                    // Turned, the view shows more of the map or less without the camera moving
+                    addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+                        if (right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop) {
+                            routeLines.follow(mapView, this, density.density)
                         }
                     }
                     mapView.setOnCameraMoveStartedListener {
@@ -539,6 +537,7 @@ internal actual fun MapView(
                     }
                     mapView.setOnCameraIdleListener {
                         isCameraMoving = false
+                        routeLines.follow(mapView, this, density.density)
                         if (!isCameraPlaced) return@setOnCameraIdleListener
                         val position = mapView.cameraPosition
                         // The visible region of the projection doesn't include the padding
@@ -578,45 +577,34 @@ internal actual fun MapView(
     }
 }
 
-// The route's widths are set again after the zoom changes by this much
-private const val ROUTE_ZOOM_STEP = 0.02f
+/** The lines of the route on the map, by the indices of its paths, and their widths. */
+private class RouteLines {
+    val polylines = mutableListOf<Polyline>()
+    var widths: RouteLineWidths? = null
 
-// The dashes of the route are cut again after the zoom changes by this much
-private const val DASH_ZOOM_STEP = 0.5f
-
-/** A line of the route on the map, with the points of its path: the dashes across country are cut from them. */
-private class RouteLine(val polyline: Polyline, val kind: RoutePathKind, val points: List<GeoPoint>)
-
-/** The widths of the route's lines at [zoom], in pixels. */
-private fun updateRouteWidths(lines: List<RouteLine>, style: MapStyle, zoom: Float, density: Float) {
-    lines.forEach { line ->
-        when (line.kind) {
-            RoutePathKind.RIDE -> line.polyline.width = style.routeLineWidth(zoom).value * density
-            RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> line.polyline.width = style.offRoadLineWidth(zoom).value * density
-        }
+    fun clear() {
+        polylines.forEach { it.remove() }
+        polylines.clear()
+        widths = null
     }
-}
 
-/**
- * The legs across country and the jumps to fast travel points cut into crayon dashes as long on the screen at [zoom] as
- * the road is wide times [OFF_ROAD_DASH]: a span of the texture over each dash, a transparent one over each gap.
- */
-private fun updateRouteDashes(lines: List<RouteLine>, style: MapStyle, zoom: Float, stamp: TextureStyle) {
-    val roadWidth = style.routeLineWidth(zoom).value
-    val dashSpan = StyleSpan(StrokeStyle.transparentColorBuilder().stamp(stamp).build())
-    val gapSpan = StyleSpan(StrokeStyle.transparentColorBuilder().build())
-    lines.filter { it.kind != RoutePathKind.RIDE }.forEach { line ->
-        val pieces = dashes(line.points, zoom, dash = roadWidth * OFF_ROAD_DASH, gap = roadWidth * OFF_ROAD_GAP)
-        val points = mutableListOf<LatLng>()
-        val spans = mutableListOf<StyleSpan>()
-        pieces.forEachIndexed { index, dash ->
-            // The segment from the end of a dash to the start of the next one is the gap
-            if (index > 0) spans += gapSpan
-            points += dash.map { LatLng(it.lat, it.lng) }
-            spans += StyleSpan(dashSpan.style, (dash.size - 1).toDouble())
-        }
-        line.polyline.points = points
-        line.polyline.spans = spans
+    /**
+     * The widths of the lines in [view], the map, or near it, for the camera now: the route grows and shrinks with the
+     * map while it zooms, not only once it stops.
+     */
+    fun follow(map: GoogleMap, view: View, density: Float) {
+        val widths = widths ?: return
+        if (view.width == 0 || view.height == 0) return
+        // All of the view: the visible region of the projection doesn't include the padding
+        val southWest = map.projection.fromScreenLocation(Point(0, view.height))
+        val northEast = map.projection.fromScreenLocation(Point(view.width, 0))
+        val bounds = MapBounds(
+            west = southWest.longitude,
+            south = southWest.latitude,
+            east = northEast.longitude,
+            north = northEast.latitude,
+        )
+        widths.update(map.cameraPosition.zoom, bounds) { index, width -> polylines[index].width = width * density }
     }
 }
 

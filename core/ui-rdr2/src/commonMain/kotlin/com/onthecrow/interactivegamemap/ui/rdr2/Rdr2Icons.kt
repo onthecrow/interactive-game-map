@@ -130,4 +130,11 @@ internal object Rdr2Icons {
         shape(circle(6f, 6f, 3f))
         shape(circle(18f, 18f, 3f))
     }
+
+    /** Four arrows from the edges to a point in the middle, the drawing the recenter button was given. */
+    val Recenter = icon("Recenter") {
+        line("M12 1.8V7.4M12 22.2V16.6M1.8 12H7.4M22.2 12H16.6", width = 2.2f)
+        line("M9.4 4.8L12 7.4L14.6 4.8M9.4 19.2L12 16.6L14.6 19.2M4.8 9.4L7.4 12L4.8 14.6M19.2 9.4L16.6 12L19.2 14.6", width = 2.2f)
+        shape(circle(12f, 12f, 1.8f))
+    }
 }

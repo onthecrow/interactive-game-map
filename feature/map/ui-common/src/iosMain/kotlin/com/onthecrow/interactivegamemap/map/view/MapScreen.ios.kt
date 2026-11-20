@@ -37,11 +37,9 @@ import com.onthecrow.interactivegamemap.map.pinImage
 import com.onthecrow.interactivegamemap.map.RouteStopBubbleLift
 import com.onthecrow.interactivegamemap.map.rememberRouteStopBubble
 import com.onthecrow.interactivegamemap.map.rememberRouteStopImages
+import com.onthecrow.interactivegamemap.map.RouteLineWidths
+import com.onthecrow.interactivegamemap.map.rememberCrayonDashTexture
 import com.onthecrow.interactivegamemap.map.rememberCrayonTexture
-import com.onthecrow.interactivegamemap.map.routeLineWidth
-import com.onthecrow.interactivegamemap.map.OFF_ROAD_DASH
-import com.onthecrow.interactivegamemap.map.OFF_ROAD_GAP
-import com.onthecrow.interactivegamemap.map.offRoadLineWidth
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
@@ -63,12 +61,10 @@ import googlemaps.GMSPolygon
 import googlemaps.GMSPolyline
 import googlemaps.GMSStrokeStyle
 import googlemaps.GMSStyleSpan
-import googlemaps.GMSStyleSpans
 import googlemaps.GMSTextureStyle
 import googlemaps.GMSTileLayer
 import googlemaps.GMSTileReceiverProtocol
 import googlemaps.animateWithCameraUpdate
-import googlemaps.GMSLengthKind
 import googlemaps.kGMSTileLayerNoTile
 import googlemaps.kGMSTypeNone
 import kotlinx.cinterop.BetaInteropApi
@@ -80,11 +76,6 @@ import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.roundToInt
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.koin.compose.koinInject
@@ -98,7 +89,6 @@ import platform.CoreGraphics.CGSizeMake
 import platform.CoreLocation.CLLocationCoordinate2D
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
-import platform.Foundation.NSNumber
 import platform.Foundation.dataWithBytes
 import platform.UIKit.UIColor
 import platform.UIKit.UIEdgeInsetsMake
@@ -159,12 +149,10 @@ internal actual fun MapView(
     // The view starts somewhere else, that camera isn't the user's one
     var isCameraPlaced by remember { mutableStateOf(false) }
     val areMarkersHidden = hideMarkersWhileMoving && isCameraMoving
-    // In halves of a zoom level: the dashes of a route are measured on the ground, so they're laid again on a zoom
-    var zoomStep by remember { mutableStateOf(((camera?.zoom ?: map?.camera?.zoom?.toFloat() ?: 0f) * 2).roundToInt()) }
 
-    // The lines of the route: the ones along the roads and across country follow the zoom, see updateRouteWidths
-    val routeLines = remember { mutableListOf<Pair<GMSPolyline, RoutePathKind>>() }
-    var routeZoom by remember { mutableStateOf(Float.NaN) }
+    // The lines of the route by the indices of its paths: they follow the zoom, see RouteLineWidths
+    val routeLines = remember { mutableListOf<GMSPolyline>() }
+    var routeWidths by remember { mutableStateOf<RouteLineWidths?>(null) }
 
     val mapDelegate = remember(onEvent) {
         object : NSObject(), GMSMapViewDelegateProtocol {
@@ -173,9 +161,12 @@ internal actual fun MapView(
                     is MapLocation -> onEvent(MapEvent.OnLocationClick(data))
                     is RouteFastTravel -> onEvent(MapEvent.OnRouteStopClick(data.number))
                     // Close enough for the locations of the cluster to be apart
-                    is MarkerCluster -> mapView.animateWithCameraUpdate(
-                        GMSCameraUpdate.fitBounds(data.bounds.toCoordinateBounds(), ClusterBoundsPadding.value.toDouble())
-                    )
+                    is MarkerCluster -> {
+                        mapView.animateWithCameraUpdate(
+                            GMSCameraUpdate.fitBounds(data.bounds.toCoordinateBounds(), ClusterBoundsPadding.value.toDouble())
+                        )
+                        onEvent(MapEvent.OnClusterClick)
+                    }
                 }
                 return true
             }
@@ -194,17 +185,14 @@ internal actual fun MapView(
             // The route grows and shrinks with the map while it zooms, not only once it stops
             @ObjCSignatureOverride
             override fun mapView(mapView: GMSMapView, didChangeCameraPosition: GMSCameraPosition) {
-                val zoom = didChangeCameraPosition.zoom
-                if (routeZoom.isNaN() || abs(zoom - routeZoom) > ROUTE_ZOOM_STEP) {
-                    routeZoom = zoom
-                    updateRouteWidths(routeLines, mapStyle, zoom)
+                routeWidths?.update(didChangeCameraPosition.zoom, mapView.visibleBounds()) { index, width ->
+                    routeLines[index].strokeWidth = width.toDouble()
                 }
             }
 
             @ObjCSignatureOverride
             override fun mapView(mapView: GMSMapView, idleAtCameraPosition: GMSCameraPosition) {
                 isCameraMoving = false
-                zoomStep = (mapView.camera.zoom * 2).roundToInt()
                 if (!isCameraPlaced) return
                 val camera = mapView.camera
                 val (lat, lng) = camera.target.useContents { latitude to longitude }
@@ -461,56 +449,43 @@ internal actual fun MapView(
     }
 
     val crayon = rememberCrayonTexture(mapStyle.routeColor)
-    val crayonStroke = remember(crayon) {
-        crayon.toPinIcon(density)?.let { GMSStrokeStyle.transparentStrokeWithStampStyle(GMSTextureStyle.textureStyleWithImage(it)) }
+    val crayonDash = rememberCrayonDashTexture(mapStyle.routeColor)
+    // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
+    val crayonStrokes = remember(crayon, crayonDash) {
+        fun stroke(image: ImageBitmap) =
+            image.toPinIcon(density)?.let { GMSStrokeStyle.transparentStrokeWithStampStyle(GMSTextureStyle.textureStyleWithImage(it)) }
+        stroke(crayon) to stroke(crayonDash)
     }
 
-    LaunchedEffect(mapView, route, crayonStroke) {
-        routeLines.forEach { it.first.map = null }
+    LaunchedEffect(mapView, route, crayonStrokes) {
+        routeLines.forEach { it.map = null }
         routeLines.clear()
+        routeWidths = null
 
         val view = mapView ?: return@LaunchedEffect
         val route = route ?: return@LaunchedEffect
+        val (stroke, dashes) = crayonStrokes
 
-        route.paths.forEach { path ->
+        val widths = RouteLineWidths(mapStyle, route.paths)
+        val zoom = view.camera.zoom
+        route.paths.forEachIndexed { index, path ->
             val line = GMSMutablePath().apply {
                 path.points.forEach { addCoordinate(CLLocationCoordinate2DMake(it.lat, it.lng)) }
             }
             GMSPolyline.polylineWithPath(line).apply {
                 strokeColor = mapStyle.routeColor.toUIColor()
+                // Along the roads a crayon stroke; across country and to the fast travel points crayon dashes, from
+                // the texture: one span for the line
+                val style = if (path.kind == RoutePathKind.RIDE) stroke else dashes
+                if (style != null) spans = listOf(GMSStyleSpan.spanWithStyle(style))
                 // In points, like the rest of the map
-                strokeWidth = mapStyle.offRoadLineWidth(view.camera.zoom).value.toDouble()
-                // A crayon stroke: the texture is stamped over a transparent line, its ragged edges show the map
-                if (path.kind == RoutePathKind.RIDE && crayonStroke != null) spans = listOf(GMSStyleSpan.spanWithStyle(crayonStroke))
+                strokeWidth = widths.initial(index, zoom).toDouble()
                 zIndex = Z_INDEX_ROUTE
                 this.map = view
-                routeLines += this to path.kind
+                routeLines += this
             }
         }
-        updateRouteWidths(routeLines, mapStyle, view.camera.zoom)
-    }
-
-    // The legs across country and the jumps to fast travel points are crayon dashes. Google Maps for iOS dashes a line
-    // by lengths on the ground, so they are laid again as the zoom changes, to stay as long on the screen
-    LaunchedEffect(mapView, route, zoomStep, crayonStroke) {
-        val zoom = zoomStep / 2f
-        val roadWidth = mapStyle.routeLineWidth(zoom).value
-        val dashStyle = crayonStroke ?: GMSStrokeStyle.solidColor(mapStyle.routeColor.toUIColor())
-        routeLines.forEach { (line, kind) ->
-            if (kind == RoutePathKind.RIDE) return@forEach
-            val path = line.path ?: return@forEach
-            val lat = path.coordinateAtIndex(0u).useContents { latitude }
-            val metersPerPoint = 156_543.03392 * cos(lat * PI / 180) / 2.0.pow(zoom.toDouble())
-            line.spans = GMSStyleSpans(
-                path,
-                listOf(dashStyle, GMSStrokeStyle.solidColor(UIColor.clearColor)),
-                listOf(
-                    NSNumber(double = roadWidth * OFF_ROAD_DASH * metersPerPoint),
-                    NSNumber(double = roadWidth * OFF_ROAD_GAP * metersPerPoint),
-                ),
-                GMSLengthKind.kGMSLengthRhumb,
-            )
-        }
+        routeWidths = widths
     }
 
     val routeStopImages = rememberRouteStopImages(route?.fastTravels?.map { it.number }.orEmpty())
@@ -683,22 +658,6 @@ private fun ImageBitmap.toPinIcon(density: Float): UIImage? {
         scale = density.toDouble(),
         orientation = UIImageOrientation.UIImageOrientationUp,
     )
-}
-
-// The route's widths are set again after the zoom changes by this much
-private const val ROUTE_ZOOM_STEP = 0.02f
-
-/** The widths of the route's lines at [zoom], in points. */
-@OptIn(ExperimentalForeignApi::class)
-private fun updateRouteWidths(lines: List<Pair<GMSPolyline, RoutePathKind>>, style: MapStyle, zoom: Float) {
-    val width = style.routeLineWidth(zoom).value.toDouble()
-    val dashWidth = style.offRoadLineWidth(zoom).value.toDouble()
-    lines.forEach { (line, kind) ->
-        when (kind) {
-            RoutePathKind.RIDE -> line.strokeWidth = width
-            RoutePathKind.OFF_ROAD, RoutePathKind.FAST_TRAVEL -> line.strokeWidth = dashWidth
-        }
-    }
 }
 
 /**

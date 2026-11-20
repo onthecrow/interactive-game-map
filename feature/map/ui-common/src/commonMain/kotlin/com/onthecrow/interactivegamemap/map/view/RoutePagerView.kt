@@ -66,7 +66,7 @@ private const val OVERSCROLL = 0.25f
 /**
  * The popups of the locations of the route side by side: the current one in the middle, the edges of the previous
  * and the next ones at the sides. A drag of a popup, an arrow or a tap on a side one goes to another location, the
- * camera follows; Found goes on to the next one.
+ * camera follows; Found goes on to the next one, a tap on the one in the middle takes the camera back to it.
  *
  * Only the popups take touches: the space around them, above a lower one too, belongs to the map under them. That's
  * why it's a layout of its own and not a pager, which takes the touches of all of its area.
@@ -110,7 +110,17 @@ internal fun RoutePagerView(
                 visible.forEach { index ->
                     val location = locations[index]
                     key(location.id) {
-                        Box(modifier = Modifier.dragsPages(scroll, onSettled)) {
+                        // A tap on the popup in the middle, not on a button of it, takes the camera back to its marker
+                        val tap = if (index == page) {
+                            Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onEvent(MapEvent.OnPopupClick) },
+                            )
+                        } else {
+                            Modifier
+                        }
+                        Box(modifier = Modifier.dragsPages(scroll, onSettled).then(tap)) {
                             LocationView(
                                 title = location.name,
                                 description = location.description,

@@ -14,6 +14,7 @@ import com.onthecrow.interactivegamemap.settings.PrivacyPolicyUrl
 import com.onthecrow.interactivegamemap.settings.di.settingsModule
 import com.onthecrow.interactivegamemap.settings.di.settingsUiModule
 import com.onthecrow.interactivegamemap.sync.di.syncModule
+import com.onthecrow.interactivegamemap.ui.components.GameSnackbars
 import com.onthecrow.nomadrates.database.di.databaseModule
 import com.onthecrow.nomadrates.navigation.Destination
 import com.onthecrow.nomadrates.navigation.di.StartDestination
@@ -33,6 +34,8 @@ fun applicationModule(flavor: FlavorConfig): Module = module {
     single { flavor.mapFeatures }
     single { GameId(flavor.gameId) }
     single { MapTileProvider(get(), get()) }
+    // Posted by any screen, shown over all of them
+    single { GameSnackbars() }
     includes(
         analyticsModule,
         navigationModule,

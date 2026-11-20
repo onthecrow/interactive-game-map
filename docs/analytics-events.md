@@ -137,9 +137,12 @@ Crashlytics shows the events of the session before a crash or a non-fatal error 
 the event. Besides:
 
 - Keys: `screen`, `map_id`, `map_ready`, `tile_error` (the last reason a tile failed), `setting_<name>` for each
-  setting of `setting_change`.
+  setting of `setting_change`; `route_markers` and `route_lines`, the markers of the route on the map and its lines
+  there (0 without one), `route_building`, the markers of a route being built (0 when none is): a long route takes
+  memory, they tell an `OutOfMemoryError` apart.
 - Log: the loads of the maps (`Map 2: loading, launch`, `Map 2: drawn in 300 ms`), each new reason a tile failed
-  for, the fetches of Remote Config and their errors.
+  for, the fetches of Remote Config and their errors, each change of the route (`Route: 120 markers, 41 lines,
+  building 0`).
 - Non-fatal errors: `MapNotDrawnException` when the user stays on the map screen for 10 s without the map, once a
   load, with the tiles loaded and failed; the `SerializationException` of a Remote Config value that can't be
   parsed.
@@ -147,6 +150,21 @@ the event. Besides:
   and in the `user_id` of the BigQuery export of Analytics.
 
 ## Checking the events
+
+A debug build sends no crash reports, and deletes the ones of its crashes at its next launch: kept, they would all
+go with the first build that sends them. To see one reach Crashlytics, build a debug build with
+`-PcrashlyticsInDebug` (`./gradlew :rdr2:installDebug -PcrashlyticsInDebug`), launch it with a test crash, it comes
+5 s after the launch, and launch it again: the report is sent then, it shows in Crashlytics within minutes as a
+`TestCrashException`, with the keys and the log. The version of a debug build ends with `-debug`, like `1.1.0-debug`.
+
+```
+adb shell am start -S -n com.onthecrow.mapslinger/.MainActivity --ez test_crash true
+adb shell am start -n com.onthecrow.mapslinger/.MainActivity
+```
+
+An `OutOfMemoryError` doesn't always make it: the report is written when there's no memory left, and the stack is
+of whichever thread couldn't allocate first. Android vitals in the Play Console count every crash, the system
+collects them.
 
 A debug build prints the events instead of sending them: `Analytics: map_ready {…}` in Logcat or in the console of
 Xcode, and the reports as `Crash log: …`, `Crash keys: {…}`, `Crash non-fatal: …`. DebugView of the Firebase console shows the events of a release build when debug mode is on:

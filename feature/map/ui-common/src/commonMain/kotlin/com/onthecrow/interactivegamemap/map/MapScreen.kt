@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Constraints
@@ -47,7 +50,7 @@ import com.onthecrow.interactivegamemap.map.view.MapView
 import com.onthecrow.interactivegamemap.map.view.MarkerListView
 import com.onthecrow.interactivegamemap.map.view.RouteBuildDialog
 import com.onthecrow.interactivegamemap.map.view.RouteExitDialog
-import com.onthecrow.interactivegamemap.map.view.RouteHintView
+import com.onthecrow.interactivegamemap.map.view.ControlHintView
 import com.onthecrow.interactivegamemap.map.view.RoutePagerView
 import com.onthecrow.interactivegamemap.map.view.SystemBackHandler
 import com.onthecrow.interactivegamemap.map.view.parseDescriptionLink
@@ -60,6 +63,11 @@ import interactivegamemap.feature.map.ui_common.generated.resources.Res
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_layers
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_markers
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_route
+import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_recenter
+import interactivegamemap.feature.map.ui_common.generated.resources.recenter_hint_text
+import interactivegamemap.feature.map.ui_common.generated.resources.recenter_hint_title
+import interactivegamemap.feature.map.ui_common.generated.resources.route_hint_text
+import interactivegamemap.feature.map.ui_common.generated.resources.route_hint_title
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_search_hint
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_search_in_map_hint
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_settings
@@ -97,6 +105,20 @@ internal fun MapScreen(
                 .distinctBy { it.id }
         }
         val cameraController = remember { MapCameraController() }
+        // The search field lets go of the focus, and its outline, at a tap on the map or on a button at the side
+        val focusManager = LocalFocusManager.current
+        val onMapEvent: (MapEvent) -> Unit = remember(onEvent, focusManager) {
+            { event ->
+                if (event.isTapOnMap) focusManager.clearFocus()
+                onEvent(event)
+            }
+        }
+        val onSideEvent: (MapEvent) -> Unit = remember(onEvent, focusManager) {
+            { event ->
+                focusManager.clearFocus()
+                onEvent(event)
+            }
+        }
         val density = LocalDensity.current
         val topInset = WindowInsets.safeDrawing.getTop(density)
         val bottomInset = WindowInsets.systemBars.getBottom(density)
@@ -121,7 +143,7 @@ internal fun MapScreen(
             (screenHeight - topInset - bottomInset - popup).coerceAtLeast(0).toDp()
         }
 
-        LaunchedEffect(state.focusedLocation) {
+        LaunchedEffect(state.focusedLocation, state.focusCount) {
             val location = state.focusedLocation ?: return@LaunchedEffect
             // The popup of a new selection is measured on its first frames
             repeat(2) { withFrameNanos {} }
@@ -158,7 +180,7 @@ internal fun MapScreen(
             hideMarkersWhileMoving = state.hideMarkersWhileMoving,
             // The Google logo stays above the search field
             bottomPadding = MapControlSize + ControlsMargin,
-            onEvent = onEvent,
+            onEvent = onMapEvent,
         )
 
         // The popup of a marker takes the place of the controls
@@ -174,22 +196,49 @@ internal fun MapScreen(
                     GameZoomControl(
                         canZoomIn = state.canZoomIn,
                         canZoomOut = state.canZoomOut,
-                        onZoomInClick = cameraController::zoomIn,
-                        onZoomOutClick = cameraController::zoomOut,
+                        onZoomInClick = {
+                            focusManager.clearFocus()
+                            cameraController.zoomIn()
+                        },
+                        onZoomOutClick = {
+                            focusManager.clearFocus()
+                            cameraController.zoomOut()
+                        },
                         zoomInDescription = stringResource(Res.string.map_screen_zoom_in),
                         zoomOutDescription = stringResource(Res.string.map_screen_zoom_out),
                     )
+                },
+                recenterButton = {
+                    WithHintAtLeft(
+                        hint = {
+                            ControlHintView(
+                                visible = state.isHintVisible(MapHint.RECENTER),
+                                title = stringResource(Res.string.recenter_hint_title),
+                                text = stringResource(Res.string.recenter_hint_text),
+                            )
+                        },
+                    ) {
+                        RecenterButton(visible = state.isRecenterVisible, onClick = { onSideEvent(MapEvent.OnRecenterClick) })
+                    }
                 },
                 sideButtons = {
                     Column(verticalArrangement = Arrangement.spacedBy(ControlsGap)) {
                         // Only while there is a route to build or to end; pressed with a route on, it offers to end it
                         if (state.isRouteButtonVisible) {
-                            WithHintAtLeft(hint = { RouteHintView(visible = state.isRouteHintVisible) }) {
+                            WithHintAtLeft(
+                                hint = {
+                                    ControlHintView(
+                                        visible = state.isHintVisible(MapHint.ROUTE),
+                                        title = stringResource(Res.string.route_hint_title),
+                                        text = stringResource(Res.string.route_hint_text),
+                                    )
+                                },
+                            ) {
                                 GameMapButton(
                                     icon = GameMapTheme.icons.route,
                                     contentDescription = stringResource(Res.string.map_screen_route),
                                     active = state.route != null,
-                                    onClick = { onEvent(MapEvent.OnRouteClick) },
+                                    onClick = { onSideEvent(MapEvent.OnRouteClick) },
                                 )
                             }
                         }
@@ -198,13 +247,13 @@ internal fun MapScreen(
                                 icon = GameMapTheme.icons.layers,
                                 contentDescription = stringResource(Res.string.map_screen_layers),
                                 active = state.isDungeonsActive,
-                                onClick = { onEvent(MapEvent.OnDungeonsClick) },
+                                onClick = { onSideEvent(MapEvent.OnDungeonsClick) },
                             )
                         }
                         GameMapButton(
                             icon = GameMapTheme.icons.markers,
                             contentDescription = stringResource(Res.string.map_screen_markers),
-                            onClick = { onEvent(MapEvent.OnMarkerListClick) },
+                            onClick = { onSideEvent(MapEvent.OnMarkerListClick) },
                         )
                     }
                 },
@@ -274,7 +323,12 @@ internal fun MapScreen(
                 RoutePagerView(modifier = measured, state = state, onEvent = onEvent, onLinkClick = onLinkClick)
             } else {
                 LocationView(
-                    modifier = measured.padding(16.dp),
+                    // A tap on it, not on a button of it, takes the camera back to the marker
+                    modifier = measured.padding(16.dp).clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onEvent(MapEvent.OnPopupClick) },
+                    ),
                     title = displayedLocation.name,
                     description = displayedLocation.description,
                     floors = state.currentMap.findDungeon(displayedLocation)?.floors.orEmpty(),
@@ -300,16 +354,22 @@ internal fun MapScreen(
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 220)),
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-                GameZoomControl(
-                    canZoomIn = state.canZoomIn,
-                    canZoomOut = state.canZoomOut,
-                    onZoomInClick = cameraController::zoomIn,
-                    onZoomOutClick = cameraController::zoomOut,
-                    zoomInDescription = stringResource(Res.string.map_screen_zoom_in),
-                    zoomOutDescription = stringResource(Res.string.map_screen_zoom_out),
-                )
-            }
+            ZoomAtRightLayout(
+                modifier = Modifier.fillMaxSize(),
+                zoomButtons = {
+                    GameZoomControl(
+                        canZoomIn = state.canZoomIn,
+                        canZoomOut = state.canZoomOut,
+                        onZoomInClick = cameraController::zoomIn,
+                        onZoomOutClick = cameraController::zoomOut,
+                        zoomInDescription = stringResource(Res.string.map_screen_zoom_in),
+                        zoomOutDescription = stringResource(Res.string.map_screen_zoom_out),
+                    )
+                },
+                recenterButton = {
+                    RecenterButton(visible = state.isRecenterVisible, onClick = { onEvent(MapEvent.OnRecenterClick) })
+                },
+            )
         }
 
         state.routeBuild?.let { progress ->
@@ -362,12 +422,14 @@ private fun SearchBar(
 
 /**
  * The search bar at the bottom, the side buttons above its right end, the zoom buttons above them in the
- * middle of the screen when they fit there, beside them when the screen is too short. Everything stays clear of the
- * system bars and of the keyboard.
+ * middle of the screen when they fit there; when the screen is too short, the zoom buttons at the right edge and the
+ * side buttons beside them. The recenter button is under the zoom buttons, its place is kept while it's away, so the
+ * zoom buttons stay where they are when it comes. Everything stays clear of the system bars and of the keyboard.
  */
 @Composable
 private fun MapControlsLayout(
     zoomButtons: @Composable () -> Unit,
+    recenterButton: @Composable () -> Unit,
     sideButtons: @Composable () -> Unit,
     bottomBar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -375,8 +437,8 @@ private fun MapControlsLayout(
     val insets = WindowInsets.safeDrawing
     Layout(
         modifier = modifier,
-        contents = listOf(zoomButtons, sideButtons, bottomBar),
-    ) { (zoomMeasurables, sideMeasurables, barMeasurables), constraints ->
+        contents = listOf(zoomButtons, recenterButton, sideButtons, bottomBar),
+    ) { (zoomMeasurables, recenterMeasurables, sideMeasurables, barMeasurables), constraints ->
         val margin = ControlsMargin.roundToPx()
         val gap = ControlsGap.roundToPx()
         val left = insets.getLeft(this, layoutDirection) + margin
@@ -390,59 +452,112 @@ private fun MapControlsLayout(
         val bar = barMeasurables.map { it.measure(childConstraints) }
         val side = sideMeasurables.map { it.measure(childConstraints) }
         val zoom = zoomMeasurables.map { it.measure(childConstraints) }
+        val recenter = recenterMeasurables.map { it.measure(childConstraints) }
 
         layout(constraints.maxWidth, constraints.maxHeight) {
-            var lowest = bottom
+            var barTop = bottom
             bar.forEach {
-                lowest -= it.height
-                it.place(left, lowest)
+                barTop -= it.height
+                it.place(left, barTop)
             }
-            val barTop = lowest
-            val sideWidth = side.maxOfOrNull { it.width } ?: 0
+            val placement = zoomPlacement(
+                screenHeight = constraints.maxHeight,
+                right = right,
+                top = top,
+                barTop = barTop,
+                sideTop = barTop - side.sumOf { gap + it.height },
+                gap = gap,
+                width = zoom.maxOfOrNull { it.width } ?: 0,
+                height = zoom.maxOfOrNull { it.height } ?: 0,
+                below = gap + MapControlSize.roundToPx(),
+            )
+            var sideY = barTop
             side.forEach {
-                lowest -= gap + it.height
-                it.place(right - it.width, lowest)
+                sideY -= gap + it.height
+                it.place(placement.sideRight - it.width, sideY)
             }
             zoom.forEach {
-                val (x, y) = zoomPosition(
-                    screenHeight = constraints.maxHeight,
-                    right = right,
-                    top = top,
-                    barTop = barTop,
-                    sideTop = lowest,
-                    sideWidth = sideWidth,
-                    gap = gap,
-                    width = it.width,
-                    height = it.height,
-                )
-                it.place(x, y)
+                it.place(placement.x, placement.y)
+                recenter.forEach { button -> button.place(placement.x + it.width - button.width, placement.y + it.height + gap) }
             }
         }
     }
 }
 
+/** Where the zoom buttons go, [x] and [y] of their top left corner, and the right edge of the side buttons. */
+internal data class ZoomPlacement(val x: Int, val y: Int, val sideRight: Int)
+
 /**
- * Where the zoom buttons go, as (x, y): over the side buttons in the middle of the screen, or lower when the middle
- * is taken; on a screen too short for that, like a phone on its side, beside the side buttons, above the bar.
+ * Where the zoom buttons go: over the side buttons in the middle of the screen, or lower when the middle is taken; on a
+ * screen too short for that, like a phone on its side, at the right edge above the bar, the side buttons moved to
+ * their left.
  *
- * @param sideTop the top of the side buttons, [barTop] the one of the bar under them
+ * @param sideTop the top of the side buttons over [barTop], the top of the bar, when they're at the right edge
+ * @param below the room kept under the zoom buttons, for the recenter button
  */
-internal fun zoomPosition(
+internal fun zoomPlacement(
     screenHeight: Int,
     right: Int,
     top: Int,
     barTop: Int,
     sideTop: Int,
-    sideWidth: Int,
     gap: Int,
     width: Int,
     height: Int,
-): Pair<Int, Int> {
+    below: Int = 0,
+): ZoomPlacement {
     val centered = (screenHeight - height) / 2
-    return if (sideTop - gap - height >= top) {
-        right - width to min(centered, sideTop - gap - height)
+    return if (sideTop - gap - height - below >= top) {
+        ZoomPlacement(x = right - width, y = min(centered, sideTop - gap - height - below), sideRight = right)
     } else {
-        right - sideWidth - gap - width to min(centered, barTop - gap - height).coerceAtLeast(top)
+        ZoomPlacement(
+            x = right - width,
+            y = min(centered, barTop - gap - height - below).coerceAtLeast(top),
+            sideRight = right - width - gap,
+        )
+    }
+}
+
+/**
+ * The zoom buttons in the middle of the right side, over the popups of a route, the recenter button under them. The
+ * rest of it takes no touches, they go to the map and the popups.
+ */
+@Composable
+private fun ZoomAtRightLayout(
+    zoomButtons: @Composable () -> Unit,
+    recenterButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Layout(modifier = modifier, contents = listOf(zoomButtons, recenterButton)) { (zoomMeasurables, recenterMeasurables), constraints ->
+        val gap = ControlsGap.roundToPx()
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val zoom = zoomMeasurables.map { it.measure(loose) }
+        val recenter = recenterMeasurables.map { it.measure(loose) }
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            zoom.forEach {
+                val y = (constraints.maxHeight - it.height) / 2
+                it.place(constraints.maxWidth - it.width, y)
+                recenter.forEach { button -> button.place(constraints.maxWidth - button.width, y + it.height + gap) }
+            }
+        }
+    }
+}
+
+/** The button taking the camera back to the selected marker or to all of them, coming and going with them. */
+@Composable
+private fun RecenterButton(visible: Boolean, onClick: () -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(durationMillis = 220)) +
+            scaleIn(initialScale = 0.8f, animationSpec = tween(durationMillis = 220)),
+        exit = fadeOut(animationSpec = tween(durationMillis = 220)) +
+            scaleOut(targetScale = 0.8f, animationSpec = tween(durationMillis = 220)),
+    ) {
+        GameMapButton(
+            icon = GameMapTheme.icons.recenter,
+            contentDescription = stringResource(Res.string.map_screen_recenter),
+            onClick = onClick,
+        )
     }
 }
 
@@ -469,3 +584,8 @@ private fun WithHintAtLeft(hint: @Composable () -> Unit, content: @Composable ()
         }
     }
 }
+
+/** A tap on the map, a marker or a point of the route on it. */
+private val MapEvent.isTapOnMap: Boolean
+    get() = this == MapEvent.OnLocationDismiss || this == MapEvent.OnClusterClick ||
+        this is MapEvent.OnLocationClick || this is MapEvent.OnRouteStopClick

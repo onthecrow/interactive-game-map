@@ -52,6 +52,10 @@ data class MapScreenState(
     val foundLocationIds: Set<Int> = emptySet(),
     /** The selected location the camera is taken to, the popup leaves it in view. */
     val focusedLocation: MapLocation? = null,
+    /** Goes up when the camera is taken back to [focusedLocation], which stays the same. */
+    val focusCount: Int = 0,
+    /** Around the markers the filters show on the whole map, null without any: recentering fits them in view. */
+    val markersBounds: MapBounds? = null,
     /** The camera is moved to show all of its bounds, a new [CameraFit] each time. */
     val cameraFit: CameraFit? = null,
     val language: String = LocationsFilter.DEFAULT_LANGUAGE,
@@ -69,8 +73,11 @@ data class MapScreenState(
     /** The progress of the route being built, null when none is. */
     val routeBuild: RouteBuildProgress? = null,
     val isRouteExitConfirmVisible: Boolean = false,
-    /** The hint at the route button is up: shown once, until the button, the map, the list or the settings is tapped. */
-    val isRouteHintShown: Boolean = false,
+    /**
+     * The hint on the screen, one at a time, see [HintManager]: until a tap on a button, the map, a marker, the list or
+     * the settings.
+     */
+    val hint: MapHint? = null,
     /** The number of the fast travel point of the route whose bubble is shown over it. */
     val selectedRouteStop: Int? = null,
 ): State {
@@ -88,13 +95,28 @@ data class MapScreenState(
     val displayedRoute: Route?
         get() = route?.takeIf { searchValue.isBlank() }
 
-    /** The hint at the route button would make sense now: the button is there, with no route and nothing over the map. */
-    val canShowRouteHint: Boolean
-        get() = isRouteButtonVisible && route == null && routeBuild == null && selectedLocation == null &&
-            !isMarkerListVisible
+    /** [hint] would make sense now: its button is there, and nothing is over the map. */
+    fun canShowHint(hint: MapHint): Boolean {
+        val isMapClear = selectedLocation == null && routeBuild == null && !isMarkerListVisible && !isRouteExitConfirmVisible
+        return isMapClear && when (hint) {
+            // With no route yet: the hint tells about building one
+            MapHint.ROUTE -> isRouteButtonVisible && route == null
+            MapHint.RECENTER -> isRecenterVisible
+        }
+    }
 
-    val isRouteHintVisible: Boolean
-        get() = isRouteHintShown && isRouteButtonVisible && route == null
+    /** The user knows the button of [hint] already, it isn't needed: a route on the map or being built came from it. */
+    fun knowsHint(hint: MapHint): Boolean = when (hint) {
+        MapHint.ROUTE -> route != null || routeBuild != null
+        MapHint.RECENTER -> false
+    }
+
+    /** [hint] is on the screen and its button is there: a search hides the route button and its hint with it. */
+    fun isHintVisible(hint: MapHint): Boolean = this.hint == hint && when (hint) {
+        MapHint.ROUTE -> isRouteButtonVisible && route == null
+        // The popup of a marker takes the place of the buttons
+        MapHint.RECENTER -> isRecenterVisible && selectedLocation == null
+    }
 
     /** The route button: with roads, without a search, and with a route to end or one to build. */
     val isRouteButtonVisible: Boolean
@@ -134,6 +156,14 @@ data class MapScreenState(
         return null
     }
 
+    /**
+     * Finding [locationId] finishes the route on the map: it's the last of its locations not found yet. Whatever is
+     * selected, so the view model reads the same before the event and after it.
+     */
+    fun finishesRoute(locationId: Int): Boolean =
+        displayedRoute != null && locationId !in foundLocationIds && routeLocations.any { it.id == locationId } &&
+            routeLocations.all { it.id == locationId || it.id in foundLocationIds }
+
     /** The selected location is the one the route has come to: its popup is one of the pages of the route. */
     val isRoutePagerVisible: Boolean
         get() = displayedRoute != null && selectedLocation != null && routeLocations.getOrNull(routePage)?.id == selectedLocation.id
@@ -171,6 +201,10 @@ data class MapScreenState(
                 .sortedBy { it.bounds.distanceTo(viewport) }
                 .take(MAX_DISPLAYED_FLOORS)
         }
+
+    /** The recenter button is there with a marker to go back to: the selected one, or all of them. */
+    val isRecenterVisible: Boolean
+        get() = selectedLocation != null || markersBounds != null
 
     val canZoomIn: Boolean
         get() = camera != null && currentMap != null && camera.zoom + ZOOM_EPSILON < currentMap.maxZoom

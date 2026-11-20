@@ -57,6 +57,7 @@ class Rdr2Style(override val components: GameMapComponents) : GameMapStyle {
         route = Rdr2Icons.Route,
         previous = Rdr2Icons.ArrowLeft,
         next = Rdr2Icons.ArrowRight,
+        recenter = Rdr2Icons.Recenter,
     )
 
     @Composable

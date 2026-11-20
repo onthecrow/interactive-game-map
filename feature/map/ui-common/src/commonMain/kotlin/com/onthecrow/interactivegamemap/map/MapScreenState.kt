@@ -6,10 +6,10 @@ import com.onthecrow.interactivegamemap.map.model.MapLocation
 import com.onthecrow.interactivegamemap.map.model.MapMarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
 import com.onthecrow.interactivegamemap.map.model.MarkerCategory
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.MapDungeon
-import com.onthecrow.interactivegamemap.network.MapFloor
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapDungeon
+import com.onthecrow.interactivegamemap.map.model.MapFloor
 import com.onthecrow.nomadrates.uicore.State
 
 // The floor images are big, so only the ones closest to the center of the screen are displayed

@@ -21,6 +21,8 @@ struct iOSApp: App {
         Analytics.setAnalyticsCollectionEnabled(isFirebaseCollectionEnabled)
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(isFirebaseCollectionEnabled)
         AppInitializer.shared.initialize(platform: IOSPlatform())
+        // The data starts loading at once, and again on every return from the background
+        AppInitializer.shared.startSync()
     }
 
     var body: some Scene {

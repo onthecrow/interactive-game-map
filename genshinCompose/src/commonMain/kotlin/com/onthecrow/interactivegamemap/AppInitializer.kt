@@ -1,17 +1,13 @@
 package com.onthecrow.interactivegamemap
 
-import com.onthecrow.interactivegamemap.di.applicationModule
-import org.koin.core.context.startKoin
-
+/** Starts the app: from the Application on Android, from the App of SwiftUI on iOS. */
 object AppInitializer {
     fun initialize(platform: Platform) {
-        initKoin(platform)
+        AppShell.initialize(platform, genshinFlavor)
     }
-}
 
-private fun initKoin(platform: Platform) = startKoin {
-    modules(
-        platform.platformModule,
-        applicationModule,
-    )
+    /** iOS only: Android injects the synchronizer into its Application and starts it there. */
+    fun startSync() {
+        AppShell.startSync()
+    }
 }

@@ -12,4 +12,10 @@ fun Throwable.networkErrorType(): String {
     }
 }
 
+/** Whether the request failed because of the connection, not because of the app or the server's answer. */
+fun Throwable.isNetworkError(): Boolean {
+    return this is HttpRequestTimeoutException || this is ConnectTimeoutException || this is SocketTimeoutException ||
+        platformErrorType() != null
+}
+
 internal expect fun Throwable.platformErrorType(): String?

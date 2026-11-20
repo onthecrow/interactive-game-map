@@ -2,6 +2,10 @@ package com.onthecrow.interactivegamemap.ui.rdr2
 
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.painter.Painter
+import com.onthecrow.interactivegamemap.ui.rdr2.resources.Res
+import com.onthecrow.interactivegamemap.ui.rdr2.resources.app_icon
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
@@ -51,6 +55,9 @@ class Rdr2Style(override val components: GameMapComponents) : GameMapStyle {
         markers = Rdr2Icons.Index,
         settings = Rdr2Icons.Settings,
     )
+
+    @Composable
+    override fun appIcon(): Painter = painterResource(Res.drawable.app_icon)
 
     @Composable
     override fun Provide(colors: GameMapColors, content: @Composable () -> Unit) {

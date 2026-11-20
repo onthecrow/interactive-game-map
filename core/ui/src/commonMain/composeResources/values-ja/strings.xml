@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">マップを読み込んでいます…</string>
+    <string name="content_loading_failed">マップを読み込めませんでした。接続を確認して、もう一度お試しください。</string>
+    <string name="content_retry">再試行</string>
+    <string name="content_updating">マップを更新しています</string>
+    <string name="content_updated">マップを更新しました</string>
+</resources>

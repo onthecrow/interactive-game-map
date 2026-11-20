@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">Carregando o mapa…</string>
+    <string name="content_loading_failed">Não foi possível carregar o mapa. Verifique sua conexão e tente novamente.</string>
+    <string name="content_retry">Tentar novamente</string>
+    <string name="content_updating">Atualizando o mapa</string>
+    <string name="content_updated">Mapa atualizado</string>
+</resources>

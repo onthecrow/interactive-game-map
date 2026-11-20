@@ -13,6 +13,7 @@ import com.onthecrow.interactivegamemap.ui.components.MapButtonComponent
 import com.onthecrow.interactivegamemap.ui.components.MenuComponent
 import com.onthecrow.interactivegamemap.ui.components.MenuItemComponent
 import com.onthecrow.interactivegamemap.ui.components.PanelComponent
+import com.onthecrow.interactivegamemap.ui.components.ProgressIndicatorComponent
 import com.onthecrow.interactivegamemap.ui.components.ScreenScaffoldComponent
 import com.onthecrow.interactivegamemap.ui.components.SearchFieldComponent
 import com.onthecrow.interactivegamemap.ui.components.SectionHeaderComponent
@@ -44,6 +45,7 @@ import com.onthecrow.interactivegamemap.ui.genshin.GenshinSettingsGroup
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinSettingsRow
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinSheet
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinStyle
+import com.onthecrow.interactivegamemap.ui.genshin.GenshinProgressIndicator
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinSwitch
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinTextButton
 import com.onthecrow.interactivegamemap.ui.genshin.GenshinVisibilityActions
@@ -76,6 +78,7 @@ val genshinUiModule = module {
     single<SectionHeaderComponent> { GenshinSectionHeader }
     single<SettingsGroupComponent> { GenshinSettingsGroup }
     single<SettingsRowComponent> { GenshinSettingsRow }
+    single<ProgressIndicatorComponent> { GenshinProgressIndicator }
     single { gameMapComponents() }
     single<GameMapStyle> { GenshinStyle(get()) }
 }

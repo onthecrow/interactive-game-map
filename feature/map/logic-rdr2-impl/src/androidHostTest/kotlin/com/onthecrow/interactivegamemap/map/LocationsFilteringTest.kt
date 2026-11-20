@@ -130,7 +130,7 @@ class LocationsFilteringTest {
 
     @Test
     fun `only markers inside the bounds are returned`() = runBlocking {
-        val bounds = LocationBounds(west = 90.0, south = 60.0, east = 110.0, north = 75.0)
+        val bounds = LocationBounds(west = 5.4, south = 24.8, east = 9.0, north = 31.3)
 
         val result = getLocations(LocationsFilter(mapId = 1, bounds = bounds))
 

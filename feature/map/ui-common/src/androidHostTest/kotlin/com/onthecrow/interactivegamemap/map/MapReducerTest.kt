@@ -10,14 +10,14 @@ import com.onthecrow.interactivegamemap.map.model.MapMarkerGroup
 import com.onthecrow.interactivegamemap.map.model.MarkerCategory
 import com.onthecrow.interactivegamemap.map.model.MarkerIcon
 import com.onthecrow.interactivegamemap.map.model.MarkerPin
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.MapCamera
-import com.onthecrow.interactivegamemap.network.MapDungeon
-import com.onthecrow.interactivegamemap.network.MapFloor
-import com.onthecrow.interactivegamemap.network.MapTiles
-import com.onthecrow.interactivegamemap.network.RemoteConfig
-import com.onthecrow.interactivegamemap.network.TileScheme
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapCamera
+import com.onthecrow.interactivegamemap.map.model.MapDungeon
+import com.onthecrow.interactivegamemap.map.model.MapFloor
+import com.onthecrow.interactivegamemap.map.model.MapTiles
+import com.onthecrow.interactivegamemap.map.model.MapsConfig
+import com.onthecrow.interactivegamemap.map.model.TileSchemes
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +40,7 @@ class MapReducerTest {
         name = "Map",
         minZoom = 1,
         maxZoom = 2,
-        tiles = MapTiles("", TileScheme.XYZ),
+        tiles = MapTiles("", TileSchemes.XYZ),
         camera = MapCamera(0.0, 0.0, 1),
         dungeonBaseOpacity = 0.5f,
         dungeons = (0 until 10).map { i ->
@@ -263,7 +263,7 @@ class MapReducerTest {
     @Test
     fun `the map of the last launch opens where it was left`() {
         val other = map.copy(id = 2)
-        val config = RemoteConfig(defaultMapId = 1, maps = listOf(map, other))
+        val config = MapsConfig(defaultMapId = 1, maps = listOf(map, other))
         val saved = MapViewSettings(mapId = 2, camera = CameraPosition(0.5, 25.0, 2f))
 
         val opened = MapScreenState().after(MapEvent.OnConfigLoaded(config, saved))
@@ -280,7 +280,7 @@ class MapReducerTest {
 
     @Test
     fun `a map which is gone opens the default one at its start`() {
-        val config = RemoteConfig(defaultMapId = 1, maps = listOf(map))
+        val config = MapsConfig(defaultMapId = 1, maps = listOf(map))
         val saved = MapViewSettings(mapId = 5, camera = CameraPosition(0.5, 25.0, 2f))
 
         val opened = MapScreenState().after(MapEvent.OnConfigLoaded(config, saved))

@@ -32,10 +32,10 @@ import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
 import com.onthecrow.interactivegamemap.map.trackFirstTile
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapBounds
-import com.onthecrow.interactivegamemap.network.MapFloor
-import com.onthecrow.interactivegamemap.network.MapTiles
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapBounds
+import com.onthecrow.interactivegamemap.map.model.MapFloor
+import com.onthecrow.interactivegamemap.map.model.MapTiles
 import googlemaps.GMSCameraPosition
 import googlemaps.GMSCameraUpdate
 import googlemaps.GMSCoordinateBounds
@@ -64,13 +64,21 @@ import kotlinx.coroutines.launch
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.koin.compose.koinInject
+import platform.CoreGraphics.CGImageCreateWithImageInRect
+import platform.CoreGraphics.CGImageGetHeight
+import platform.CoreGraphics.CGImageGetWidth
+import platform.CoreGraphics.CGImageRelease
 import platform.CoreGraphics.CGPointMake
+import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGSizeMake
 import platform.CoreLocation.CLLocationCoordinate2D
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
 import platform.UIKit.UIColor
 import platform.UIKit.UIEdgeInsetsMake
+import platform.UIKit.UIGraphicsImageRenderer
+import platform.UIKit.UIGraphicsImageRendererFormat
 import platform.UIKit.UIImage
 import platform.UIKit.UIImageOrientation
 import platform.darwin.NSObject
@@ -164,8 +172,8 @@ internal actual fun MapView(
             }
         }
     }
-    val tileLayer = remember(map?.tiles) {
-        map?.tiles?.let { tiles -> MapTileLayer(tiles, mapTileProvider, scope) }
+    val tileLayer = remember(map?.tiles, map?.maxZoom) {
+        map?.let { gameMap -> MapTileLayer(gameMap.tiles, gameMap.maxZoom, mapTileProvider, scope) }
     }
     var tileLoad by remember { mutableStateOf<MapLoad?>(null) }
 
@@ -447,10 +455,17 @@ internal actual fun MapView(
     )
 }
 
-/** Loads the tiles of [tiles] on the main thread, each one the map gets goes to [load]. */
+/**
+ * Loads the tiles of [tiles] on the main thread, each one the map gets goes to [load].
+ *
+ * The layer draws 256 px tiles at their pixel size, so on a dense screen it asks for the zoom past the camera's.
+ * Past [maxZoom] the server may have no tiles: then the part of the tile of [maxZoom] covering the same place,
+ * enlarged, is drawn instead of nothing.
+ */
 @OptIn(ExperimentalForeignApi::class)
 private class MapTileLayer(
     private val tiles: MapTiles,
+    private val maxZoom: Int,
     private val mapTileProvider: MapTileProvider,
     private val scope: CoroutineScope,
 ) : GMSTileLayer() {
@@ -461,6 +476,8 @@ private class MapTileLayer(
             var error: String? = null
             val tile = mapTileProvider.getTileAsync(tiles, x.toInt(), y.toInt(), zoom.toInt()) { error = it }
             val decoded = tile?.data.toUIImageOrNull()
+                ?: tile?.takeIf { it.data == null && zoom.toInt() > maxZoom }
+                    ?.let { enlargedPart(x.toInt(), y.toInt(), zoom.toInt()) }
             // No image is asked for again, the empty one isn't
             val image: UIImage? = decoded ?: tile?.let { kGMSTileLayerNoTile }
             receiver.receiveTileWithX(x, y, zoom, image)
@@ -469,6 +486,34 @@ private class MapTileLayer(
                 error = error ?: "decode".takeIf { tile?.data != null && decoded == null } ?: "unknown".takeIf { tile == null },
             )
         }
+    }
+
+    private suspend fun enlargedPart(x: Int, y: Int, zoom: Int): UIImage? {
+        val depth = zoom - maxZoom
+        val parentX = x shr depth
+        val parentY = y shr depth
+        val parent = mapTileProvider.getTileAsync(tiles, parentX, parentY, maxZoom)?.data.toUIImageOrNull() ?: return null
+        return parent.enlargedPart(column = x - (parentX shl depth), row = y - (parentY shl depth), parts = 1 shl depth)
+    }
+}
+
+/** The part in [column] and [row] of the image cut in [parts] x [parts], at the size of the whole image. */
+@OptIn(ExperimentalForeignApi::class)
+private fun UIImage.enlargedPart(column: Int, row: Int, parts: Int): UIImage? {
+    val image = CGImage ?: return null
+    val width = CGImageGetWidth(image).toDouble()
+    val height = CGImageGetHeight(image).toDouble()
+    val partWidth = width / parts
+    val partHeight = height / parts
+    val cropped = CGImageCreateWithImageInRect(
+        image,
+        CGRectMake(column * partWidth, row * partHeight, partWidth, partHeight),
+    ) ?: return null
+    val part = UIImage.imageWithCGImage(cropped)
+    CGImageRelease(cropped)
+    val format = UIGraphicsImageRendererFormat.defaultFormat().apply { scale = 1.0 }
+    return UIGraphicsImageRenderer(size = CGSizeMake(width, height), format = format).imageWithActions {
+        part.drawInRect(CGRectMake(0.0, 0.0, width, height))
     }
 }
 

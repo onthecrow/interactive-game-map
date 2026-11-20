@@ -10,8 +10,8 @@ import com.onthecrow.interactivegamemap.map.MapCameraController
 import com.onthecrow.interactivegamemap.map.MarkerCluster
 import com.onthecrow.interactivegamemap.map.MapEvent
 import com.onthecrow.interactivegamemap.map.model.MapLocation
-import com.onthecrow.interactivegamemap.network.GameMap
-import com.onthecrow.interactivegamemap.network.MapFloor
+import com.onthecrow.interactivegamemap.map.model.GameMap
+import com.onthecrow.interactivegamemap.map.model.MapFloor
 
 internal val EntrancePathColor = Color(0xFFFFC107)
 

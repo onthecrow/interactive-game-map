@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.painter.Painter
 import com.onthecrow.interactivegamemap.ui.components.GameMapComponents
 import org.koin.compose.koinInject
 
@@ -71,6 +72,10 @@ object GameMapTheme {
 
     val components: GameMapComponents
         @Composable @ReadOnlyComposable get() = LocalGameMapStyle.current.components
+
+    /** The icon of the app, see [GameMapStyle.appIcon]. */
+    @Composable
+    fun appIcon(): Painter = LocalGameMapStyle.current.appIcon()
 
     /** Whether the style can follow the system's colors at all, the setting is pointless otherwise. */
     val supportsDynamicColor: Boolean

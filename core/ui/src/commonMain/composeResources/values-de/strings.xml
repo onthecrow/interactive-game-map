@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">Karte wird geladen…</string>
+    <string name="content_loading_failed">Die Karte konnte nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.</string>
+    <string name="content_retry">Erneut versuchen</string>
+    <string name="content_updating">Karte wird aktualisiert</string>
+    <string name="content_updated">Karte aktualisiert</string>
+</resources>

@@ -17,10 +17,16 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.androidx.room.runtime)
-            implementation(libs.sqlite.bundled)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
             implementation(libs.kotlinx.coroutines.core)
+        }
+        // Android has SQLite of its own, the bundled one adds ~1 MB of native code per ABI to the APK
+        androidMain.dependencies {
+            implementation(libs.sqlite.framework)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqlite.bundled)
         }
     }
 }

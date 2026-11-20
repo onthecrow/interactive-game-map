@@ -1,6 +1,7 @@
 package com.onthecrow.interactivegamemap.ui.theme
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.painter.Painter
 import com.onthecrow.interactivegamemap.ui.components.GameMapComponents
 
 /**
@@ -22,6 +23,13 @@ interface GameMapStyle {
 
     @Composable
     fun icons(): GameMapIcons
+
+    /**
+     * The icon of the app as the splash screen shows it: the screens shown while the data loads put it in the same
+     * place, so the splash seems to go on.
+     */
+    @Composable
+    fun appIcon(): Painter
 
     /** Provides what the game's own components read, like its extra colors, around [content]. */
     @Composable

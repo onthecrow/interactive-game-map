@@ -8,7 +8,7 @@ import com.google.android.gms.maps.model.TileProvider
 import com.onthecrow.interactivegamemap.map.MapLoad
 import com.onthecrow.interactivegamemap.map.MapTileProvider
 import com.onthecrow.interactivegamemap.map.model.MapTile
-import com.onthecrow.interactivegamemap.network.MapTiles
+import com.onthecrow.interactivegamemap.map.model.MapTiles
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope

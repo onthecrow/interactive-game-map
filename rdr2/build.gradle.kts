@@ -15,6 +15,8 @@ kotlin {
         implementation(libs.compose.uiToolingPreview)
         implementation(libs.androidx.activity.compose)
         implementation(libs.androidx.core.splashscreen)
+        implementation(project.dependencies.platform(libs.koin.bom))
+        implementation(libs.koin.android)
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.analytics)
         implementation(libs.firebase.crashlytics)
@@ -36,15 +38,15 @@ val signingProps = Properties().apply {
 }
 
 android {
-    namespace = "com.onthecrow.rdr2map"
+    namespace = "com.onthecrow.mapslinger"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.onthecrow.rdr2map"
+        applicationId = "com.onthecrow.mapslinger"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0.0"
 
         resValue("string", "google_maps_key", mapsKey)
     }
@@ -68,7 +70,9 @@ android {
             manifestPlaceholders["firebaseCollectionEnabled"] = false
         }
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
             manifestPlaceholders["firebaseCollectionEnabled"] = true
         }
@@ -76,4 +80,9 @@ android {
     buildFeatures {
         resValues = true
     }
+}
+
+// Compose tooling (previews on a device, the layout inspector) only in debug builds
+dependencies {
+    debugImplementation(libs.compose.uiTooling)
 }

@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">Chargement de la carte…</string>
+    <string name="content_loading_failed">Impossible de charger la carte. Vérifiez votre connexion et réessayez.</string>
+    <string name="content_retry">Réessayer</string>
+    <string name="content_updating">Mise à jour de la carte</string>
+    <string name="content_updated">Carte mise à jour</string>
+</resources>

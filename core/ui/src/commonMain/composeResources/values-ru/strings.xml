@@ -1,0 +1,7 @@
+<resources>
+    <string name="content_loading">Загружаем карту…</string>
+    <string name="content_loading_failed">Не удалось загрузить карту. Проверьте подключение и попробуйте ещё раз.</string>
+    <string name="content_retry">Повторить</string>
+    <string name="content_updating">Обновляем карту</string>
+    <string name="content_updated">Карта обновлена</string>
+</resources>

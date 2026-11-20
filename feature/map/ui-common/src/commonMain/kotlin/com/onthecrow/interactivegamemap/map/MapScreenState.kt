@@ -14,6 +14,7 @@ import com.onthecrow.interactivegamemap.map.model.FastTravelPoint
 import com.onthecrow.interactivegamemap.map.model.Route
 import com.onthecrow.interactivegamemap.map.model.RouteStop
 import com.onthecrow.interactivegamemap.map.model.RouteBuildStage
+import com.onthecrow.interactivegamemap.settings.MapStyleMode
 import com.onthecrow.nomadrates.uicore.State
 
 // The floor images are big, so only the ones closest to the center of the screen are displayed
@@ -61,6 +62,8 @@ data class MapScreenState(
     val language: String = LocationsFilter.DEFAULT_LANGUAGE,
     val hideMarkersWhileMoving: Boolean = false,
     val clusterMarkers: Boolean = true,
+    /** Picks the dark map or the usual one, with the theme of the app by default. */
+    val mapStyle: MapStyleMode = MapStyleMode.THEME,
     /** Whether the route button is there: the app has routes and the map has roads. */
     val isRouteAvailable: Boolean = false,
     /** The markers a route would go through: the ones the filters show on the whole map, not found yet. */

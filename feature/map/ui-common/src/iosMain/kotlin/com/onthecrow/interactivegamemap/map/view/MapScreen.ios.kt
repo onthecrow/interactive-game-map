@@ -40,6 +40,7 @@ import com.onthecrow.interactivegamemap.map.rememberRouteStopImages
 import com.onthecrow.interactivegamemap.map.RouteLineWidths
 import com.onthecrow.interactivegamemap.map.rememberCrayonDashTexture
 import com.onthecrow.interactivegamemap.map.rememberCrayonTexture
+import com.onthecrow.interactivegamemap.map.TileColorMatrix
 import com.onthecrow.interactivegamemap.ui.theme.GameMapTheme
 import com.onthecrow.interactivegamemap.map.rememberClusterImages
 import com.onthecrow.interactivegamemap.map.rememberMarkerPinImages
@@ -76,6 +77,8 @@ import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.koin.compose.koinInject
@@ -124,6 +127,7 @@ internal fun ByteArray?.toUIImageOrNull(): UIImage? {
 @Composable
 internal actual fun MapView(
     map: GameMap?,
+    isDarkMap: Boolean,
     locations: List<MapLocation>,
     clusters: List<MarkerCluster>,
     selectedLocation: MapLocation?,
@@ -142,6 +146,8 @@ internal actual fun MapView(
     val scope = rememberCoroutineScope()
     val mapTileProvider: MapTileProvider = koinInject<MapTileProvider>()
     val mapStyle: MapStyle = koinInject<MapStyle>()
+    // The tiles, the floors and the markers alike
+    val tileColors = mapStyle.tileColors(isDarkMap)
     val mapAnalytics: MapAnalytics = koinInject<MapAnalytics>()
 
     var mapView by remember { mutableStateOf<GMSMapView?>(null) }
@@ -205,8 +211,8 @@ internal actual fun MapView(
             }
         }
     }
-    val tileLayer = remember(map?.tiles, map?.maxZoom) {
-        map?.let { gameMap -> MapTileLayer(gameMap.tiles, gameMap.maxZoom, mapTileProvider, scope) }
+    val tileLayer = remember(map?.tiles, map?.maxZoom, tileColors) {
+        map?.let { gameMap -> MapTileLayer(gameMap.tiles, gameMap.maxZoom, mapTileProvider, scope, tileColors) }
     }
     var tileLoad by remember { mutableStateOf<MapLoad?>(null) }
 
@@ -244,13 +250,14 @@ internal actual fun MapView(
     // The pin with the popup over it
     val selectedId = selectedLocation?.id
     val highlight = GameMapTheme.colors.accent
-    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight)
+    val pinImages = rememberMarkerPinImages(locations, selectedId, highlight, tileColors)
     val density = LocalDensity.current.density
     val pinIcons = remember { mutableMapOf<MarkerPinImage, UIImage?>() }
     val markers = remember { mutableMapOf<String, GMSMarker>() }
     val markerImages = remember { mutableMapOf<String, ImageBitmap?>() }
 
-    LaunchedEffect(mapView, locations, pinImages, selectedId, highlight) {
+    // With the colors: the images of the other style may be loaded already, and then pinImages stays the same
+    LaunchedEffect(mapView, locations, pinImages, selectedId, highlight, tileColors) {
         val view = mapView ?: return@LaunchedEffect
         val actualIds = locations.map { it.id.toString() }.toSet()
 
@@ -273,7 +280,7 @@ internal actual fun MapView(
                     userData = location
                 }
             }
-            val pinImage = location.pinImage(selectedId, highlight)
+            val pinImage = location.pinImage(selectedId, highlight, tileColors)
             if (pinImage != null && pinImage !in pinImages) return@forEach
 
             val image = pinImage?.let { pinImages[it] }
@@ -304,7 +311,7 @@ internal actual fun MapView(
         }
     }
 
-    val clusterImages = rememberClusterImages(clusters)
+    val clusterImages = rememberClusterImages(clusters, tileColors)
     val clusterIcons = remember { mutableMapOf<ImageBitmap, UIImage?>() }
     val clusterMarkers = remember { mutableMapOf<Int, GMSMarker>() }
 
@@ -371,6 +378,8 @@ internal actual fun MapView(
 
     var dungeonDim by remember { mutableStateOf<GMSPolygon?>(null) }
     val floorOverlays = remember { mutableMapOf<Int, GMSGroundOverlay>() }
+    // The colors each floor's image is drawn with
+    val floorColors = remember { mutableMapOf<Int, TileColorMatrix?>() }
     val hasFloors = floors.isNotEmpty()
 
     LaunchedEffect(mapView, map, hasFloors) {
@@ -397,11 +406,17 @@ internal actual fun MapView(
         }
     }
 
-    LaunchedEffect(mapView, floors) {
+    LaunchedEffect(mapView, isDarkMap) {
+        // The background of the other style matches the edges of its tiles
+        mapView?.backgroundColor = mapStyle.backgroundColor(isDarkMap).toUIColor()
+    }
+
+    LaunchedEffect(mapView, floors, tileColors) {
         val actualIds = floors.map { it.id }.toSet()
 
         floorOverlays.entries.removeAll { entry ->
-            val shouldRemove = entry.key !in actualIds
+            // The floors of the other style of the map are drawn again
+            val shouldRemove = entry.key !in actualIds || floorColors[entry.key] != tileColors
             if (shouldRemove) {
                 entry.value.map = null
             }
@@ -412,8 +427,9 @@ internal actual fun MapView(
 
         floors.filter { it.id !in floorOverlays }.forEach { floor ->
             launch {
-                val image = mapTileProvider.getImage(floor.imageUrl).toUIImageOrNull()
+                val image = mapTileProvider.getImage(floor.imageUrl).toMapImage(tileColors)
                     ?: return@launch
+                floorColors[floor.id] = tileColors
 
                 floorOverlays[floor.id] = GMSGroundOverlay.groundOverlayWithBounds(
                     floor.bounds.toCoordinateBounds(),
@@ -561,7 +577,7 @@ internal actual fun MapView(
         factory = {
             val options = GMSMapViewOptions().apply {
                 this.camera = defaultCamera
-                backgroundColor = mapStyle.backgroundColor.toUIColor()
+                backgroundColor = mapStyle.backgroundColor(isDarkMap).toUIColor()
             }
             mapView = GMSMapView(options = options).apply {
                 mapType = kGMSTypeNone
@@ -599,6 +615,7 @@ private class MapTileLayer(
     private val maxZoom: Int,
     private val mapTileProvider: MapTileProvider,
     private val scope: CoroutineScope,
+    private val colors: TileColorMatrix?,
 ) : GMSTileLayer() {
     var load: MapLoad? = null
 
@@ -606,7 +623,7 @@ private class MapTileLayer(
         scope.launch {
             var error: String? = null
             val tile = mapTileProvider.getTileAsync(tiles, x.toInt(), y.toInt(), zoom.toInt()) { error = it }
-            val decoded = tile?.data.toUIImageOrNull()
+            val decoded = tile?.data.toMapImage(colors)
                 ?: tile?.takeIf { it.data == null && zoom.toInt() > maxZoom }
                     ?.let { enlargedPart(x.toInt(), y.toInt(), zoom.toInt()) }
             // No image is asked for again, the empty one isn't
@@ -623,9 +640,19 @@ private class MapTileLayer(
         val depth = zoom - maxZoom
         val parentX = x shr depth
         val parentY = y shr depth
-        val parent = mapTileProvider.getTileAsync(tiles, parentX, parentY, maxZoom)?.data.toUIImageOrNull() ?: return null
+        val parent = mapTileProvider.getTileAsync(tiles, parentX, parentY, maxZoom)?.data.toMapImage(colors) ?: return null
         return parent.enlargedPart(column = x - (parentX shl depth), row = y - (parentY shl depth), parts = 1 shl depth)
     }
+}
+
+/**
+ * The image of a tile or of a floor recoloured by [colors], decoded and recoloured off the main thread; without
+ * colors it is decoded later, where the map draws it.
+ */
+private suspend fun ByteArray?.toMapImage(colors: TileColorMatrix?): UIImage? {
+    colors ?: return toUIImageOrNull()
+    val bytes = this ?: return null
+    return withContext(Dispatchers.Default) { bytes.toUIImageOrNull()?.recoloured(colors) }
 }
 
 /** The part in [column] and [row] of the image cut in [parts] x [parts], at the size of the whole image. */

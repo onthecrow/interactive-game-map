@@ -53,6 +53,10 @@ import interactivegamemap.feature.settings.ui.generated.resources.settings_impor
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language_system
 import interactivegamemap.feature.settings.ui.generated.resources.settings_language_system_summary
+import interactivegamemap.feature.settings.ui.generated.resources.settings_map_style
+import interactivegamemap.feature.settings.ui.generated.resources.settings_map_style_dark
+import interactivegamemap.feature.settings.ui.generated.resources.settings_map_style_standard
+import interactivegamemap.feature.settings.ui.generated.resources.settings_map_style_theme
 import interactivegamemap.feature.settings.ui.generated.resources.settings_privacy_policy
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_appearance
 import interactivegamemap.feature.settings.ui.generated.resources.settings_section_found_markers
@@ -98,6 +102,7 @@ internal fun SettingsScreen(
     onEvent: (SettingsEvent) -> Unit,
     modifier: Modifier = Modifier,
     legalNotice: List<String> = emptyList(),
+    options: SettingsOptions = SettingsOptions(),
 ) {
     GameScreenScaffold(
         modifier = modifier,
@@ -113,7 +118,7 @@ internal fun SettingsScreen(
                     .heightIn(min = maxHeight),
             ) {
                 MapSection(state.settings, onEvent)
-                AppearanceSection(state.settings, onEvent)
+                AppearanceSection(state.settings, options, onEvent)
                 LanguageSection(state, onEvent)
                 FoundMarkersSection(state, onEvent)
                 PrivacySection(state.analyticsId, privacyPolicyUrl)
@@ -148,6 +153,15 @@ internal fun SettingsScreen(
             label = { stringResource(it.labelRes) },
             description = { null },
             onSelect = { onEvent(SettingsEvent.OnThemeSelect(it)) },
+            onDismiss = { onEvent(SettingsEvent.OnDialogDismiss) },
+        )
+        SettingsDialog.MAP_STYLE -> ChoiceDialog(
+            title = stringResource(Res.string.settings_map_style),
+            options = MapStyleMode.entries,
+            selected = state.settings.mapStyle,
+            label = { stringResource(it.labelRes) },
+            description = { null },
+            onSelect = { onEvent(SettingsEvent.OnMapStyleSelect(it)) },
             onDismiss = { onEvent(SettingsEvent.OnDialogDismiss) },
         )
         SettingsDialog.LANGUAGE -> ChoiceDialog(
@@ -190,12 +204,14 @@ private fun MapSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) 
 }
 
 @Composable
-private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
+private fun AppearanceSection(settings: AppSettings, options: SettingsOptions, onEvent: (SettingsEvent) -> Unit) {
     GameSectionHeader(text = stringResource(Res.string.settings_section_appearance))
     // The system's colors exist from Android 12: from the wallpaper or picked by the user. A game with
     // colors of its own doesn't follow them
     val hasSystemColors = isDynamicColorSupported && GameMapTheme.supportsDynamicColor
     val themeLabel = stringResource(settings.theme.labelRes)
+    val mapStyle = stringResource(Res.string.settings_map_style)
+    val mapStyleLabel = stringResource(settings.mapStyle.labelRes)
     val systemColors = stringResource(Res.string.settings_system_colors)
     val systemColorsSummary = stringResource(Res.string.settings_system_colors_summary)
     GameSettingsGroup {
@@ -204,6 +220,14 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
                 title = stringResource(Res.string.settings_theme),
                 action = SettingAction.Choice(themeLabel) { onEvent(SettingsEvent.OnThemeClick) },
             )
+        }
+        if (options.hasMapStyle) {
+            item {
+                GameSettingsRow(
+                    title = mapStyle,
+                    action = SettingAction.Choice(mapStyleLabel) { onEvent(SettingsEvent.OnMapStyleClick) },
+                )
+            }
         }
         if (hasSystemColors) {
             item {
@@ -324,6 +348,13 @@ private val ThemeMode.labelRes: StringResource
         ThemeMode.SYSTEM -> Res.string.settings_theme_system
         ThemeMode.LIGHT -> Res.string.settings_theme_light
         ThemeMode.DARK -> Res.string.settings_theme_dark
+    }
+
+private val MapStyleMode.labelRes: StringResource
+    get() = when (this) {
+        MapStyleMode.THEME -> Res.string.settings_map_style_theme
+        MapStyleMode.STANDARD -> Res.string.settings_map_style_standard
+        MapStyleMode.DARK -> Res.string.settings_map_style_dark
     }
 
 @Composable

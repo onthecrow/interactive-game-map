@@ -11,6 +11,10 @@
     <string name="settings_theme_system">Padrão do sistema</string>
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_map_style">Estilo do mapa</string>
+    <string name="settings_map_style_theme">Igual ao tema</string>
+    <string name="settings_map_style_standard">Padrão</string>
+    <string name="settings_map_style_dark">Escuro</string>
     <string name="settings_system_colors">Cores do sistema</string>
     <string name="settings_system_colors_summary">Usar as cores do tema do smartphone</string>
     <string name="settings_section_language">Idioma</string>

@@ -199,7 +199,7 @@ data class FoundMarkersTransferEvent(
         )
 }
 
-enum class AnalyticsSetting { HIDE_MARKERS_WHILE_MOVING, CLUSTER_MARKERS, THEME, DYNAMIC_COLOR, LANGUAGE }
+enum class AnalyticsSetting { HIDE_MARKERS_WHILE_MOVING, CLUSTER_MARKERS, THEME, MAP_STYLE, DYNAMIC_COLOR, LANGUAGE }
 
 /** The user changes a setting. */
 data class SettingChangeEvent(

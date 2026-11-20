@@ -19,7 +19,7 @@ internal data class SettingsState(
     val transferMessage: TransferMessage? = null,
 ) : State
 
-internal enum class SettingsDialog { THEME, LANGUAGE }
+internal enum class SettingsDialog { THEME, MAP_STYLE, LANGUAGE }
 
 internal sealed interface TransferMessage {
     data class Exported(val count: Int) : TransferMessage

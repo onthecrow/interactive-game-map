@@ -17,6 +17,7 @@ internal val AppSettings.analyticsValues: Map<AnalyticsSetting, Any>
         AnalyticsSetting.HIDE_MARKERS_WHILE_MOVING to hideMarkersWhileMoving,
         AnalyticsSetting.CLUSTER_MARKERS to clusterMarkers,
         AnalyticsSetting.THEME to theme,
+        AnalyticsSetting.MAP_STYLE to mapStyle,
         AnalyticsSetting.DYNAMIC_COLOR to dynamicColor,
         AnalyticsSetting.LANGUAGE to (language ?: SYSTEM_LANGUAGE),
     )

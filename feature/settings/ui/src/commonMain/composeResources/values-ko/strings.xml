@@ -11,6 +11,10 @@
     <string name="settings_theme_system">시스템 기본값</string>
     <string name="settings_theme_light">라이트</string>
     <string name="settings_theme_dark">다크</string>
+    <string name="settings_map_style">지도 스타일</string>
+    <string name="settings_map_style_theme">테마와 같게</string>
+    <string name="settings_map_style_standard">기본</string>
+    <string name="settings_map_style_dark">다크</string>
     <string name="settings_system_colors">시스템 색상</string>
     <string name="settings_system_colors_summary">휴대전화 테마의 색상 사용</string>
     <string name="settings_section_language">언어</string>

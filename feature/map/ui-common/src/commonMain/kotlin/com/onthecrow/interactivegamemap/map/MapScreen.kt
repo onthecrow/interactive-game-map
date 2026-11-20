@@ -75,6 +75,7 @@ import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_z
 import interactivegamemap.feature.map.ui_common.generated.resources.map_screen_zoom_out
 import kotlin.math.min
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 
 /** The size of the buttons over the map, the search field is as tall. */
 internal val MapControlSize = 48.dp
@@ -164,9 +165,13 @@ internal fun MapScreen(
             state.cameraFit?.let { cameraController.fit(it.bounds) }
         }
 
+        // The dark map goes with the dark theme unless the user picked one of the two for good
+        val isDarkMap = koinInject<MapStyle>().hasDarkMap && state.mapStyle.isDark(GameMapTheme.colors.isDark)
+
         MapView(
             modifier = Modifier.fillMaxSize(),
             map = state.currentMap,
+            isDarkMap = isDarkMap,
             locations = displayedMarkers,
             clusters = state.clusters,
             selectedLocation = state.selectedLocation,

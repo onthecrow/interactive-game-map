@@ -11,6 +11,10 @@
     <string name="settings_theme_system">Как в системе</string>
     <string name="settings_theme_light">Светлая</string>
     <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_map_style">Стиль карты</string>
+    <string name="settings_map_style_theme">Как тема</string>
+    <string name="settings_map_style_standard">Обычный</string>
+    <string name="settings_map_style_dark">Тёмный</string>
     <string name="settings_system_colors">Системные цвета</string>
     <string name="settings_system_colors_summary">Цвета из темы телефона</string>
     <string name="settings_section_language">Язык</string>

@@ -48,6 +48,7 @@ private const val SELECTED_PIN_TINT_ALPHA = 0.35f
  * @param highlight the tint of the selected location's pin, which is also [SELECTED_PIN_SCALE] times bigger
  * @param pictogram drawn over [icon] in its head
  * @param anchorY where the location lies on the pin, of its height from the top
+ * @param colors recolour the pin like the map under it, under [highlight]
  */
 internal data class MarkerPinImage(
     val icon: MarkerIcon,
@@ -57,6 +58,7 @@ internal data class MarkerPinImage(
     val highlight: Color? = null,
     val pictogram: MarkerIcon? = null,
     val anchorY: Float = 1f,
+    val colors: TileColorMatrix? = null,
 )
 
 internal val MapLocation.pinImage: MarkerPinImage?
@@ -73,9 +75,9 @@ internal val MapLocation.pinImage: MarkerPinImage?
         )
     }
 
-/** The pin of the location, highlighted with [highlight] when it is the selected one. */
-internal fun MapLocation.pinImage(selectedId: Int?, highlight: Color): MarkerPinImage? {
-    return pinImage?.let { if (id == selectedId) it.copy(highlight = highlight) else it }
+/** The pin of the location recoloured by [colors], highlighted with [highlight] when it is the selected one. */
+internal fun MapLocation.pinImage(selectedId: Int?, highlight: Color, colors: TileColorMatrix?): MarkerPinImage? {
+    return pinImage?.copy(highlight = highlight.takeIf { id == selectedId }, colors = colors)
 }
 
 /** Must be used from one thread. */
@@ -115,18 +117,20 @@ internal class MarkerPinLoader(
         // The pictogram wears as in the lists, the pins of a color differ by the pictogram over them
         val seed = (pin.pictogram ?: pin.icon).url.hashCode()
         CanvasDrawScope().draw(Density(scale), LayoutDirection.Ltr, Canvas(image), size) {
-            // The pin's wear rubs the pictogram as well: they are printed as one
-            withWear(pin.icon.wear, textures.pin, bounds, seed xor PIN_WEAR_SALT) {
-                drawMarkerImage(source, pin.icon, bounds)
-                if (pictogram != null && pin.pictogram != null) {
-                    val head = Rect(Offset(size.width / 2, size.width / 2), size.width * PICTOGRAM_SIZE / 2)
-                    withWear(pin.pictogram.wear, textures.pictogram, head, seed) {
-                        drawMarkerImage(pictogram, pin.pictogram, head)
+            withColors(pin.colors) {
+                // The pin's wear rubs the pictogram as well: they are printed as one
+                withWear(pin.icon.wear, textures.pin, bounds, seed xor PIN_WEAR_SALT) {
+                    drawMarkerImage(source, pin.icon, bounds)
+                    if (pictogram != null && pin.pictogram != null) {
+                        val head = Rect(Offset(size.width / 2, size.width / 2), size.width * PICTOGRAM_SIZE / 2)
+                        withWear(pin.pictogram.wear, textures.pictogram, head, seed) {
+                            drawMarkerImage(pictogram, pin.pictogram, head)
+                        }
                     }
                 }
-            }
-            if (pin.hasDungeonBadge) {
-                drawDungeonBadge()
+                if (pin.hasDungeonBadge) {
+                    drawDungeonBadge()
+                }
             }
             pin.highlight?.let { highlight ->
                 // Only over the pin itself, its transparent parts stay so
@@ -165,20 +169,21 @@ internal class MarkerPinLoader(
 
 /**
  * The finished loads of the pin images of [locations], null for an image which can't be loaded.
- * The pin of [selectedId] is highlighted with [highlight].
+ * The pin of [selectedId] is highlighted with [highlight], all of them are recoloured by [colors].
  */
 @Composable
 internal fun rememberMarkerPinImages(
     locations: List<MapLocation>,
     selectedId: Int?,
     highlight: Color,
+    colors: TileColorMatrix?,
 ): Map<MarkerPinImage, ImageBitmap?> {
     val pinLoader = koinInject<MarkerPinLoader>()
     val density = LocalDensity.current.density
     var images by remember { mutableStateOf(emptyMap<MarkerPinImage, ImageBitmap?>()) }
 
-    LaunchedEffect(locations, selectedId, highlight) {
-        locations.mapNotNullTo(mutableSetOf()) { it.pinImage(selectedId, highlight) }
+    LaunchedEffect(locations, selectedId, highlight, colors) {
+        locations.mapNotNullTo(mutableSetOf()) { it.pinImage(selectedId, highlight, colors) }
             .filter { images[it] == null }
             .forEach { pin ->
                 launch {

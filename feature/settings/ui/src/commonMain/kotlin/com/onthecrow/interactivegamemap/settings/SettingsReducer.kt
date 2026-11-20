@@ -14,8 +14,10 @@ internal class SettingsReducer : Reducer<SettingsState, SettingsEvent> {
             SettingsEvent.OnExportHandedOver -> state.copy(pendingExport = null)
             is SettingsEvent.OnTransferMessage -> state.copy(transferMessage = event.message)
             SettingsEvent.OnThemeClick -> state.copy(dialog = SettingsDialog.THEME)
+            SettingsEvent.OnMapStyleClick -> state.copy(dialog = SettingsDialog.MAP_STYLE)
             SettingsEvent.OnLanguageClick -> state.copy(dialog = SettingsDialog.LANGUAGE)
             is SettingsEvent.OnThemeSelect,
+            is SettingsEvent.OnMapStyleSelect,
             is SettingsEvent.OnLanguageSelect,
             SettingsEvent.OnDialogDismiss -> state.copy(dialog = null)
             else -> state

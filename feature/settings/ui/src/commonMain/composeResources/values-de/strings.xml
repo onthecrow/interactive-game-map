@@ -11,6 +11,10 @@
     <string name="settings_theme_system">Systemstandard</string>
     <string name="settings_theme_light">Hell</string>
     <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_map_style">Kartenstil</string>
+    <string name="settings_map_style_theme">Wie das Design</string>
+    <string name="settings_map_style_standard">Standard</string>
+    <string name="settings_map_style_dark">Dunkel</string>
     <string name="settings_system_colors">Systemfarben</string>
     <string name="settings_system_colors_summary">Die Farben des Smartphone-Designs verwenden</string>
     <string name="settings_section_language">Sprache</string>

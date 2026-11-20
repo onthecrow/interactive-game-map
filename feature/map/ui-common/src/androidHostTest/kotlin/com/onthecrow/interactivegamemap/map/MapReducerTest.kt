@@ -18,6 +18,7 @@ import com.onthecrow.interactivegamemap.map.model.MapFloor
 import com.onthecrow.interactivegamemap.map.model.MapTiles
 import com.onthecrow.interactivegamemap.map.model.MapsConfig
 import com.onthecrow.interactivegamemap.map.model.TileSchemes
+import com.onthecrow.interactivegamemap.settings.MapStyleMode
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -246,9 +247,9 @@ class MapReducerTest {
         val icon = MarkerIcon("plain")
         val location = MapLocation.EMPTY.copy(id = 5, pin = MarkerPin(icon, width = 33, height = 44))
 
-        assertEquals(MarkerPinImage(icon, false, 33, 44, Color.Red), location.pinImage(5, Color.Red))
-        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(6, Color.Red))
-        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(null, Color.Red))
+        assertEquals(MarkerPinImage(icon, false, 33, 44, Color.Red), location.pinImage(5, Color.Red, colors = null))
+        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(6, Color.Red, colors = null))
+        assertEquals(MarkerPinImage(icon, false, 33, 44), location.pinImage(null, Color.Red, colors = null))
     }
 
     @Test
@@ -258,8 +259,8 @@ class MapReducerTest {
         val pin = MarkerPin(disc, pictogram = paw, width = 30, height = 30, anchorY = 0.5f)
         val location = MapLocation.EMPTY.copy(id = 5, pin = pin, areas = listOf(LocationArea(listOf(GeoPoint(0.0, 0.0)))))
 
-        assertEquals(MarkerPinImage(disc, false, 30, 30, pictogram = paw, anchorY = 0.5f), location.pinImage(6, Color.Red))
-        assertEquals(MarkerPinImage(disc, false, 30, 30, Color.Red, paw, 0.5f), location.pinImage(5, Color.Red))
+        assertEquals(MarkerPinImage(disc, false, 30, 30, pictogram = paw, anchorY = 0.5f), location.pinImage(6, Color.Red, colors = null))
+        assertEquals(MarkerPinImage(disc, false, 30, 30, Color.Red, paw, 0.5f), location.pinImage(5, Color.Red, colors = null))
     }
 
     @Test
@@ -284,7 +285,7 @@ class MapReducerTest {
         assertEquals(null, zoomedIn.clusterZoom)
         assertFalse(zoomedIn.canZoomIn)
 
-        val turnedOff = zoomedOut.after(MapEvent.OnSettingsChange(hideMarkersWhileMoving = false, clusterMarkers = false))
+        val turnedOff = zoomedOut.after(MapEvent.OnSettingsChange(hideMarkersWhileMoving = false, clusterMarkers = false, mapStyle = MapStyleMode.THEME))
         assertEquals(null, turnedOff.clusterZoom)
     }
 

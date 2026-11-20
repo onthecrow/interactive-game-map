@@ -3,10 +3,13 @@ package com.onthecrow.interactivegamemap.map.view
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import com.google.android.gms.maps.model.Tile
 import com.google.android.gms.maps.model.TileProvider
 import com.onthecrow.interactivegamemap.map.MapLoad
 import com.onthecrow.interactivegamemap.map.MapTileProvider
+import com.onthecrow.interactivegamemap.map.TileColorMatrix
 import com.onthecrow.interactivegamemap.map.model.MapTile
 import com.onthecrow.interactivegamemap.map.model.MapTiles
 import kotlinx.coroutines.async
@@ -37,13 +40,18 @@ internal fun mergedTileParts(x: Int, y: Int): List<MergedTilePart> {
  * The map draws a tile on 256 dp, so a 256 px tile is stretched on high density screens.
  * The four tiles of the next zoom cover the same part of the world and have twice as many pixels.
  * Each tile the map gets goes to [load].
+ *
+ * @param colors recolour the tiles as they are merged, or as they come for the last zoom; null leaves them as they are
  */
 internal class MergedTileProvider(
     private val mapTileProvider: MapTileProvider,
     private val tiles: MapTiles,
     private val maxZoom: Int,
     private val load: MapLoad,
+    private val colors: TileColorMatrix? = null,
 ) : TileProvider {
+    // The map asks for tiles on several threads at once, each merge takes a paint of its own
+    private val colorFilter = colors?.let { ColorMatrixColorFilter(it.values) }
 
     override fun getTile(x: Int, y: Int, zoom: Int): Tile? {
         var error: String? = null
@@ -59,7 +67,9 @@ internal class MergedTileProvider(
     }
 
     private suspend fun getSingleTile(x: Int, y: Int, zoom: Int, onError: (String) -> Unit): Tile? {
-        return mapTileProvider.getTileAsync(tiles, x, y, zoom, onError)?.toGoogleTile()
+        val tile = mapTileProvider.getTileAsync(tiles, x, y, zoom, onError) ?: return null
+        val image = tile.data?.takeIf { colorFilter != null }?.toBitmap() ?: return tile.toGoogleTile()
+        return merge(listOf(MergedTilePart(x, y, column = 0, row = 0) to image), isComplete = true, parts = 1)
     }
 
     private suspend fun getMergedTile(x: Int, y: Int, zoom: Int, onError: (String) -> Unit): Tile? {
@@ -77,17 +87,19 @@ internal class MergedTileProvider(
         return if (images.isEmpty()) {
             getSingleTile(x, y, zoom, onError)
         } else {
-            merge(images, isComplete = images.size == parts.size)
+            merge(images, isComplete = images.size == parts.size, parts = 2)
         }
     }
 
-    private fun merge(images: List<Pair<MergedTilePart, Bitmap>>, isComplete: Boolean): Tile {
+    /** [images] drawn on one tile of [parts] x [parts] of them, through the [colors] if there are any. */
+    private fun merge(images: List<Pair<MergedTilePart, Bitmap>>, isComplete: Boolean, parts: Int): Tile {
         val partWidth = images.first().second.width
         val partHeight = images.first().second.height
-        val merged = Bitmap.createBitmap(partWidth * 2, partHeight * 2, Bitmap.Config.ARGB_8888)
+        val merged = Bitmap.createBitmap(partWidth * parts, partHeight * parts, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(merged)
+        val paint = colorFilter?.let { Paint().apply { colorFilter = it } }
         images.forEach { (part, image) ->
-            canvas.drawBitmap(image, part.column * partWidth.toFloat(), part.row * partHeight.toFloat(), null)
+            canvas.drawBitmap(image, part.column * partWidth.toFloat(), part.row * partHeight.toFloat(), paint)
             image.recycle()
         }
         // Only PNG keeps the missing parts at the edges of the map transparent
@@ -95,7 +107,7 @@ internal class MergedTileProvider(
         val output = ByteArrayOutputStream()
         merged.compress(format, MERGED_TILE_JPEG_QUALITY, output)
         merged.recycle()
-        return Tile(partWidth * 2, partHeight * 2, output.toByteArray())
+        return Tile(partWidth * parts, partHeight * parts, output.toByteArray())
     }
 
     private fun ByteArray.toBitmap(): Bitmap? {
@@ -105,4 +117,11 @@ internal class MergedTileProvider(
     private fun MapTile.toGoogleTile(): Tile {
         return data?.let { Tile(width, height, it) } ?: TileProvider.NO_TILE
     }
+}
+
+/** A copy of the image recoloured by [colors]. */
+internal fun Bitmap.recoloured(colors: TileColorMatrix): Bitmap {
+    val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    Canvas(result).drawBitmap(this, 0f, 0f, Paint().apply { colorFilter = ColorMatrixColorFilter(colors.values) })
+    return result
 }

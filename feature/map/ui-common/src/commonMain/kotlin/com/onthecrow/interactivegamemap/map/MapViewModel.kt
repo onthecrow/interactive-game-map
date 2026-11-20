@@ -115,7 +115,7 @@ internal class MapViewModel(
             .onEach { reloadContent() }
             .launchIn(viewModelScope)
         settingsRepository.settings
-            .onEach { onEvent(MapEvent.OnSettingsChange(it.hideMarkersWhileMoving, it.clusterMarkers)) }
+            .onEach { onEvent(MapEvent.OnSettingsChange(it.hideMarkersWhileMoving, it.clusterMarkers, it.mapStyle)) }
             .launchIn(viewModelScope)
         state
             .map { it.locationsRequest }

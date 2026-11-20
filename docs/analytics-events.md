@@ -85,8 +85,8 @@ matters most: it tells what people look for and don't find.
 | `category_id` | string | The id of its category in `marker_catalog.json`: `o3`, `33` |
 | `is_found` | string | `true`, `false`: the new state |
 | `found_total` | number | The found markers of the game after the change |
-| `setting_name` | string | `hide_markers_while_moving`, `cluster_markers`, `theme`, `dynamic_color`, `language` |
-| `setting_value` | string | `true`, `false`; `system`, `light`, `dark`; a language tag or `system` |
+| `setting_name` | string | `hide_markers_while_moving`, `cluster_markers`, `theme`, `map_style`, `dynamic_color`, `language` |
+| `setting_value` | string | `true`, `false`; `system`, `light`, `dark`; `theme`, `standard`, `dark` for `map_style`; a language tag or `system` |
 | `route_result` | string | `built`, `cancelled`, `unavailable` (the map has no roads), `failed` |
 | `locations_count` | number | The markers of the route: the ones the filters show on the whole map and not found yet |
 | `fast_travels` | number | The fast travel points of a built route, the first one included; none when it wasn't built |
